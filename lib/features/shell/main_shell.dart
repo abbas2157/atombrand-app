@@ -1,0 +1,74 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/session.dart';
+
+/// Bottom tabs: Home · Orders · Bulk · Catalogue · More (§3.1).
+class MainShell extends ConsumerStatefulWidget {
+  const MainShell({super.key, required this.shell});
+
+  final StatefulNavigationShell shell;
+
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh the Bulk badge whenever the app comes back to the foreground.
+    _lifecycle = AppLifecycleListener(onResume: () => ref.read(sessionProvider.notifier).refreshBadge());
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = ref.watch(signedInProvider)?.newBulkRequests ?? 0;
+    return Scaffold(
+      body: widget.shell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: widget.shell.currentIndex,
+        onDestinationSelected: (i) => widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex),
+        destinations: [
+          const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
+          const NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long_rounded),
+            label: 'Orders',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: badge > 0,
+              label: Text(badge > 99 ? '99+' : '$badge'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: const Icon(Icons.campaign_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: badge > 0,
+              label: Text(badge > 99 ? '99+' : '$badge'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: const Icon(Icons.campaign_rounded),
+            ),
+            label: 'Bulk',
+            tooltip: badge > 0 ? 'Bulk requests, $badge new' : 'Bulk requests',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2_rounded),
+            label: 'Catalogue',
+          ),
+          const NavigationDestination(icon: Icon(Icons.menu_rounded), label: 'More'),
+        ],
+      ),
+    );
+  }
+}

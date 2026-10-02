@@ -1,0 +1,220 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+
+import '../core/theme.dart';
+
+/// White rounded card with the single allowed shadow (§4.3).
+class AppCard extends StatelessWidget {
+  const AppCard({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.onTap});
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadius.card);
+    return DecoratedBox(
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: radius, boxShadow: cardShadow),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: Padding(padding: padding, child: child),
+        ),
+      ),
+    );
+  }
+}
+
+/// Rounded network thumbnail with a neutral placeholder.
+class NetThumb extends StatelessWidget {
+  const NetThumb(this.url, {super.key, this.size = 48, this.radius = 10, this.icon = Icons.inventory_2_outlined});
+
+  final String? url;
+  final double size;
+  final double radius;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = Container(
+      width: size,
+      height: size,
+      color: AppColors.neutralBg,
+      child: Icon(icon, color: AppColors.muted, size: size * 0.45),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: url == null
+          ? placeholder
+          : CachedNetworkImage(
+              imageUrl: url!,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              placeholder: (_, _) => placeholder,
+              errorWidget: (_, _, _) => placeholder,
+            ),
+    );
+  }
+}
+
+/// Info banner with a primary left border (§4.5), used for `locked_reason`
+/// and review warnings.
+class InfoBanner extends StatelessWidget {
+  const InfoBanner(this.text, {super.key, this.icon = Icons.info_outline_rounded, this.color = AppColors.infoFg});
+
+  final String text;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        border: Border(left: BorderSide(color: color, width: 4)),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Icon, one sentence saying what's missing, one action (§4.5).
+class EmptyState extends StatelessWidget {
+  const EmptyState({super.key, required this.icon, required this.message, this.actionLabel, this.onAction});
+
+  final IconData icon;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(color: AppColors.primarySoft, shape: BoxShape.circle),
+              child: Icon(icon, color: AppColors.primary, size: 34),
+            ),
+            const SizedBox(height: 16),
+            Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.muted)),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 16),
+              FilledButton.tonal(onPressed: onAction, child: Text(actionLabel!)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ErrorView extends StatelessWidget {
+  const ErrorView({super.key, required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => EmptyState(
+        icon: Icons.cloud_off_rounded,
+        message: message,
+        actionLabel: 'Try again',
+        onAction: onRetry,
+      );
+}
+
+class SectionTitle extends StatelessWidget {
+  const SectionTitle(this.text, {super.key, this.trailing});
+
+  final String text;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 10),
+      child: Row(
+        children: [
+          Expanded(child: Text(text, style: Theme.of(context).textTheme.titleMedium)),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
+
+/// Label/value row for detail cards.
+class KeyValue extends StatelessWidget {
+  const KeyValue(this.label, this.value, {super.key, this.emphasize = false});
+
+  final String label;
+  final String? value;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    if (value == null || value!.isEmpty) return const SizedBox.shrink();
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(flex: 2, child: Text(label, style: t.bodySmall?.copyWith(fontSize: 13))),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value!,
+              textAlign: TextAlign.end,
+              style: (emphasize ? t.titleMedium : t.bodyMedium)?.copyWith(fontFeatures: tabularFigures),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A full-width primary button that shows a spinner while [busy].
+class BusyButton extends StatelessWidget {
+  const BusyButton({super.key, required this.label, required this.onPressed, this.busy = false, this.danger = false});
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool busy;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        style: danger ? FilledButton.styleFrom(backgroundColor: AppColors.dangerFg) : null,
+        onPressed: busy ? null : onPressed,
+        child: busy
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+            : Text(label),
+      ),
+    );
+  }
+}
