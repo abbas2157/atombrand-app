@@ -185,7 +185,7 @@ class BulkTile extends StatelessWidget {
                       child: Text(meta, style: t.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                     if (r.commentsCount > 0) ...[
-                      const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: AppColors.muted),
+                      Icon(Icons.chat_bubble_outline_rounded, size: 14, color: AppPalette.of(context).muted),
                       const SizedBox(width: 2),
                       Text('${r.commentsCount}', style: t.bodySmall),
                     ],
@@ -197,13 +197,13 @@ class BulkTile extends StatelessWidget {
           if (r.phone != null)
             IconButton(
               tooltip: 'Call ${r.fullName}',
-              icon: const Icon(Icons.call_outlined, color: AppColors.primary),
+              icon: Icon(Icons.call_outlined, color: AppPalette.of(context).primary),
               onPressed: () => callPhone(context, r.phone),
             ),
           if (r.whatsapp != null)
             IconButton(
               tooltip: 'WhatsApp ${r.fullName}',
-              icon: const Icon(Icons.chat_outlined, color: AppColors.successFg),
+              icon: Icon(Icons.chat_outlined, color: AppPalette.of(context).success),
               onPressed: () => openExternal(context, r.whatsapp),
             ),
         ],

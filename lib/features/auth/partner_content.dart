@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 class PartnerContent {
   const PartnerContent._();
 
+  /// atomshop.pk has no separate terms page yet, so "Terms & Privacy Policy"
+  /// opens the privacy policy. Point this at the T&C page once it exists.
+  static const termsUrl = 'https://atomshop.pk/privacy-policy';
+
   static const headline = 'Put your brand in orbit.';
   static const pitch =
       "Sell on Pakistan's fastest-growing Buy Now, Pay Later marketplace, to buyers ready to spend in instalments.";

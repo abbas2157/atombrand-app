@@ -35,7 +35,7 @@ class OrderSummary {
     required this.status,
     this.totalDealPrice = 0,
     this.advancePrice = 0,
-    this.tenure = 1,
+    this.tenure,
     this.isCash = false,
     this.portal,
     this.city,
@@ -43,15 +43,19 @@ class OrderSummary {
     this.variant,
     this.createdAt,
     this.quantity,
+    this.recoveryPercent,
+    this.needsActionFlag,
   });
 
   factory OrderSummary.fromJson(Json j) => OrderSummary(
+        recoveryPercent: asIntOrNull(j['recovery_percent']),
+        needsActionFlag: j['needs_action'] == null ? null : asBool(j['needs_action']),
         uuid: asStrOr(j['uuid']),
         id: asInt(j['id']),
         status: asStrOr(j['status'], 'Pending'),
         totalDealPrice: asInt(j['total_deal_price']),
         advancePrice: asInt(j['advance_price']),
-        tenure: asInt(j['tenure'], 1),
+        tenure: asIntOrNull(j['tenure']),
         isCash: asBool(j['is_cash']),
         portal: asStr(j['portal']),
         city: asStr(j['city']),
@@ -66,7 +70,8 @@ class OrderSummary {
   final String status;
   final int totalDealPrice;
   final int advancePrice;
-  final int tenure;
+  /// Months in the plan; dashboard `latest_orders` leaves it out.
+  final int? tenure;
   final bool isCash;
   final String? portal;
   final String? city;
@@ -74,6 +79,18 @@ class OrderSummary {
   final String? variant;
   final String? createdAt;
   final int? quantity;
+
+  /// Share of a financed order collected so far (0–100). Newer, optional
+  /// list field; the recovery bar hides without it.
+  final int? recoveryPercent;
+
+  /// Server's say on whether the brand must act. Optional; see [needsAction].
+  final bool? needsActionFlag;
+
+  /// Whether the order waits on the brand: the server's flag when sent,
+  /// otherwise a retail cash order still at Pending or Verification (only
+  /// those can be moved on by the brand, §8.6).
+  bool get needsAction => needsActionFlag ?? (isCash && (status == 'Pending' || status == 'Varification'));
 }
 
 class OrderDeal {

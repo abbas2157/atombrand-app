@@ -4,6 +4,13 @@ import 'package:intl/intl.dart';
 final _thousands = NumberFormat('#,##0', 'en_US');
 final _date = DateFormat('d MMM y', 'en_US');
 final _dateTime = DateFormat('d MMM y, h:mm a', 'en_US');
+final _shortDate = DateFormat('d MMM', 'en_US');
+
+/// `30 Sep` (step dates, where the year is obvious).
+String formatShortDate(String? raw) {
+  final d = parseServerDate(raw);
+  return d == null ? '' : _shortDate.format(d);
+}
 
 /// `30000` → `Rs. 30,000`.
 String money(num? value) => 'Rs. ${_thousands.format(value ?? 0)}';

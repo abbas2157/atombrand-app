@@ -53,7 +53,7 @@ Future<bool> confirm(
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
         FilledButton(
-          style: destructive ? FilledButton.styleFrom(backgroundColor: AppColors.dangerFg) : null,
+          style: destructive ? FilledButton.styleFrom(backgroundColor: AppPalette.of(ctx).danger, foregroundColor: AppPalette.of(ctx).onPrimary) : null,
           onPressed: () => Navigator.pop(ctx, true),
           child: Text(confirmLabel),
         ),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
-import 'auth_scaffold.dart';
 import 'partner_content.dart';
 
-/// Small uppercase heading between landing sections.
+/// Small uppercase heading between sections.
 class AuthSectionTitle extends StatelessWidget {
   const AuthSectionTitle(this.text, {super.key});
   final String text;
@@ -16,87 +15,11 @@ class AuthSectionTitle extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.muted,
+              color: AppPalette.of(context).muted,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.1,
               fontSize: 12,
             ),
-      ),
-    );
-  }
-}
-
-/// Charcoal card with the marketplace numbers, in a 2 × 2 grid.
-class PartnerStatsCard extends StatelessWidget {
-  const PartnerStatsCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    const stats = PartnerContent.stats;
-    Widget cell(int i) => Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                stats[i].value,
-                style: t.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 24),
-              ),
-              const SizedBox(height: 2),
-              Text(stats[i].label, style: t.bodySmall?.copyWith(color: Colors.white70)),
-            ],
-          ),
-        );
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-      decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(20)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(width: 18, height: 4, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 8),
-              Text('AtomShop today', style: t.labelMedium?.copyWith(color: Colors.white70)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(children: [cell(0), const SizedBox(width: 16), cell(1)]),
-          const SizedBox(height: 18),
-          Row(children: [cell(2), const SizedBox(width: 16), cell(3)]),
-        ],
-      ),
-    );
-  }
-}
-
-class BenefitRow extends StatelessWidget {
-  const BenefitRow({super.key, required this.icon, required this.title, required this.body});
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AuthIconBadge(icon, size: 44),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: t.titleMedium),
-                const SizedBox(height: 3),
-                Text(body, style: t.bodySmall?.copyWith(fontSize: 13, height: 1.45)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -114,6 +37,7 @@ class PartnerSteps extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final p = AppPalette.of(context);
     return Column(
       children: [
         for (var i = 0; i < steps.length; i++)
@@ -127,7 +51,7 @@ class PartnerSteps extends StatelessWidget {
                     children: [
                       _Dot(index: i, done: current != null && i < current!),
                       if (i < steps.length - 1)
-                        Expanded(child: Container(width: 2, margin: const EdgeInsets.symmetric(vertical: 4), color: AppColors.line)),
+                        Expanded(child: Container(width: 2, margin: const EdgeInsets.symmetric(vertical: 4), color: p.border)),
                     ],
                   ),
                 ),
@@ -138,9 +62,9 @@ class PartnerSteps extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(steps[i].title, style: t.titleMedium),
+                        Text(steps[i].title, style: t.titleMedium?.copyWith(color: p.text)),
                         const SizedBox(height: 3),
-                        Text(steps[i].body, style: t.bodySmall?.copyWith(fontSize: 13, height: 1.45)),
+                        Text(steps[i].body, style: t.bodySmall?.copyWith(fontSize: 13, height: 1.45, color: p.muted)),
                       ],
                     ),
                   ),
@@ -160,42 +84,19 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final fg = done ? p.onSuccess : p.onPrimary;
     return Container(
       width: 32,
       height: 32,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: done ? AppColors.successFg : AppColors.primary, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: done ? p.success : p.primary, shape: BoxShape.circle),
       child: done
-          ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+          ? Icon(Icons.check_rounded, color: fg, size: 18)
           : Text(
               '${index + 1}',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: fg, fontSize: 14, fontWeight: FontWeight.w700),
             ),
-    );
-  }
-}
-
-/// Soft pill, e.g. a live brand or an eligible business type.
-class SoftPill extends StatelessWidget {
-  const SoftPill(this.label, {super.key, this.icon});
-  final String label;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(999)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 16, color: AppColors.primary),
-            const SizedBox(width: 6),
-          ],
-          Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.ink)),
-        ],
-      ),
     );
   }
 }
@@ -206,17 +107,20 @@ class CheckLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 1),
-            child: Icon(Icons.check_circle_rounded, size: 18, color: AppColors.successFg),
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(Icons.check_circle_rounded, size: 18, color: p.success),
           ),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4))),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4, color: p.text)),
+          ),
         ],
       ),
     );

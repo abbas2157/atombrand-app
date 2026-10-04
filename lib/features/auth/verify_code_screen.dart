@@ -10,9 +10,19 @@ import '../../core/theme.dart';
 import '../../data/models/account.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../widgets/code_input.dart';
-import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
 import 'auth_scaffold.dart';
+
+/// Where the code went, from the challenge's masked destinations.
+String challengeSentText(VerificationChallenge c) {
+  final d = c.destinations;
+  final parts = [
+    if (d['whatsapp'] != null) 'WhatsApp ${d['whatsapp']}',
+    if (d['email'] != null) 'email ${d['email']}',
+  ];
+  if (parts.isEmpty) return "If this account exists, we've sent a 6-digit code. It's valid for 10 minutes.";
+  return 'We sent a 6-digit code to ${parts.join(' and ')}. It\'s valid for 10 minutes.';
+}
 
 /// Codes exist only where there's no password to check (§6).
 enum VerifyMode { reset, apply }
@@ -143,19 +153,8 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
 
   String _channelName(String c) => c == 'whatsapp' ? 'WhatsApp' : 'email';
 
-  String get _subtitle {
-    final d = _challenge.destinations;
-    final parts = [
-      if (d['whatsapp'] != null) 'WhatsApp ${d['whatsapp']}',
-      if (d['email'] != null) 'email ${d['email']}',
-    ];
-    if (parts.isEmpty) return "If this account exists, we've sent a 6-digit code. It's valid for 10 minutes.";
-    return 'We sent a 6-digit code to ${parts.join(' and ')}. It\'s valid for 10 minutes.';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     final channels = _challenge.channels;
     return AuthScaffold(
       title: switch (_args.mode) {
@@ -163,25 +162,26 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
         VerifyMode.apply => 'Verify your phone',
       },
       icon: _args.mode == VerifyMode.apply ? Icons.verified_user_outlined : Icons.mark_email_unread_outlined,
-      subtitle: _subtitle,
+      subtitle: challengeSentText(_challenge),
+      bottom: AuthButton(
+        label: _args.mode == VerifyMode.apply ? 'Submit application' : 'Verify',
+        busyLabel: 'Verifying…',
+        busy: _busy,
+        onPressed: () => _verify(_code.text),
+      ),
       children: [
         CodeInput(controller: _code, onCompleted: _verify, errorText: _error, enabled: !_busy),
         if (kDebugMode && _challenge.debugCode != null) ...[
           const SizedBox(height: 8),
-          Text('Test server code: ${_challenge.debugCode}', style: t.bodySmall?.copyWith(color: AppColors.warningFg)),
+          Builder(
+            builder: (context) => Text(
+              'Test server code: ${_challenge.debugCode}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppPalette.of(context).accentInk),
+            ),
+          ),
         ],
-        const SizedBox(height: 24),
-        BusyButton(
-          label: _args.mode == VerifyMode.apply ? 'Submit application' : 'Verify',
-          busy: _busy,
-          onPressed: () => _verify(_code.text),
-        ),
         const SizedBox(height: 16),
-        Center(
-          child: _wait > 0
-              ? Text('Resend code in ${_wait}s', style: t.bodySmall)
-              : TextButton(onPressed: _resending ? null : () => _resend(), child: const Text('Resend code')),
-        ),
+        _ResendRow(wait: _wait, onResend: _resending ? null : () => _resend()),
         if (channels.length > 1 && _wait <= 0)
           Wrap(
             alignment: WrapAlignment.center,
@@ -192,6 +192,49 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                   child: Text('Send by ${_channelName(c)} only'),
                 ),
             ],
+          ),
+      ],
+    );
+  }
+}
+
+/// "Didn't get a code? ⏱ Resend in 0:42", then a Resend button.
+class _ResendRow extends StatelessWidget {
+  const _ResendRow({required this.wait, required this.onResend});
+  final int wait;
+  final VoidCallback? onResend;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final t = Theme.of(context).textTheme.bodyMedium;
+    final clock = '${wait ~/ 60}:${(wait % 60).toString().padLeft(2, '0')}';
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      children: [
+        Text("Didn't get a code?", style: t?.copyWith(color: p.muted)),
+        if (wait > 0)
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.schedule_rounded, size: 16, color: p.accentInk),
+                const SizedBox(width: 5),
+                Text(
+                  'Resend in $clock',
+                  style: t?.copyWith(color: p.text, fontWeight: FontWeight.w600, fontFeatures: tabularFigures),
+                ),
+              ],
+            ),
+          )
+        else
+          TextButton(
+            onPressed: onResend,
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+            child: const Text('Resend code'),
           ),
       ],
     );

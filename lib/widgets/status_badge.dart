@@ -2,65 +2,79 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 
-enum BadgeTone {
-  neutral(AppColors.neutralFg, AppColors.neutralBg),
-  warning(AppColors.warningFg, AppColors.warningBg),
-  info(AppColors.infoFg, AppColors.infoBg),
-  success(AppColors.successFg, AppColors.successBg),
-  danger(AppColors.dangerFg, AppColors.dangerBg);
+/// Pill colours (DESIGN.md §2.2). [plan] is the outlined neutral pill used
+/// for payment plans.
+enum BadgeTone { neutral, info, warning, success, danger, lead, violet, plan }
 
-  const BadgeTone(this.fg, this.bg);
-  final Color fg;
-  final Color bg;
-}
-
-/// Pill badge identical to the web portal (§4.4). Never wraps.
+/// Status pill (§4.4). Never wraps or truncates.
 class StatusBadge extends StatelessWidget {
   const StatusBadge(this.label, this.tone, {super.key});
 
   /// Order statuses. `Varification` is the real value; it shows as "Verification".
   factory StatusBadge.order(String status) => StatusBadge(orderStatusLabel(status), switch (status) {
-        'Varification' || 'Processing' => BadgeTone.warning,
-        'Delivered' || 'Instalments' => BadgeTone.info,
-        'Completed' => BadgeTone.success,
+        'Varification' || 'Instalments' => BadgeTone.info,
+        'Processing' => BadgeTone.warning,
+        'Delivered' || 'Completed' => BadgeTone.success,
         'Cancelled' => BadgeTone.danger,
         _ => BadgeTone.neutral,
       });
 
   factory StatusBadge.bulk(String status) => StatusBadge(status, switch (status) {
-        'New Lead' => BadgeTone.warning,
-        'Contacted' || 'Quoted' => BadgeTone.info,
+        'New Lead' => BadgeTone.lead,
+        'Contacted' => BadgeTone.info,
+        'Quoted' => BadgeTone.violet,
         'Won' => BadgeTone.success,
-        'Lost' => BadgeTone.danger,
+        'Lost' => BadgeTone.neutral,
         _ => BadgeTone.neutral,
       });
 
   factory StatusBadge.product(String status) => StatusBadge(productStatusLabel(status), switch (status) {
         'Published' => BadgeTone.success,
-        'Pending' => BadgeTone.warning,
+        'Pending' => BadgeTone.info,
         'Out of Stock' => BadgeTone.danger,
+        'On hold' => BadgeTone.warning,
         _ => BadgeTone.neutral,
       });
 
-  /// Payment pill for retail orders.
-  factory StatusBadge.payment({required bool isCash, required int tenure}) => isCash
-      ? const StatusBadge('Paid in full', BadgeTone.info)
-      : StatusBadge('$tenure-month plan', BadgeTone.neutral);
+  /// Payment plan: "Paid in full" (green) or "3 mo plan" (outlined).
+  factory StatusBadge.payment({required bool isCash, int? tenure}) => isCash
+      ? const StatusBadge('Paid in full', BadgeTone.success)
+      : StatusBadge(tenure == null ? 'Instalment plan' : '$tenure mo plan', BadgeTone.plan);
 
   final String label;
   final BadgeTone tone;
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final (fg, bg) = switch (tone) {
+      BadgeTone.neutral => (p.neutral.fg, p.neutral.bg),
+      BadgeTone.info => (p.info.fg, p.info.bg),
+      BadgeTone.warning => (p.warning.fg, p.warning.bg),
+      BadgeTone.success => (p.positive.fg, p.positive.bg),
+      BadgeTone.danger => (p.negative.fg, p.negative.bg),
+      BadgeTone.lead => (p.lead.fg, p.lead.bg),
+      BadgeTone.violet => (p.violet.fg, p.violet.bg),
+      BadgeTone.plan => (p.text, p.card),
+    };
+    // No `alignment` here: it would stretch the pill to the full width
+    // inside Wraps and Columns.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: tone.bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(
-        label,
-        maxLines: 1,
-        softWrap: false,
-        overflow: TextOverflow.fade,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: tone.fg, fontSize: 12, fontWeight: FontWeight.w600),
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: tone == BadgeTone.plan ? Border.all(color: p.border) : null,
+      ),
+      child: Center(
+        widthFactor: 1,
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

@@ -4,183 +4,140 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/session.dart';
 import '../../core/theme.dart';
-import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
+import 'auth_illustrations.dart';
 import 'auth_scaffold.dart';
-import 'google_sign_in_button.dart';
 import 'partner_content.dart';
-import 'partner_widgets.dart';
 
-/// A short brand-partner landing page that scrolls, with the ways in pinned
-/// at the bottom (DESIGN.md §3.1). Copy: atomshop.pk/brand-partners.
+/// Logo, product illustration, the partner pitch with marketplace numbers,
+/// and the ways in (DESIGN.md §3.3). Copy: atomshop.pk/brand-partners.
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t = Theme.of(context).textTheme;
     final session = ref.watch(sessionProvider);
     final notice = session is SignedOut ? session.notice : null;
-    final config = ref.watch(configProvider).value;
 
     return AuthTheme(
-      child: Scaffold(
-        backgroundColor: AppColors.surface,
-        bottomNavigationBar: _ActionPanel(notice: notice),
-        body: Stack(
-          children: [
-            SafeArea(
-              bottom: false,
+      child: Builder(
+        builder: (context) {
+          final p = AppPalette.of(context);
+          final heroHeight = (MediaQuery.sizeOf(context).height * 0.3).clamp(170.0, 260.0);
+          return Scaffold(
+            backgroundColor: p.bg,
+            body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-                    children: [
-                      const Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Positioned(top: -60, right: -84, child: _BrandSlashes()),
-                          Center(child: BrandLogo.lockup(height: 112)),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      Text(
-                        PartnerContent.headline,
-                        textAlign: TextAlign.center,
-                        style: authTitleStyle(t)?.copyWith(fontSize: 28),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(PartnerContent.pitch, textAlign: TextAlign.center, style: authSubtitleStyle(t)),
-                      const SizedBox(height: 24),
-                      const PartnerStatsCard(),
-                      const SizedBox(height: 36),
-                      const AuthSectionTitle('Why brands sell on AtomShop'),
-                      for (final b in PartnerContent.benefits) BenefitRow(icon: b.icon, title: b.title, body: b.body),
-                      const SizedBox(height: 18),
-                      const AuthSectionTitle('How it works'),
-                      const PartnerSteps(),
-                      const SizedBox(height: 36),
-                      const AuthSectionTitle('Brands already live'),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final b in PartnerContent.liveBrands) SoftPill(b, icon: Icons.verified_rounded),
-                        ],
-                      ),
-                      if (config?.supportWhatsapp != null || config?.supportEmail != null) ...[
-                        const SizedBox(height: 36),
-                        const AuthSectionTitle('Questions?'),
-                        Text(
-                          'Talk to the partnerships team. We reply within ${PartnerContent.replyTime}.',
-                          style: t.bodyMedium?.copyWith(color: AppColors.muted, height: 1.45),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (config?.supportWhatsapp != null)
-                              ActionChip(
-                                avatar: const Icon(Icons.chat_rounded, size: 18, color: AppColors.successFg),
-                                label: const Text('WhatsApp us'),
-                                onPressed: () => openExternal(context, config!.supportWhatsapp),
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                        sliver: SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(
+                                height: 48,
+                                child: Align(alignment: Alignment.centerLeft, child: BrandLogo.inline(height: 30)),
                               ),
-                            if (config?.supportEmail != null)
-                              ActionChip(
-                                avatar: const Icon(Icons.mail_outline_rounded, size: 18, color: AppColors.primary),
-                                label: Text(config!.supportEmail!),
-                                onPressed: () => openExternal(context, 'mailto:${config.supportEmail}'),
+                              const SizedBox(height: 16),
+                              ProductsIllustration(height: heroHeight),
+                              const SizedBox(height: 24),
+                              Text(PartnerContent.headline, style: authTitleStyle(context)),
+                              const SizedBox(height: 8),
+                              Text(PartnerContent.pitch, style: authSubtitleStyle(context)),
+                              const SizedBox(height: 20),
+                              const _StatsStrip(),
+                              const Spacer(),
+                              const SizedBox(height: 24),
+                              if (notice != null) ...[
+                                AuthBanner(notice, icon: Icons.lock_outline_rounded),
+                                const SizedBox(height: 12),
+                              ],
+                              AuthButton(label: 'Sign In', onPressed: () => context.push('/sign-in')),
+                              const SizedBox(height: 12),
+                              OutlinedButton(
+                                onPressed: () => context.push('/sign-up'),
+                                child: const Text('Create Account'),
                               ),
-                          ],
+                              const SizedBox(height: 4),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text(
+                                    'By continuing, you agree to our',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontSize: 13, color: p.muted),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => openExternal(context, PartnerContent.termsUrl),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      textStyle: Theme.of(context).textTheme.labelMedium
+                                          ?.copyWith(fontWeight: FontWeight.w600),
+                                    ),
+                                    child: const Text('Terms & Privacy Policy'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-/// White panel pinned to the bottom: Sign in, Google, Become a partner.
-class _ActionPanel extends StatelessWidget {
-  const _ActionPanel({this.notice});
-  final String? notice;
+/// AtomShop's marketplace numbers in three soft tiles.
+class _StatsStrip extends StatelessWidget {
+  const _StatsStrip();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.line)),
-        boxShadow: [BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, -4))],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (notice != null) ...[
-                    InfoBanner(notice!, icon: Icons.lock_outline_rounded, color: AppColors.dangerFg),
-                    const SizedBox(height: 12),
-                  ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton(onPressed: () => context.push('/sign-in'), child: const Text('Sign in')),
+    final p = AppPalette.of(context);
+    final t = Theme.of(context).textTheme;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, s) in PartnerContent.stats.take(3).indexed) ...[
+            if (i > 0) const SizedBox(width: 10),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(AuthTheme.radius)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.value,
+                      style: t.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: p.primary,
+                        fontFeatures: tabularFigures,
                       ),
-                      const SizedBox(width: 10),
-                      const Expanded(child: GoogleSignInButton(compact: true)),
-                    ],
-                  ),
-                  const PartnerLink(),
-                ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(s.label, style: t.bodySmall?.copyWith(color: p.muted, height: 1.3)),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
+          ],
+        ],
       ),
     );
   }
-}
-
-/// Two faint diagonal strokes in the corner, echoing the A and B of the mark.
-class _BrandSlashes extends StatelessWidget {
-  const _BrandSlashes();
-
-  @override
-  Widget build(BuildContext context) =>
-      const ExcludeSemantics(child: CustomPaint(size: Size(220, 200), painter: _SlashPainter()));
-}
-
-class _SlashPainter extends CustomPainter {
-  const _SlashPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Path bar(double x, double w) => Path()
-      ..moveTo(x, size.height)
-      ..lineTo(x + w, size.height)
-      ..lineTo(x + w + size.height * 0.58, 0)
-      ..lineTo(x + size.height * 0.58, 0)
-      ..close();
-    canvas.drawPath(bar(20, 44), Paint()..color = AppColors.accent.withValues(alpha: 0.05));
-    canvas.drawPath(bar(84, 30), Paint()..color = AppColors.primary.withValues(alpha: 0.08));
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

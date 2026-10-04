@@ -6,8 +6,8 @@ import '../../core/api_client.dart';
 import '../../core/push.dart';
 import '../../core/session.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
+import 'auth_field.dart';
 import 'auth_scaffold.dart';
 import 'google_sign_in_button.dart';
 
@@ -20,11 +20,14 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
+  // Keeps the Sign In button in view above the keyboard while typing.
+  static const _revealButton = EdgeInsets.fromLTRB(20, 20, 20, 140);
+
   final _form = GlobalKey<FormState>();
   final _login = TextEditingController();
   final _password = TextEditingController();
   bool _busy = false;
-  bool _obscure = true;
+  bool _submitted = false;
   ApiException? _error;
 
   @override
@@ -35,7 +38,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }
 
   Future<void> _submit() async {
+    setState(() => _submitted = true);
     if (!_form.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() {
       _busy = true;
       _error = null;
@@ -58,60 +63,66 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Widget build(BuildContext context) {
     final authError = _error?.statusCode == 401 ? _error!.message : null;
     return AuthScaffold(
+      showLogo: true,
       title: 'Welcome back',
       subtitle: 'Sign in with the email or phone number linked to your brand.',
-      footer: const PartnerLink(),
+      footer: AuthFooterLink(
+        prompt: "Don't have an account?",
+        action: 'Sign up',
+        // Swap rather than stack, so Back from either returns to Welcome.
+        onPressed: () => context.pushReplacement('/sign-up'),
+      ),
       children: [
         Form(
           key: _form,
+          autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
           child: AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (authError != null) ...[
-                  InfoBanner(authError, icon: Icons.error_outline_rounded, color: Theme.of(context).colorScheme.error),
+                  AuthBanner(authError),
                   const SizedBox(height: 16),
                 ],
-                TextFormField(
+                AuthField(
+                  label: 'Email or phone',
                   controller: _login,
+                  icon: Icons.mail_outline_rounded,
+                  hint: 'you@brand.pk or 0300 1234567',
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username, AutofillHints.email, AutofillHints.telephoneNumber],
-                  decoration: InputDecoration(
-                    labelText: 'Email or phone',
-                    prefixIcon: const Icon(Icons.alternate_email_rounded),
-                    hintText: 'you@brand.pk or 0300 1234567',
-                    errorText: _error?.fieldError('login'),
-                  ),
+                  scrollPadding: _revealButton,
+                  errorText: _error?.fieldError('login'),
                   validator: loginValidator,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                AuthField(
+                  label: 'Password',
                   controller: _password,
-                  obscureText: _obscure,
+                  icon: Icons.lock_outline_rounded,
+                  password: true,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.password],
-                  onFieldSubmitted: (_) => _submit(),
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    errorText: _error?.fieldError('password'),
-                    suffixIcon: IconButton(
-                      tooltip: _obscure ? 'Show password' : 'Hide password',
-                      icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                      onPressed: () => setState(() => _obscure = !_obscure),
-                    ),
-                  ),
-                  validator: (v) => requiredValidator(v, 'Password'),
+                  scrollPadding: _revealButton,
+                  onSubmitted: (_) => _submit(),
+                  errorText: _error?.fieldError('password'),
+                  validator: (v) => v.isEmpty ? 'Enter your password.' : null,
                 ),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(onPressed: () => context.push('/forgot'), child: const Text('Forgot password?')),
+                  child: TextButton(
+                    onPressed: () => context.push('/forgot'),
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+                    child: const Text('Forgot password?'),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                BusyButton(label: 'Sign in', busy: _busy, onPressed: _submit),
-                const OrDivider(),
-                const GoogleSignInButton(),
+                const SizedBox(height: 6),
+                AuthButton(label: 'Sign In', busyLabel: 'Signing in…', busy: _busy, onPressed: _submit),
+                const SizedBox(height: 28),
+                const OrDivider(text: 'or continue with'),
+                const SizedBox(height: 20),
+                const SocialLoginRow(),
               ],
             ),
           ),

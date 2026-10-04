@@ -154,7 +154,7 @@ class _StatusSheetState extends State<_StatusSheet> {
               ),
             const SizedBox(height: 12),
             FilledButton(
-              style: a.isCancel ? FilledButton.styleFrom(backgroundColor: AppColors.dangerFg) : null,
+              style: a.isCancel ? FilledButton.styleFrom(backgroundColor: AppPalette.of(context).danger, foregroundColor: AppPalette.of(context).onPrimary) : null,
               onPressed: _picking
                   ? null
                   : () => Navigator.pop(

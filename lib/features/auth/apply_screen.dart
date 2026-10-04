@@ -6,8 +6,8 @@ import '../../core/api_client.dart';
 import '../../core/session.dart';
 import '../../core/theme.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
+import 'auth_field.dart';
 import 'auth_scaffold.dart';
 import 'partner_content.dart';
 import 'partner_widgets.dart';
@@ -36,6 +36,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
   String? _businessType;
   int? _percentage;
   bool _busy = false;
+  bool _submitted = false;
   ApiException? _error;
 
   @override
@@ -60,6 +61,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
       };
 
   Future<void> _continue() async {
+    setState(() => _submitted = true);
     if (!_form.currentState!.validate()) return;
     setState(() {
       _busy = true;
@@ -83,9 +85,6 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     }
   }
 
-  InputDecoration _dec(String label, String field, {String? hint, String? helper}) =>
-      InputDecoration(labelText: label, hintText: hint, helperText: helper, errorText: _error?.fieldError(field));
-
   @override
   Widget build(BuildContext context) {
     final percentages = ref.watch(configProvider).value?.applyPercentages ?? const [];
@@ -100,100 +99,136 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
         const SizedBox(height: 32),
         Form(
           key: _form,
+          autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_error != null && _error!.fieldErrors.isNotEmpty) ...[
-                InfoBanner('Please fix the highlighted fields.', color: AppColors.dangerFg),
+                const AuthBanner('Please fix the highlighted fields.'),
                 gap,
               ],
               const AuthSectionTitle('About you'),
-              TextFormField(
+              AuthField(
+                label: 'Your name',
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.name],
-                decoration: _dec('Your name', 'name'),
+                errorText: _error?.fieldError('name'),
                 validator: (v) => requiredValidator(v, 'Name'),
               ),
               gap,
-              TextFormField(
+              AuthField(
+                label: 'Mobile (WhatsApp)',
                 controller: _phone,
+                hint: '0300 1234567',
+                helper: "We'll send a code to this number",
                 keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.telephoneNumber],
-                decoration: _dec('Mobile (WhatsApp)', 'phone', hint: '0300 1234567', helper: "We'll send a code to this number"),
+                errorText: _error?.fieldError('phone'),
                 validator: phoneValidator,
               ),
               gap,
-              TextFormField(
+              AuthField(
+                label: 'Email',
                 controller: _email,
+                helper: 'Your login is sent here once approved',
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.email],
-                decoration: _dec('Email', 'email', helper: 'Your login is sent here once approved'),
+                errorText: _error?.fieldError('email'),
                 validator: emailValidator,
               ),
               const SizedBox(height: 28),
               const AuthSectionTitle('Your business'),
-              TextFormField(
+              AuthField(
+                label: 'Company / brand name',
                 controller: _company,
                 textCapitalization: TextCapitalization.words,
-                decoration: _dec('Company / brand name', 'company'),
+                textInputAction: TextInputAction.next,
+                errorText: _error?.fieldError('company'),
                 validator: (v) => requiredValidator(v, 'Company'),
               ),
               gap,
+              const AuthFieldLabel('Business type'),
+              const SizedBox(height: 6),
               DropdownButtonFormField<String>(
                 initialValue: _businessType,
                 isExpanded: true,
-                decoration: _dec('Business type', 'business_type'),
+                decoration: InputDecoration(hintText: 'Choose one', errorText: _error?.fieldError('business_type')),
                 items: [for (final b in _businessTypes) DropdownMenuItem(value: b, child: Text(b))],
                 onChanged: (v) => setState(() => _businessType = v),
                 validator: (v) => v == null ? 'Choose a business type.' : null,
               ),
               gap,
-              TextFormField(
+              AuthField(
+                label: 'Main category',
+                labelSuffix: '(optional)',
                 controller: _category,
-                decoration: _dec('Main category (optional)', 'category', hint: 'e.g. Mobiles, Smart TVs'),
+                hint: 'e.g. Mobiles, Smart TVs',
+                textInputAction: TextInputAction.next,
+                errorText: _error?.fieldError('category'),
               ),
               gap,
-              TextFormField(
+              AuthField(
+                label: 'Website',
+                labelSuffix: '(optional)',
                 controller: _website,
                 keyboardType: TextInputType.url,
-                decoration: _dec('Website (optional)', 'website'),
+                textInputAction: TextInputAction.next,
+                errorText: _error?.fieldError('website'),
               ),
               gap,
-              TextFormField(
+              AuthField(
+                label: 'Number of products',
+                labelSuffix: '(optional)',
                 controller: _productsCount,
+                helper: 'At least 3 to get listed',
                 keyboardType: TextInputType.number,
-                decoration: _dec('Number of products (optional)', 'products_count', helper: 'At least 3 to get listed'),
+                textInputAction: TextInputAction.next,
+                errorText: _error?.fieldError('products_count'),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return null;
+                  if (v.trim().isEmpty) return null;
                   final n = int.tryParse(v.trim());
                   return (n == null || n < 1) ? 'Enter a whole number, 1 or more.' : null;
                 },
               ),
               const SizedBox(height: 28),
               const AuthSectionTitle('Partnership'),
+              const AuthFieldLabel('AtomShop share per sale'),
+              const SizedBox(height: 6),
               DropdownButtonFormField<int>(
                 initialValue: _percentage,
                 isExpanded: true,
-                decoration: _dec('AtomShop share per sale', 'percentage', helper: "The % of each sale you're offering AtomShop"),
+                decoration: InputDecoration(
+                  hintText: 'Choose a percentage',
+                  helperText: "The % of each sale you're offering AtomShop",
+                  errorText: _error?.fieldError('percentage'),
+                ),
                 items: [for (final p in percentages) DropdownMenuItem(value: p, child: Text('$p%'))],
                 onChanged: (v) => setState(() => _percentage = v),
                 validator: (v) => v == null ? 'Choose a percentage.' : null,
               ),
               gap,
-              TextFormField(
+              AuthField(
+                label: 'Anything else?',
+                labelSuffix: '(optional)',
                 controller: _message,
                 minLines: 3,
                 maxLines: 6,
-                decoration: _dec('Anything else? (optional)', 'message'),
+                keyboardType: TextInputType.multiline,
+                errorText: _error?.fieldError('message'),
               ),
               const SizedBox(height: 28),
-              BusyButton(label: 'Verify phone & continue', busy: _busy, onPressed: _continue),
+              AuthButton(label: 'Verify phone & continue', busyLabel: 'Sending code…', busy: _busy, onPressed: _continue),
               const SizedBox(height: 12),
-              Text(
-                "Next, we'll send a 6-digit code to your WhatsApp to confirm your number.",
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
+              Builder(
+                builder: (context) => Text(
+                  "Next, we'll send a 6-digit code to your WhatsApp to confirm your number.",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ],
           ),
@@ -209,9 +244,10 @@ class _Eligibility extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(18)),
+      decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(18)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -224,11 +260,11 @@ class _Eligibility extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: p.field,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppColors.line),
+                    border: Border.all(color: p.border),
                   ),
-                  child: Text(w, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.ink)),
+                  child: Text(w, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: p.text)),
                 ),
             ],
           ),
@@ -248,60 +284,55 @@ class ApplySubmittedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     return AuthTheme(
-      child: Scaffold(
-        backgroundColor: AppColors.surface,
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                children: [
-                  const Center(child: BrandLogo.mark(height: 26)),
-                  const SizedBox(height: 40),
-                  const Center(
-                    child: AuthIconBadge(
-                      Icons.check_rounded,
-                      color: AppColors.successFg,
-                      background: AppColors.successBg,
-                      size: 72,
+      child: Builder(builder: (context) {
+        final p = AppPalette.of(context);
+        return Scaffold(
+          backgroundColor: p.bg,
+          body: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  children: [
+                    const Center(child: BrandLogo.inline(height: 28)),
+                    const SizedBox(height: 40),
+                    Center(child: AuthIconBadge(Icons.check_rounded, color: p.onSuccess, background: p.success, size: 72)),
+                    const SizedBox(height: 24),
+                    Text(
+                      message?.isNotEmpty == true ? message! : 'Application received',
+                      textAlign: TextAlign.center,
+                      style: authTitleStyle(context),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    message?.isNotEmpty == true ? message! : 'Application received',
-                    textAlign: TextAlign.center,
-                    style: authTitleStyle(t),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Thanks for applying. We'll be in touch within ${PartnerContent.replyTime}.",
-                    textAlign: TextAlign.center,
-                    style: authSubtitleStyle(t),
-                  ),
-                  const SizedBox(height: 32),
-                  const AuthSectionTitle('What happens next'),
-                  const PartnerSteps(
-                    current: 1,
-                    steps: [
-                      (title: 'Application sent', body: 'Your details and phone number are verified.'),
-                      (title: 'Review', body: 'Our team checks your brand and agrees pricing and margins with you.'),
-                      (
-                        title: 'Your login arrives',
-                        body: "Once approved, we email a temporary password. Sign in here and list your products.",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 36),
-                  FilledButton(onPressed: () => context.go('/welcome'), child: const Text('Back to start')),
-                ],
+                    const SizedBox(height: 10),
+                    Text(
+                      "Thanks for applying. We'll be in touch within ${PartnerContent.replyTime}.",
+                      textAlign: TextAlign.center,
+                      style: authSubtitleStyle(context),
+                    ),
+                    const SizedBox(height: 32),
+                    const AuthSectionTitle('What happens next'),
+                    const PartnerSteps(
+                      current: 1,
+                      steps: [
+                        (title: 'Application sent', body: 'Your details and phone number are verified.'),
+                        (title: 'Review', body: 'Our team checks your brand and agrees pricing and margins with you.'),
+                        (
+                          title: 'Your login arrives',
+                          body: "Once approved, we email a temporary password. Sign in here and list your products.",
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 36),
+                    AuthButton(label: 'Back to start', onPressed: () => context.go('/welcome')),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }

@@ -490,6 +490,30 @@ App bootstrap data.
 }
 ```
 
+**Proposed additions (optional; app ready, server to do).** The Home dashboard (DESIGN.md §4.1) already reads these. It hides each section until the server sends its data, so they can ship one at a time:
+
+```json
+{
+  "orders": { "…": "…", "pending": 5, "verification": 5 },
+  "periods": {
+    "today": { "revenue": 566550, "revenue_change_pct": 12, "orders": 14, "orders_change": 3,
+               "series": [ { "label": "9 AM", "value": 42000 }, { "label": "11 AM", "value": 78840 } ] },
+    "7d":    { "revenue": 1986400, "revenue_change_pct": 8, "orders": 22, "orders_change": 4, "series": [ { "label": "Sun", "value": 212000 } ] },
+    "30d":   { "revenue": 4252848, "revenue_change_pct": 15, "orders": 39, "orders_change": 6, "series": [ { "label": "4 Sep", "value": 98000 } ] }
+  },
+  "recovery": { "financed": 1284600, "recovered": 873528, "overdue_instalments": 3 }
+}
+```
+
+| Field | Meaning | Shows |
+|---|---|---|
+| `orders.pending` / `orders.verification` | Current count of the brand's orders in `Pending` / `Varification` | "Pending orders" KPI; "Orders waiting for verification" row |
+| `periods.{today,7d,30d}` | Revenue (sum of `total_deal_price`, excluding cancelled) and order count for the period. `*_change` compares with the previous period of the same length: a whole-number percentage for revenue, an absolute count for orders. Asia/Karachi days. | Period switch, Revenue and Orders KPIs with ▲/▼, sales chart |
+| `periods.*.series` | Oldest → newest buckets: 2-hour slots for `today`, days for `7d` and `30d`. `label` is display-ready. | Chart bars; the last bar is highlighted |
+| `recovery` | Instalment orders: total financed, collected so far, count of instalments past due | Instalment recovery card |
+
+Until `periods` arrives, the KPIs show all-time order value and orders in the last 30 days. Until `orders.pending` arrives, the third KPI shows live products.
+
 ### 8.4 Products
 
 **Product summary** (list item):
@@ -531,12 +555,26 @@ App bootstrap data.
 
 Variant lists are **replaced** on every save; send the full set each time.
 
+**Wanted for the Catalogue design (not used yet):** a `counts` sibling on `GET products` (per status, for the current `q`) so every chip shows a count, not just the four the dashboard has; `sort=updated|price|name`; `q` matching `pr_number` like Inventory does; a `Rejected` outcome with a `rejection_reason` (shown on the card with *Fix & resubmit*); a `barcode` field to scan; and brand endpoints to put a product on hold and to duplicate one.
+
 ### 8.5 Inventory
 
 | | Endpoint | Notes |
 |---|---|---|
 | 🔒 | `GET inventory?q=&availability=in\|out&page=` | summaries + `can_manage_stock`; sibling `summary: { in_stock, out_of_stock }`. `q` also matches exact `pr_number`. |
 | 🔒 | `POST inventory/{id}` | `available` (`0`/`1`), `stock` (required when available, 1–1,000,000) → `{ id, status, stock }`. `409` if not live yet. |
+
+**Wanted for the Inventory design (not used yet):** `POST inventory` taking a list of `{ id, available, stock }` so Save is one request and all-or-nothing; a `low` availability filter and a `low` count in `summary` (the app loads every page to count today); a `stock_tracked` flag so a live product with 0 units isn't guessed to be untracked; and `barcode` on each item for the scan button.
+
+**Wanted for the Product detail design (not used yet):** on `GET products/{id}`: `rejection_reason` + `reviewed_at` (with a `Rejected` status), `instalment_preview: { months, monthly }` (how buyers see the plan), and `performance: { units_sold, revenue, page_views, bulk_requests, daily_units[30], last_sale_at }` for the last 30 days. Brand endpoints for `POST products/{id}/duplicate`, `…/hold`, `…/close` and `…/reopen`. Each section stays hidden until it is sent.
+
+**Wanted for the Add / Edit product design (not used yet):** a way to keep a live product live while an edit is reviewed (today `update` sets it `Pending` and hides it); a gallery order field so photos can be reordered; server-side drafts (*Save draft*); and the plan terms behind "Buyers will see From Rs. X/month" (shared with `instalment_preview` above).
+
+**Wanted for the More design (not used yet):** per-type push settings (new orders, bulk leads, stock alerts); a seller language preference with Urdu copy; payout bank details; team members with their own logins; a help center URL in `config.support`; and the brand `status` values spelled out (the app maps active / pending / suspended).
+
+**Wanted for the Brand page design (not used yet):** slides with an image, a link (product or category) and start/end dates, and more than 2 of them; WhatsApp, business address, city, social links and a "show contact details" switch; an order for featured products and a limit the server enforces; whether `description` may hold simple HTML (then the story gets Bold / Heading / Bullet like the product description); and a "Write with AI" draft endpoint.
+
+**Wanted for the Notifications design (not used yet):** more types (order status changes, instalment received / overdue, stock alerts, product rejected with a reason, AtomShop announcements with an image); a product thumbnail and the amount / city in `data`; `DELETE notifications/{id}` and a mark-unread call; per-type preferences, channels (push, WhatsApp, email) and quiet hours; and how long new bulk leads have waited, for "waiting over 3 days".
 
 ### 8.6 Orders
 
@@ -581,6 +619,20 @@ Variant lists are **replaced** on every save; send the full set each time.
 ```
 Customer details are personal data (CNIC, address). Don't cache them to disk, and don't log them.
 
+**Proposed list additions (optional; app ready, server to do).** The Orders screen (DESIGN.md §4.3) shows these as soon as they arrive and hides them until then:
+
+| Field | Where | Meaning | Shows |
+|---|---|---|---|
+| `counts` | sibling of `items` | `{ "Pending": 5, "Varification": 1, … }` for the current `type` and `q`, ignoring `status` | Count on each status chip; "All" is their sum |
+| `type_counts` | sibling | `{ "retail": 6, "instalment": 8 }` for the current `q` | "Retail (6)" / "Instalment (8)" |
+| `total_value` | sibling | Sum of `total_deal_price` for the current filter (all pages) | "14 orders · Rs. 1,045,600 total" |
+| `recovery_percent` | list item | As in the detail's `deal` | Recovery bar on instalment cards |
+| `needs_action` | list item | The brand must act on it now | Red stripe on the card. Without it the app marks retail cash orders at Pending or Verification |
+
+Also wanted, but not yet used by the app, since the UI would mislead without them: `q` matching customer name and order # (the search box says "Search by product" until then), and `sort=newest|oldest|price` (the mockup's Sort control). The mockup's **Shipped** status and **COD** plan don't exist in the API. They'd need a new status and a payment-method field.
+
+**Wanted for the order detail design (not used yet):** a `Shipped` status (for a Shipped step in the tracker); retail `payment_method` (`cod` / `online`) and `payment_status`; and an `Overdue` value in `instalments[].status`, so overdue doesn't depend on the device's clock. Until then the app treats any unpaid instalment dated before today as overdue.
+
 **Status change** (`multipart` when sending a photo):
 
 | Field | Rules |
@@ -617,6 +669,8 @@ Customer details are personal data (CNIC, address). Don't cache them to disk, an
 }
 ```
 `requester` is `null` for guests with no AtomShop account.
+
+**Wanted for the bulk request design (not used yet):** structured quote fields on a status change (`quote_price`, `quote_quantity`, `quote_valid_until`); the product's `price` in the dossier (for "≈ Rs. 15.8M at retail price"); an endpoint to turn a won lead into an order (*Create order*); and one to mark a lead as spam. Until then the app saves a quote as a fixed first line of `comments` (DESIGN.md §4.5).
 
 ### 8.8 Brand page
 

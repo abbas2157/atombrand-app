@@ -7,6 +7,7 @@ import '../features/auth/apply_screen.dart';
 import '../features/auth/forgot_password_screen.dart';
 import '../features/auth/new_password_screen.dart';
 import '../features/auth/sign_in_screen.dart';
+import '../features/auth/sign_up_screen.dart';
 import '../features/auth/splash_screen.dart';
 import '../features/auth/verify_code_screen.dart';
 import '../features/auth/welcome_screen.dart';
@@ -18,6 +19,7 @@ import '../features/catalogue/product_detail_screen.dart';
 import '../features/catalogue/product_form_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/orders/order_detail_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/orders/orders_screen.dart';
 import '../features/profile/more_screen.dart';
 import '../features/profile/profile_screens.dart';
@@ -27,6 +29,7 @@ import 'session.dart';
 const _authPaths = {
   '/welcome',
   '/sign-in',
+  '/sign-up',
   '/forgot',
   '/verify',
   '/new-password',
@@ -62,6 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/welcome', builder: (_, _) => const WelcomeScreen()),
       GoRoute(path: '/sign-in', builder: (_, _) => const SignInScreen()),
+      GoRoute(path: '/sign-up', builder: (_, _) => const SignUpScreen()),
       GoRoute(path: '/forgot', builder: (_, _) => const ForgotPasswordScreen()),
       GoRoute(
         path: '/verify',
@@ -133,6 +137,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(parentNavigatorKey: _rootKey, path: '/notifications', builder: (_, _) => const NotificationsScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/brand-page', builder: (_, _) => const BrandPageScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/change-password', builder: (_, _) => const ChangePasswordScreen()),

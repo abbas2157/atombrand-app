@@ -95,6 +95,10 @@ class ProductDetail {
     this.memories = const [],
     this.sizes = const [],
     this.gallery = const [],
+    this.rejectionReason,
+    this.reviewedAt,
+    this.plan,
+    this.performance,
   });
 
   factory ProductDetail.fromJson(Json j) => ProductDetail(
@@ -108,6 +112,10 @@ class ProductDetail {
         memories: asList(j['memories'], VariantPrice.fromJson),
         sizes: asList(j['sizes'], VariantPrice.fromJson),
         gallery: asList(j['gallery'], GalleryImage.fromJson),
+        rejectionReason: asStr(j['rejection_reason']),
+        reviewedAt: asStr(j['reviewed_at']),
+        plan: asMapOrNull(j['instalment_preview']) == null ? null : InstalmentPreview.fromJson(asMap(j['instalment_preview'])),
+        performance: asMapOrNull(j['performance']) == null ? null : ProductPerformance.fromJson(asMap(j['performance'])),
       );
 
   final ProductSummary summary;
@@ -120,6 +128,14 @@ class ProductDetail {
   final List<VariantPrice> memories;
   final List<VariantPrice> sizes;
   final List<GalleryImage> gallery;
+
+  // Wanted (BRAND_APP.md §8.5); each section stays hidden until it is sent.
+  final String? rejectionReason;
+  final String? reviewedAt;
+  final InstalmentPreview? plan;
+  final ProductPerformance? performance;
+
+  bool get isRejected => summary.status == 'Rejected' || (rejectionReason != null && summary.status != 'Published');
 }
 
 class FormBrand {
@@ -180,4 +196,43 @@ class ProductFormOptions {
   final List<int> colorCategories;
   final List<int> memoryCategories;
   final List<int> sizeCategories;
+}
+
+/// How buyers see the instalment offer: "From Rs. X/month · N months".
+class InstalmentPreview {
+  const InstalmentPreview({required this.months, required this.monthly});
+
+  factory InstalmentPreview.fromJson(Json j) =>
+      InstalmentPreview(months: asInt(j['months']), monthly: asInt(j['monthly']));
+
+  final int months;
+  final int monthly;
+}
+
+/// Last 30 days for one product.
+class ProductPerformance {
+  const ProductPerformance({
+    this.unitsSold = 0,
+    this.revenue = 0,
+    this.pageViews,
+    this.bulkRequests = 0,
+    this.dailyUnits = const [],
+    this.lastSaleAt,
+  });
+
+  factory ProductPerformance.fromJson(Json j) => ProductPerformance(
+        unitsSold: asInt(j['units_sold']),
+        revenue: asInt(j['revenue']),
+        pageViews: asIntOrNull(j['page_views']),
+        bulkRequests: asInt(j['bulk_requests']),
+        dailyUnits: asIntList(j['daily_units']),
+        lastSaleAt: asStr(j['last_sale_at']),
+      );
+
+  final int unitsSold;
+  final int revenue;
+  final int? pageViews;
+  final int bulkRequests;
+  final List<int> dailyUnits;
+  final String? lastSaleAt;
 }

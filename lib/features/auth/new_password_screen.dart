@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
+import 'auth_field.dart';
 import 'auth_scaffold.dart';
 
 /// F3, last step: set a new password with the 15-minute reset token.
@@ -23,7 +23,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   bool _busy = false;
-  bool _obscure = true;
+  bool _submitted = false;
   ApiException? _error;
 
   @override
@@ -33,8 +33,16 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
     super.dispose();
   }
 
+  bool get _confirmMatches => _confirm.text.isNotEmpty && _confirm.text == _password.text;
+
+  /// Shown as soon as the confirmation is as long as the password.
+  bool get _confirmMismatch =>
+      _confirm.text.isNotEmpty && _confirm.text.length >= _password.text.length && _confirm.text != _password.text;
+
   Future<void> _save() async {
+    setState(() => _submitted = true);
     if (!_form.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() {
       _busy = true;
       _error = null;
@@ -64,45 +72,43 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
       title: 'Choose a new password',
       icon: Icons.password_rounded,
       subtitle: 'Saving signs you out on every device.',
+      bottom: AuthButton(label: 'Save password', busyLabel: 'Saving…', busy: _busy, onPressed: _save),
       children: [
         Form(
           key: _form,
+          autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
           child: AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(
+                AuthField(
+                  label: 'New password',
                   controller: _password,
-                  obscureText: _obscure,
-                  autofillHints: const [AutofillHints.newPassword],
+                  icon: Icons.lock_outline_rounded,
+                  password: true,
+                  autofocus: true,
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'New password',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    helperText: 'At least 8 characters',
-                    errorText: _error?.fieldError('password'),
-                    suffixIcon: IconButton(
-                      tooltip: _obscure ? 'Show password' : 'Hide password',
-                      icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                      onPressed: () => setState(() => _obscure = !_obscure),
-                    ),
-                  ),
+                  autofillHints: const [AutofillHints.newPassword],
+                  onChanged: (_) => setState(() {}),
+                  scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 72), // keeps the meter in view
+                  errorText: _error?.fieldError('password'),
                   validator: passwordValidator,
+                  below: PasswordStrengthMeter(controller: _password),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                AuthField(
+                  label: 'Confirm new password',
                   controller: _confirm,
-                  obscureText: _obscure,
+                  icon: Icons.lock_outline_rounded,
+                  password: true,
+                  textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.newPassword],
-                  onFieldSubmitted: (_) => _save(),
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm new password',
-                    prefixIcon: Icon(Icons.lock_outline_rounded),
-                  ),
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _save(),
+                  errorText: _confirmMismatch ? "Passwords don't match." : null,
+                  successText: _confirmMatches ? 'Passwords match' : null,
                   validator: (v) => v != _password.text ? "Passwords don't match." : null,
                 ),
-                const SizedBox(height: 24),
-                BusyButton(label: 'Save password', busy: _busy, onPressed: _save),
               ],
             ),
           ),

@@ -12,7 +12,9 @@ class BrandApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'AtomShop Brand Partner',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
+      theme: buildTheme(AppPalette.light),
+      darkTheme: buildTheme(AppPalette.dark),
+      themeMode: ThemeMode.system,
       routerConfig: ref.watch(routerProvider),
       // Support system font scaling, capped at 130% (§4.6).
       builder: (context, child) {

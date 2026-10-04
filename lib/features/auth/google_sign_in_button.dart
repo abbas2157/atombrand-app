@@ -7,16 +7,82 @@ import '../../core/api_client.dart';
 import '../../core/google_auth.dart';
 import '../../core/push.dart';
 import '../../core/session.dart';
+import '../../core/theme.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../widgets/feedback.dart';
+import 'auth_scaffold.dart';
 
-/// "Continue with Google": picks a Google account, then `POST auth/google`
-/// signs in the brand account with that email (BRAND_APP.md §6.1).
+/// Google, Apple and Facebook as three equal icon buttons (DESIGN.md §3.4).
+/// Only Google is wired to the backend; Apple and Facebook say so when tapped.
+class SocialLoginRow extends StatelessWidget {
+  const SocialLoginRow({super.key, this.verb = 'Continue'});
+
+  /// "Continue" on Sign in, "Sign up" on Sign up; used in the button labels.
+  final String verb;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    void notYet(String provider) =>
+        showToast(context, "$verb with $provider isn't available yet. Use your email, or Google.");
+    return Row(
+      children: [
+        Expanded(child: GoogleSignInButton(semanticLabel: '$verb with Google')),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _SocialButton(
+            label: '$verb with Apple',
+            onPressed: () => notYet('Apple'),
+            child: Icon(Icons.apple, size: 24, color: p.text),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _SocialButton(
+            label: '$verb with Facebook',
+            onPressed: () => notYet('Facebook'),
+            child: const Icon(Icons.facebook, size: 24, color: Color(0xFF1877F2)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  const _SocialButton({required this.label, required this.onPressed, required this.child});
+  final String label;
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        button: true,
+        excludeSemantics: true,
+        child: DecoratedBox(
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(AuthTheme.radius), boxShadow: p.fieldShadow),
+          child: OutlinedButton(
+            onPressed: onPressed,
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52), padding: EdgeInsets.zero),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Continue with Google" as an icon button: picks a Google account, then
+/// `POST auth/google` signs in the brand account with that email (BRAND_APP.md §6.1).
 class GoogleSignInButton extends ConsumerStatefulWidget {
-  const GoogleSignInButton({super.key, this.compact = false});
+  const GoogleSignInButton({super.key, this.semanticLabel = 'Continue with Google'});
 
-  /// Shorter label ("Google") for side-by-side layouts.
-  final bool compact;
+  final String semanticLabel;
 
   @override
   ConsumerState<GoogleSignInButton> createState() => _GoogleSignInButtonState();
@@ -54,22 +120,12 @@ class _GoogleSignInButtonState extends ConsumerState<GoogleSignInButton> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: _busy ? null : _signIn,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_busy)
-              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5))
-            else
-              const GoogleLogo(size: 20),
-            const SizedBox(width: 12),
-            Text(widget.compact ? 'Google' : 'Continue with Google'),
-          ],
-        ),
-      ),
+    return _SocialButton(
+      label: widget.semanticLabel,
+      onPressed: _busy ? null : _signIn,
+      child: _busy
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5))
+          : const GoogleLogo(size: 20),
     );
   }
 }
