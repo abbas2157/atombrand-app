@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import 'partner_content.dart';
@@ -92,7 +93,7 @@ class _Dot extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(color: done ? p.success : p.primary, shape: BoxShape.circle),
       child: done
-          ? Icon(Icons.check_rounded, color: fg, size: 18)
+          ? Icon(AppIcons.check, color: fg, size: 18)
           : Text(
               '${index + 1}',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(color: fg, fontSize: 14, fontWeight: FontWeight.w700),
@@ -115,7 +116,7 @@ class CheckLine extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 1),
-            child: Icon(Icons.check_circle_rounded, size: 18, color: p.success),
+            child: Icon(AppIcons.checkCircleFill, size: 18, color: p.success),
           ),
           const SizedBox(width: 10),
           Expanded(

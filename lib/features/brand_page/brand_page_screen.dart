@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/app_icons.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -324,7 +325,7 @@ class _BrandPageScreenState extends ConsumerState<BrandPageScreen> {
                 child: TextButton.icon(
                   onPressed: _openPreview,
                   style: TextButton.styleFrom(foregroundColor: AppPalette.of(context).onHeader),
-                  icon: const Icon(Icons.visibility_outlined, size: 20),
+                  icon: const Icon(AppIcons.eye, size: 20),
                   label: const Text('Preview'),
                 ),
               ),
@@ -515,7 +516,7 @@ class _BrandPageScreenState extends ConsumerState<BrandPageScreen> {
               decoration: InputDecoration(
                 label: const _Label('Phone'),
                 hintText: '03xx xxxxxxx',
-                prefixIcon: const Icon(Icons.call_outlined),
+                prefixIcon: const Icon(AppIcons.phone),
                 errorText: _err('support_phone'),
               ),
             ),
@@ -525,7 +526,7 @@ class _BrandPageScreenState extends ConsumerState<BrandPageScreen> {
               decoration: InputDecoration(
                 label: const _Label('Email'),
                 hintText: 'care@yourbrand.pk',
-                prefixIcon: const Icon(Icons.mail_outline_rounded),
+                prefixIcon: const Icon(AppIcons.email),
                 errorText:
                     _err('support_email') ??
                     (_showErrors && _validate() == 'Check the email address'
@@ -539,7 +540,7 @@ class _BrandPageScreenState extends ConsumerState<BrandPageScreen> {
               decoration: InputDecoration(
                 label: const _Label('Website', optional: true),
                 hintText: 'yourbrand.pk',
-                prefixIcon: const Icon(Icons.public_rounded),
+                prefixIcon: const Icon(AppIcons.globe),
                 errorText:
                     _err('website') ??
                     (_showErrors && _validate() == 'Check the website address'
@@ -645,7 +646,7 @@ class _ErrorLine extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 1),
-            child: Icon(Icons.error_outline_rounded, size: 16, color: pal.danger),
+            child: Icon(AppIcons.error, size: 16, color: pal.danger),
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -697,7 +698,7 @@ class _Completeness extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_rounded, size: 14, color: pal.positive.fg),
+                      Icon(AppIcons.check, size: 14, color: pal.positive.fg),
                       const SizedBox(width: 4),
                       Text(
                         'Page complete',
@@ -732,14 +733,14 @@ class _Completeness extends StatelessWidget {
                 for (final c in checklist)
                   c.done
                       ? Chip(
-                          avatar: Icon(Icons.check_rounded, size: 16, color: pal.positive.fg),
+                          avatar: Icon(AppIcons.check, size: 16, color: pal.positive.fg),
                           label: Text(c.label),
                           labelStyle: t.labelMedium?.copyWith(color: pal.positive.fg, fontWeight: FontWeight.w600),
                           backgroundColor: pal.positive.bg,
                           side: BorderSide.none,
                         )
                       : ActionChip(
-                          avatar: Icon(Icons.add_rounded, size: 16, color: pal.primary),
+                          avatar: Icon(AppIcons.add, size: 16, color: pal.primary),
                           label: Text(c.label),
                           tooltip: 'Add ${c.label.toLowerCase()}',
                           labelStyle: t.labelMedium?.copyWith(color: pal.primary, fontWeight: FontWeight.w600),
@@ -812,7 +813,7 @@ class _HeaderEditor extends StatelessWidget {
                       minimumSize: const Size(0, 36),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    icon: const Icon(Icons.photo_camera_outlined, size: 16),
+                    icon: const Icon(AppIcons.camera, size: 16),
                     label: const Text('Change'),
                   ),
                 ),
@@ -835,7 +836,7 @@ class _HeaderEditor extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.add_photo_alternate_outlined,
+                        AppIcons.imageAdd,
                         size: 30,
                         color: bannerError != null ? pal.danger : pal.muted,
                       ),
@@ -920,7 +921,7 @@ class _HeaderEditor extends StatelessWidget {
                                       logoUrl,
                                       size: logoSize,
                                       radius: logoSize / 2,
-                                      icon: Icons.add_a_photo_outlined,
+                                      icon: AppIcons.cameraAdd,
                                     ),
                             ),
                             Positioned(
@@ -934,7 +935,7 @@ class _HeaderEditor extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   border: Border.all(color: pal.card, width: 3),
                                 ),
-                                child: Icon(Icons.photo_camera_outlined, size: 15, color: pal.onHeader),
+                                child: Icon(AppIcons.camera, size: 15, color: pal.onHeader),
                               ),
                             ),
                           ],
@@ -992,7 +993,7 @@ class _AddressCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.lock_outline_rounded, size: 14, color: pal.muted),
+              Icon(AppIcons.lock, size: 14, color: pal.muted),
               const SizedBox(width: 6),
               Text(
                 'PUBLIC ADDRESS · READ ONLY',
@@ -1010,13 +1011,13 @@ class _AddressCard extends StatelessWidget {
               Expanded(
                 child: SelectableText(shortUrl(url), style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
               ),
-              round(Icons.copy_rounded, 'Copy link', () {
+              round(AppIcons.copy, 'Copy link', () {
                 Clipboard.setData(ClipboardData(text: url));
                 showToast(context, 'Link copied');
               }),
               const SizedBox(width: 6),
               round(
-                Icons.share_outlined,
+                AppIcons.share,
                 'Share link',
                 () => SharePlus.instance.share(ShareParams(uri: Uri.parse(url))),
               ),
@@ -1060,7 +1061,7 @@ class _EmptyTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(color: pal.primarySoft2, borderRadius: BorderRadius.circular(12)),
-                child: Icon(onTap == null ? Icons.hourglass_empty_rounded : Icons.add_rounded, color: pal.primary),
+                child: Icon(onTap == null ? AppIcons.hourglassEmpty : AppIcons.add, color: pal.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1105,7 +1106,7 @@ class _AddTile extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_rounded, color: pal.primary),
+                Icon(AppIcons.add, color: pal.primary),
                 const SizedBox(height: 2),
                 Text(
                   label,
@@ -1211,7 +1212,7 @@ class _SlideCard extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(color: pal.card, shape: BoxShape.circle),
-                  child: Icon(Icons.edit_outlined, size: 16, color: pal.text),
+                  child: Icon(AppIcons.edit, size: 16, color: pal.text),
                 ),
               ),
             ],
@@ -1437,7 +1438,7 @@ class _FeaturedCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: pal.card, width: 2),
                 ),
-                child: Icon(Icons.close_rounded, size: 14, color: pal.onHeader),
+                child: Icon(AppIcons.close, size: 14, color: pal.onHeader),
               ),
             ),
           ),
@@ -1520,7 +1521,7 @@ class _ProductPickerState extends ConsumerState<_ProductPicker> {
                 },
                 decoration: const InputDecoration(
                   hintText: 'Search by name or PR number',
-                  prefixIcon: Icon(Icons.search_rounded),
+                  prefixIcon: Icon(AppIcons.search),
                 ),
               ),
             ),
@@ -1829,11 +1830,11 @@ class _PreviewScreen extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         if (phone.isNotEmpty)
-                          Chip(avatar: const Icon(Icons.call_outlined, size: 18), label: Text(phone)),
+                          Chip(avatar: const Icon(AppIcons.phone, size: 18), label: Text(phone)),
                         if (email.isNotEmpty)
-                          Chip(avatar: const Icon(Icons.mail_outline_rounded, size: 18), label: Text(email)),
+                          Chip(avatar: const Icon(AppIcons.email, size: 18), label: Text(email)),
                         if (website.isNotEmpty)
-                          Chip(avatar: const Icon(Icons.public_rounded, size: 18), label: Text(website)),
+                          Chip(avatar: const Icon(AppIcons.globe, size: 18), label: Text(website)),
                       ],
                     ),
                   ),
@@ -1872,7 +1873,7 @@ class _PreviewScreen extends StatelessWidget {
                       IconButton(
                         tooltip: 'Close preview',
                         onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.close_rounded, color: pal.onHeader, size: 20),
+                        icon: Icon(AppIcons.close, color: pal.onHeader, size: 20),
                       ),
                     ],
                   ),

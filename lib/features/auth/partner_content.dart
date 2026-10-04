@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../../core/app_icons.dart';
 
 /// Marketing copy for the signed-out screens, taken from
 /// https://atomshop.pk/brand-partners. Keep it in step with that page.
@@ -22,32 +22,32 @@ class PartnerContent {
 
   static const benefits = [
     (
-      icon: Icons.trending_up_rounded,
+      icon: AppIcons.trendUp,
       title: 'Lift your conversion',
       body: 'Instalments remove sticker shock. Shoppers who hesitate at full price check out when they can pay in steps.',
     ),
     (
-      icon: Icons.public_rounded,
+      icon: AppIcons.globe,
       title: 'Sell across Pakistan',
       body: 'Reach instalment-ready buyers nationwide, for retail and bulk orders.',
     ),
     (
-      icon: Icons.storefront_rounded,
+      icon: AppIcons.store,
       title: 'Web & app storefront',
       body: 'Your products featured on the AtomShop website and app, with merchandising and search.',
     ),
     (
-      icon: Icons.campaign_rounded,
+      icon: AppIcons.bulkFill,
       title: 'No extra ad spend',
       body: 'Tap our marketing engine and community without opening a new advertising budget.',
     ),
     (
-      icon: Icons.account_balance_wallet_rounded,
+      icon: AppIcons.wallet,
       title: 'Keep control of recovery',
       body: 'We route buyers to you, and payment goes straight to your account.',
     ),
     (
-      icon: Icons.verified_rounded,
+      icon: AppIcons.verifiedFill,
       title: 'Build brand presence',
       body: "Grow recognition alongside Pakistan's trusted brands.",
     ),

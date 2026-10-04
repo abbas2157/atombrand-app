@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 
@@ -297,25 +298,27 @@ class AuthTheme extends StatelessWidget {
   }
 }
 
-/// The AtomBrands logo (DESIGN.md §1). [BrandLogo.mark] is the AB monogram,
-/// [BrandLogo.inline] sets "AtomBrands" beside it, and [BrandLogo.lockup] adds
-/// the stacked wordmark and "Connect. Sell. Grow.". The PNGs are charcoal and
-/// red, so in dark mode they sit on a white tile.
+/// The Atombrand logo (DESIGN.md §1). [BrandLogo.mark] is the AB monogram,
+/// [BrandLogo.inline] sets "Atombrand" beside it, and [BrandLogo.lockup] stacks
+/// the mark over "Atombrand" and "Connect. Sell. Grow.", set in code because
+/// assets/brand/lockup.png still reads "AtomBrands". The mark PNG is charcoal
+/// and red, so in dark mode it sits on a white tile.
 class BrandLogo extends StatelessWidget {
-  const BrandLogo.mark({super.key, this.height = 32}) : _asset = _markAsset, _wordmark = false;
-  const BrandLogo.inline({super.key, this.height = 32}) : _asset = _markAsset, _wordmark = true;
-  const BrandLogo.lockup({super.key, this.height = 140}) : _asset = 'assets/brand/lockup.png', _wordmark = false;
+  const BrandLogo.mark({super.key, this.height = 32}) : _asset = _markAsset, _wordmark = false, _stacked = false;
+  const BrandLogo.inline({super.key, this.height = 32}) : _asset = _markAsset, _wordmark = true, _stacked = false;
+  const BrandLogo.lockup({super.key, this.height = 140}) : _asset = _markAsset, _wordmark = false, _stacked = true;
 
   static const _markAsset = 'assets/brand/mark.png';
 
   final double height;
   final String _asset;
   final bool _wordmark;
+  final bool _stacked;
 
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
-    Widget logo = Image.asset(_asset, height: height, filterQuality: FilterQuality.medium);
+    Widget logo = Image.asset(_asset, height: _stacked ? height * 0.55 : height, filterQuality: FilterQuality.medium);
     if (p.isDark) {
       logo = Container(
         padding: EdgeInsets.all(height * 0.16),
@@ -330,7 +333,7 @@ class BrandLogo extends StatelessWidget {
           logo,
           SizedBox(width: height * 0.32),
           Text(
-            'AtomBrands',
+            'Atombrand',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontSize: height * 0.62,
                   fontWeight: FontWeight.w700,
@@ -341,7 +344,28 @@ class BrandLogo extends StatelessWidget {
         ],
       );
     }
-    return Semantics(label: 'AtomBrands', image: true, child: ExcludeSemantics(child: logo));
+    if (_stacked) {
+      final t = Theme.of(context).textTheme;
+      logo = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          logo,
+          SizedBox(height: height * 0.08),
+          Text(
+            'Atombrand',
+            style: t.headlineMedium?.copyWith(
+              fontSize: height * 0.24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              height: 1.1,
+              color: p.text,
+            ),
+          ),
+          Text('Connect. Sell. Grow.', style: t.bodyLarge?.copyWith(fontSize: height * 0.1, color: p.muted)),
+        ],
+      );
+    }
+    return Semantics(label: 'Atombrand', image: true, child: ExcludeSemantics(child: logo));
   }
 }
 
@@ -360,7 +384,7 @@ class AuthBackButton extends StatelessWidget {
         side: BorderSide(color: p.border, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AuthTheme.radius)),
       ),
-      icon: const Icon(Icons.chevron_left_rounded, size: 28),
+      icon: const Icon(AppIcons.chevronLeft, size: 28),
     );
   }
 }
@@ -477,7 +501,7 @@ class AuthFooterLink extends StatelessWidget {
 
 /// Tinted message box for screen-level errors and notices.
 class AuthBanner extends StatelessWidget {
-  const AuthBanner(this.text, {super.key, this.icon = Icons.error_outline_rounded});
+  const AuthBanner(this.text, {super.key, this.icon = AppIcons.error});
 
   final String text;
   final IconData icon;

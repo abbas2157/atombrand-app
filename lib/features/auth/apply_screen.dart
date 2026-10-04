@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/session.dart';
@@ -91,7 +92,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     const gap = SizedBox(height: 14);
     return AuthScaffold(
       title: 'Become a partner',
-      icon: Icons.handshake_outlined,
+      icon: AppIcons.handshake,
       subtitle:
           'Sell your catalogue to instalment-ready buyers across Pakistan. It takes about two minutes, and we reply within ${PartnerContent.replyTime}.',
       children: [
@@ -298,7 +299,7 @@ class ApplySubmittedScreen extends StatelessWidget {
                   children: [
                     const Center(child: BrandLogo.inline(height: 28)),
                     const SizedBox(height: 40),
-                    Center(child: AuthIconBadge(Icons.check_rounded, color: p.onSuccess, background: p.success, size: 72)),
+                    Center(child: AuthIconBadge(AppIcons.check, color: p.onSuccess, background: p.success, size: 72)),
                     const SizedBox(height: 24),
                     Text(
                       message?.isNotEmpty == true ? message! : 'Application received',

@@ -17,6 +17,6 @@ class Env {
   /// Label stored against the Sanctum token (`device_name`).
   static const deviceName = String.fromEnvironment(
     'DEVICE_NAME',
-    defaultValue: 'AtomShop Brand App',
+    defaultValue: 'Atombrand App',
   );
 }

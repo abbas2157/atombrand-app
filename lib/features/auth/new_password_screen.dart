@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -70,7 +71,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
   Widget build(BuildContext context) {
     return AuthScaffold(
       title: 'Choose a new password',
-      icon: Icons.password_rounded,
+      icon: AppIcons.password,
       subtitle: 'Saving signs you out on every device.',
       bottom: AuthButton(label: 'Save password', busyLabel: 'Saving…', busy: _busy, onPressed: _save),
       children: [
@@ -84,7 +85,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                 AuthField(
                   label: 'New password',
                   controller: _password,
-                  icon: Icons.lock_outline_rounded,
+                  icon: AppIcons.lock,
                   password: true,
                   autofocus: true,
                   textInputAction: TextInputAction.next,
@@ -99,7 +100,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                 AuthField(
                   label: 'Confirm new password',
                   controller: _confirm,
-                  icon: Icons.lock_outline_rounded,
+                  icon: AppIcons.lock,
                   password: true,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.newPassword],

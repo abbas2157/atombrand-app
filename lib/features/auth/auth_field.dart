@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import 'auth_scaffold.dart';
@@ -162,7 +163,7 @@ class _AuthFieldState extends State<AuthField> {
                           tooltip: _obscure ? 'Show password' : 'Hide password',
                           onPressed: () => setState(() => _obscure = !_obscure),
                           icon: Icon(
-                            _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            _obscure ? AppIcons.eye : AppIcons.eyeOff,
                             size: 20,
                             color: _obscure ? p.muted : p.primary,
                           ),
@@ -172,9 +173,9 @@ class _AuthFieldState extends State<AuthField> {
               ),
             ),
             if (error != null)
-              AuthFieldMessage(error, color: p.danger, icon: Icons.error_outline_rounded)
+              AuthFieldMessage(error, color: p.danger, icon: AppIcons.error)
             else if (widget.successText != null)
-              AuthFieldMessage(widget.successText!, color: p.success, icon: Icons.check_circle_outline_rounded)
+              AuthFieldMessage(widget.successText!, color: p.success, icon: AppIcons.checkCircle)
             else if (widget.helper != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),

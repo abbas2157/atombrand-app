@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/formatters.dart';
 import '../../core/theme.dart';
@@ -169,7 +170,7 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AutomaticKeepA
               width: 24,
               height: 24,
               decoration: BoxDecoration(color: pal.success, shape: BoxShape.circle),
-              child: Icon(Icons.check_rounded, size: 16, color: pal.onSuccess),
+              child: Icon(AppIcons.check, size: 16, color: pal.onSuccess),
             ),
             const SizedBox(width: 10),
             Expanded(child: Text(message)),
@@ -234,7 +235,7 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AutomaticKeepA
     if (products == null) {
       if (_error != null) {
         return EmptyState(
-          icon: Icons.cloud_off_rounded,
+          icon: AppIcons.offline,
           message: "Couldn't load your inventory.",
           actionLabel: 'Try again',
           onAction: _load,
@@ -321,7 +322,7 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AutomaticKeepA
                                               _update(() => _bulk = true);
                                             },
                                       style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 14)),
-                                      icon: const Icon(Icons.checklist_rounded, size: 18),
+                                      icon: const Icon(AppIcons.checklist, size: 18),
                                       label: const Text('Bulk edit'),
                                     ),
                                   ],
@@ -498,12 +499,12 @@ class _InvSearch extends StatelessWidget {
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: 'Search by name or PR number',
-        prefixIcon: const Icon(Icons.search_rounded),
+        prefixIcon: const Icon(AppIcons.search),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
                 tooltip: 'Clear search',
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(AppIcons.close),
                 onPressed: () {
                   controller.clear();
                   onChanged('');
@@ -721,7 +722,7 @@ class InventoryCard extends StatelessWidget {
               decoration: BoxDecoration(color: p.negative.bg, borderRadius: BorderRadius.circular(10)),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, size: 16, color: p.negative.fg),
+                  Icon(AppIcons.warning, size: 16, color: p.negative.fg),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -866,7 +867,7 @@ class _UnitsStepperState extends State<UnitsStepper> {
         ),
         child: Row(
           children: [
-            btn(Icons.remove_rounded, 'One fewer', u > 0 ? u - 1 : null),
+            btn(AppIcons.minus, 'One fewer', u > 0 ? u - 1 : null),
             Expanded(
               child: TextField(
                 controller: _ctrl,
@@ -889,7 +890,7 @@ class _UnitsStepperState extends State<UnitsStepper> {
                 onChanged: (s) => widget.onChanged?.call((int.tryParse(s) ?? 0).clamp(0, maxUnits)),
               ),
             ),
-            btn(Icons.add_rounded, 'One more', u < maxUnits ? u + 1 : null),
+            btn(AppIcons.add, 'One more', u < maxUnits ? u + 1 : null),
           ],
         ),
       ),
@@ -1242,7 +1243,7 @@ class _SetStockSheetState extends State<_SetStockSheet> {
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: Icon(Icons.arrow_forward_rounded, size: 14, color: p.muted),
+                              child: Icon(AppIcons.arrowRight, size: 14, color: p.muted),
                             ),
                             ConstrainedBox(
                               constraints: const BoxConstraints(minWidth: 28),
@@ -1338,7 +1339,7 @@ class _InvEmpty extends StatelessWidget {
             height: 72,
             decoration: BoxDecoration(color: allGood ? p.positive.bg : p.primarySoft2, shape: BoxShape.circle),
             child: Icon(
-              allGood ? Icons.check_rounded : Icons.inventory_2_outlined,
+              allGood ? AppIcons.check : AppIcons.package,
               size: 36,
               color: allGood ? p.positive.fg : p.primary,
             ),

@@ -14,7 +14,7 @@ class ProductsIllustration extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     return Semantics(
-      label: 'Headphones, a smartphone showing the AtomBrands logo, and a smartwatch',
+      label: 'Headphones, a smartphone showing the Atombrand logo, and a smartwatch',
       image: true,
       child: Container(
         height: height,

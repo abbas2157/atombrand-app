@@ -10,7 +10,7 @@ class BrandApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'AtomShop Brand Partner',
+      title: 'Atombrand',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(AppPalette.light),
       darkTheme: buildTheme(AppPalette.dark),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/app_icons.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -74,12 +75,12 @@ class _SearchField extends StatelessWidget {
       decoration: InputDecoration(
         isDense: true,
         hintText: hint,
-        prefixIcon: const Icon(Icons.search_rounded),
+        prefixIcon: const Icon(AppIcons.search),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
                 tooltip: 'Clear search',
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(AppIcons.close),
                 onPressed: () {
                   controller.clear();
                   onChanged('');
@@ -217,7 +218,7 @@ class _ProductsTabState extends ConsumerState<ProductsTab> with AutomaticKeepAli
                   onPressed: () => _open('/products/new'),
                   isExtended: _fabExtended,
                   tooltip: 'Add product',
-                  icon: const Icon(Icons.add_rounded),
+                  icon: const Icon(AppIcons.add),
                   label: const Text('Add product'),
                 ),
           body: RefreshIndicator(
@@ -318,7 +319,7 @@ class _ProductsTabState extends ConsumerState<ProductsTab> with AutomaticKeepAli
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber_rounded, size: 20, color: p.negative.fg),
+                        Icon(AppIcons.warning, size: 20, color: p.negative.fg),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -389,7 +390,7 @@ class _ProductsTabState extends ConsumerState<ProductsTab> with AutomaticKeepAli
       return [
         fill(
           EmptyState(
-            icon: Icons.search_off_rounded,
+            icon: AppIcons.searchEmpty,
             message: _search.text.isEmpty
                 ? 'No products with this status.'
                 : 'No products match ‘${_search.text.trim()}’.',
@@ -589,8 +590,8 @@ class _ViewToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          button(false, Icons.view_agenda_outlined, 'List view'),
-          button(true, Icons.grid_view_rounded, 'Grid view'),
+          button(false, AppIcons.listView, 'List view'),
+          button(true, AppIcons.grid, 'Grid view'),
         ],
       ),
     );
@@ -667,7 +668,7 @@ class _EmptyCatalogue extends StatelessWidget {
               minimumSize: const Size(64, 52),
               padding: const EdgeInsets.symmetric(horizontal: 28),
             ),
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(AppIcons.add),
             label: const Text('Add product'),
           ),
         ],
@@ -718,7 +719,7 @@ class _StockDialogState extends State<_StockDialog> {
       title: Text(widget.title),
       content: Row(
         children: [
-          IconButton.outlined(tooltip: 'Decrease', onPressed: () => _step(-1), icon: const Icon(Icons.remove_rounded)),
+          IconButton.outlined(tooltip: 'Decrease', onPressed: () => _step(-1), icon: const Icon(AppIcons.minus)),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
@@ -732,7 +733,7 @@ class _StockDialogState extends State<_StockDialog> {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton.outlined(tooltip: 'Increase', onPressed: () => _step(1), icon: const Icon(Icons.add_rounded)),
+          IconButton.outlined(tooltip: 'Increase', onPressed: () => _step(1), icon: const Icon(AppIcons.add)),
         ],
       ),
       actions: [

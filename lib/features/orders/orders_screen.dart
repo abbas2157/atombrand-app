@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/app_icons.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -130,11 +131,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
                     hintText: 'Search by product',
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: const Icon(AppIcons.search),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                     suffixIcon: _search.text.isEmpty
                         ? null
-                        : IconButton(tooltip: 'Clear search', icon: const Icon(Icons.close_rounded), onPressed: _clearSearch),
+                        : IconButton(tooltip: 'Clear search', icon: const Icon(AppIcons.close), onPressed: _clearSearch),
                   ),
                 ),
               ),
@@ -220,8 +221,8 @@ class _TypeSwitch extends StatelessWidget {
                       children: [
                         Icon(
                           f == selected
-                              ? Icons.check_rounded
-                              : (f == OrderFeed.retail ? Icons.shopping_bag_outlined : Icons.calendar_month_outlined),
+                              ? AppIcons.check
+                              : (f == OrderFeed.retail ? AppIcons.bag : AppIcons.calendar),
                           size: 18,
                           color: f == selected ? p.primary : p.muted,
                         ),
@@ -634,7 +635,7 @@ Future<void> showOrderQuickActions(BuildContext context, WidgetRef ref, OrderSum
                   return Column(
                     children: [
                       row(
-                        icon: Icons.call_outlined,
+                        icon: AppIcons.phone,
                         tone: p.indigo,
                         label: 'Call customer',
                         busy: waiting,
@@ -647,7 +648,7 @@ Future<void> showOrderQuickActions(BuildContext context, WidgetRef ref, OrderSum
                               },
                       ),
                       row(
-                        icon: Icons.chat_outlined,
+                        icon: AppIcons.chat,
                         tone: p.positive,
                         label: 'WhatsApp',
                         busy: waiting,
@@ -664,7 +665,7 @@ Future<void> showOrderQuickActions(BuildContext context, WidgetRef ref, OrderSum
                 },
               ),
               row(
-                icon: Icons.copy_rounded,
+                icon: AppIcons.copy,
                 tone: p.neutral,
                 label: 'Copy order #${o.id}',
                 onTap: () async {

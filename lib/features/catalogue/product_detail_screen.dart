@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/formatters.dart';
@@ -161,8 +162,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 tooltip: p.summary.brandFeatured ? 'Remove from brand page' : 'Feature on brand page',
                 onPressed: _busy ? null : _toggleFeatured,
                 icon: p.summary.brandFeatured
-                    ? Icon(Icons.star_rounded, color: pal.accent)
-                    : const Icon(Icons.star_outline_rounded),
+                    ? Icon(AppIcons.starFill, color: pal.accent)
+                    : const Icon(AppIcons.star),
               ),
               PopupMenuButton<String>(
                 tooltip: 'More actions',
@@ -174,12 +175,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   if (canView)
                     const PopupMenuItem(
                       value: 'view',
-                      child: ListTile(leading: Icon(Icons.open_in_new_rounded), title: Text('View on atomshop.pk')),
+                      child: ListTile(leading: Icon(AppIcons.externalLink), title: Text('View on atomshop.pk')),
                     ),
                   PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
-                      leading: Icon(Icons.delete_outline_rounded, color: pal.danger),
+                      leading: Icon(AppIcons.delete, color: pal.danger),
                       title: Text('Delete product', style: TextStyle(color: pal.danger)),
                     ),
                   ),
@@ -212,7 +213,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           OutlinedButton.icon(
                             onPressed: () => openExternal(context, p.summary.publicUrl),
                             style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
-                            icon: const Icon(Icons.visibility_outlined, size: 20),
+                            icon: const Icon(AppIcons.eye, size: 20),
                             label: const Text('Preview'),
                           ),
                           const SizedBox(width: 10),
@@ -221,7 +222,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           child: FilledButton.icon(
                             onPressed: _busy ? null : _edit,
                             style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            icon: const Icon(AppIcons.edit, size: 20),
                             label: const Text('Edit product'),
                           ),
                         ),
@@ -400,7 +401,7 @@ class _ProductGalleryState extends State<ProductGallery> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_photo_alternate_outlined, size: 40, color: p.muted),
+                Icon(AppIcons.imageAdd, size: 40, color: p.muted),
                 const SizedBox(height: 8),
                 Text('Add photos', style: t.titleSmall?.copyWith(color: p.primary)),
                 Text('Products with photos sell far better', style: t.bodySmall?.copyWith(color: p.muted)),
@@ -414,7 +415,7 @@ class _ProductGalleryState extends State<ProductGallery> {
     Widget photo(String url) => CachedNetworkImage(
           imageUrl: url,
           fit: BoxFit.contain,
-          errorWidget: (_, _, _) => Icon(Icons.broken_image_outlined, size: 40, color: p.muted),
+          errorWidget: (_, _, _) => Icon(AppIcons.imageBroken, size: 40, color: p.muted),
         );
 
     final gallery = SizedBox(
@@ -504,7 +505,7 @@ class _ProductGalleryState extends State<ProductGallery> {
           padding: const EdgeInsets.only(left: 16, right: 4),
           child: Row(
             children: [
-              Icon(Icons.photo_library_outlined, size: 20, color: p.muted),
+              Icon(AppIcons.gallery, size: 20, color: p.muted),
               const SizedBox(width: 10),
               Expanded(child: Text('Add more photos to sell better', style: t.bodySmall?.copyWith(fontSize: 13, color: p.muted))),
               TextButton(onPressed: widget.onAddPhotos, child: const Text('Add photos')),
@@ -545,7 +546,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
         foregroundColor: Colors.white,
         leading: IconButton(
           tooltip: 'Close photo',
-          icon: const Icon(Icons.close_rounded),
+          icon: const Icon(AppIcons.close),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('${_index + 1} of ${widget.images.length}'),
@@ -615,7 +616,7 @@ class StatusBanner extends StatelessWidget {
                   onPressed: onView,
                   style: TextButton.styleFrom(foregroundColor: p.positive.fg),
                   iconAlignment: IconAlignment.end,
-                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                  icon: const Icon(AppIcons.externalLink, size: 16),
                   label: const Text('View'),
                 ),
             ],
@@ -628,7 +629,7 @@ class StatusBanner extends StatelessWidget {
     final (Tone tone, IconData icon, String title, String body, String? action, VoidCallback? onAction) = switch (kind) {
       ProductBanner.outOfStock => (
           p.negative,
-          Icons.warning_amber_rounded,
+          AppIcons.warning,
           'Live, but out of stock',
           "Buyers can see it but can't order. Add stock to start selling again.",
           'Update stock',
@@ -636,7 +637,7 @@ class StatusBanner extends StatelessWidget {
         ),
       ProductBanner.rejected => (
           p.negative,
-          Icons.cancel_outlined,
+          AppIcons.xCircle,
           detail.rejectionReason == null ? 'Not approved' : 'Not approved · ${detail.rejectionReason}',
           "AtomShop couldn't approve this product. Fix what's wrong and save it to send it for review again.",
           'Fix & resubmit',
@@ -644,7 +645,7 @@ class StatusBanner extends StatelessWidget {
         ),
       ProductBanner.review => (
           p.info,
-          Icons.schedule_rounded,
+          AppIcons.clock,
           'In review',
           "AtomShop is reviewing this product. Usually takes 1–2 days. We'll let you know when it's live.",
           null,
@@ -652,7 +653,7 @@ class StatusBanner extends StatelessWidget {
         ),
       ProductBanner.onHold => (
           p.warning,
-          Icons.pause_circle_outline_rounded,
+          AppIcons.pauseCircle,
           'On hold · hidden from buyers',
           'AtomShop has paused this product, so buyers can’t see it. Contact AtomShop to resume it.',
           null,
@@ -660,7 +661,7 @@ class StatusBanner extends StatelessWidget {
         ),
       ProductBanner.closed => (
           p.neutral,
-          Icons.lock_outline_rounded,
+          AppIcons.lock,
           'Closed · hidden from buyers',
           'This product is closed and hidden from buyers. Past orders aren’t affected.',
           null,
@@ -668,7 +669,7 @@ class StatusBanner extends StatelessWidget {
         ),
       _ => (
           p.neutral,
-          Icons.info_outline_rounded,
+          AppIcons.info,
           detail.summary.status,
           'Buyers can’t order this product right now.',
           null,
@@ -1011,7 +1012,7 @@ class _StockCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.check_rounded, size: 18, color: pal.positive.fg),
+                Icon(AppIcons.check, size: 18, color: pal.positive.fg),
                 const SizedBox(width: 6),
                 Text('Stock saved · buyers see it now', style: t.bodySmall?.copyWith(fontSize: 13, fontWeight: FontWeight.w600, color: pal.positive.fg)),
               ],
@@ -1189,7 +1190,7 @@ class _FeaturesState extends State<_Features> {
                   height: 20,
                   margin: const EdgeInsets.only(top: 1),
                   decoration: BoxDecoration(color: pal.positive.bg, shape: BoxShape.circle),
-                  child: Icon(Icons.check_rounded, size: 13, color: pal.positive.fg),
+                  child: Icon(AppIcons.check, size: 13, color: pal.positive.fg),
                 ),
                 const SizedBox(width: 10),
                 Expanded(child: Text(f, style: t.bodyMedium)),

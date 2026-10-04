@@ -1,21 +1,21 @@
-# AtomBrands app: Design System
+# Atombrand app: Design System
 
-> **What this file is:** the visual language of the AtomBrands (Brand Partner) Flutter app: tokens, where they live in code, and the layout rules for each group of screens. The API contract is in [BRAND_APP.md](BRAND_APP.md); this file only covers how things look.
+> **What this file is:** the visual language of the Atombrand Flutter app (for AtomShop Brand Partners): tokens, where they live in code, and the layout rules for each group of screens. The API contract is in [BRAND_APP.md](BRAND_APP.md); this file only covers how things look.
 > Last reviewed: 2026-10-03
 
 ---
 
 ## 1. Brand
 
-The identity comes from the **AtomBrands** logo: a charcoal **A** and a red **B** on white, with the wordmark and the tagline *Connect. Sell. Grow.*
+The identity comes from the **Atombrand** logo: a charcoal **A** and a red **B** on white, with the wordmark and the tagline *Connect. Sell. Grow.*
 
 | Asset | File | Use |
 |---|---|---|
 | Mark (AB monogram) | `assets/brand/mark.png` | Top bar of every auth screen (26 px high) |
-| Lockup (mark + wordmark + tagline) | `assets/brand/lockup.png` | Splash and Welcome (150 px high) |
+| Lockup (mark + wordmark + tagline) | built in code by `BrandLogo.lockup()` | Splash (150 px high). `assets/brand/lockup.png` is no longer used: its wordmark still reads "AtomBrands". |
 
 - Both are transparent PNGs cropped from the master logo. The A and the wordmark are charcoal, so on dark backgrounds the logo sits on a **white rounded tile**; `BrandLogo` does this automatically in dark mode.
-- In code, use `BrandLogo.mark()` / `.inline()` (mark + "AtomBrands" in the UI font) / `.lockup()` (`auth_scaffold.dart`), never `Image.asset` directly. The one exception is the mark on the phone in `ProductsIllustration`.
+- In code, use `BrandLogo.mark()` / `.inline()` (mark + "Atombrand" in the UI font) / `.lockup()` (`auth_scaffold.dart`), never `Image.asset` directly. The one exception is the mark on the phone in `ProductsIllustration`.
 - Don't recolour, stretch or add effects to the logo.
 - **Still to do:** the Android/iOS launcher icon and native launch screen are still Flutter defaults. They should use the mark on white.
 
@@ -60,6 +60,9 @@ Each tone has its own dark pair in `AppPalette.dark`. `StatusBadge` maps statuse
 
 At most three font sizes per card.
 
+### 2.3.1 Icons
+Lucide (`lucide_icons_flutter`, ISC): 24 px grid, 2 px round strokes, used through `AppIcons` (`lib/core/app_icons.dart`), never `Icons.*` directly. The active bottom tab uses the bolder 500 weight (Lucide has no filled set). Exceptions: a solid star for "featured" and the real Facebook / Apple marks on the sign-in buttons.
+
 ### 2.4 Shape & spacing
 - Radii: cards **16**; buttons, inputs and code boxes **14**; icon tiles ≈ 28% of their size; chips and badges are pills.
 - 4-pt grid. Screen padding 16 (signed in) / 24 (auth). Tap targets ≥ 48 px (text links ≥ 44).
@@ -67,7 +70,7 @@ At most three font sizes per card.
 
 ## 3. Auth screens (signed out)
 
-Goal: minimal and trustworthy. Deep indigo with one orange accent, lots of white space, one primary action per screen. Reference mockups (light and dark, 375×812): the *AtomBrands Auth Flow* design canvas.
+Goal: minimal and trustworthy. Deep indigo with one orange accent, lots of white space, one primary action per screen. Reference mockups (light and dark, 375×812): the *Atombrand Auth Flow* design canvas.
 
 **Light by default, dark when the system is dark**, like the rest of the app. `AuthTheme` takes the app's `AppPalette` and swaps in Poppins, the white (or dark) auth page and taller controls.
 
@@ -146,7 +149,7 @@ Sign in ↔ Sign up swap with `pushReplacement`, so Back from either returns to 
 All of them use `buildTheme(palette)`: navy app bar (`header`), cards on `page`, indigo primary actions, status pills per §2.2, and a bottom nav whose active tab sits in a soft indigo pill. They follow the system light/dark setting.
 
 ### 4.1 Home dashboard (`dashboard_screen.dart`, `dashboard_widgets.dart`)
-Reference mockups (Default, Loading, Empty): the *AtomShop Brand Home Dashboard* design canvas. Goal: at a glance, how sales are going and what needs action today. Calm, not cluttered.
+Reference mockups (Default, Loading, Empty): the *Atombrand Home Dashboard* design canvas. Goal: at a glance, how sales are going and what needs action today. Calm, not cluttered.
 
 Top to bottom:
 1. **Header** (`header` navy, light status bar): brand logo (48 px circle), "Hi, {brand}", "Here's your store today", and a bell with the unread count that opens `/notifications`.
@@ -280,7 +283,7 @@ Reference mockups: the More HTML mockups (Default, Incomplete brand page, Sign-o
    - *Help & support:* Contact AtomShop (opens the contact sheet), Seller policies and terms.
 4. **Sign out:** its own card with one red centred row. It always confirms in a sheet: "Sign out of OXY?", the email, "You'll need your email and password to sign in again…", *Cancel* / red *Sign out*.
 5. **Contact sheet:** large WhatsApp ("Fastest", usually within 1 hour), Call (number spaced as +92 330 227 7522) and Email options from `config.support`, the hours, *Cancel*.
-6. **Footer:** "AtomShop Seller · v{appVersion}" (a test keeps it in step with pubspec).
+6. **Footer:** "Atombrand · v{appVersion}" (a test keeps it in step with pubspec).
 
 Not built yet (no API): notification switches per type, language (Urdu), bank and payout details, team members, a help center link.
 

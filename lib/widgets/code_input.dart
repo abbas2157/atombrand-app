@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/app_icons.dart';
 
 import '../core/theme.dart';
 
@@ -141,7 +142,7 @@ class _CodeInputState extends State<CodeInput> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.error_outline_rounded, size: 16, color: p.danger),
+                Icon(AppIcons.error, size: 16, color: p.danger),
                 const SizedBox(width: 6),
                 Expanded(child: Text(widget.errorText!, style: t.bodySmall?.copyWith(fontSize: 13, color: p.danger))),
               ],

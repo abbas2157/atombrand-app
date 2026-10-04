@@ -1,4 +1,4 @@
-# AtomShop Brand Partner app
+# Atombrand
 
 Flutter app for AtomShop brand partners: orders, bulk enquiries, catalogue, inventory and brand page on mobile.
 The product spec, design system and API contract are in [BRAND_APP.md](BRAND_APP.md).

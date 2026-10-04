@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/formatters.dart';
@@ -90,7 +91,7 @@ class _BulkDossierScreenState extends ConsumerState<BulkDossierScreen> {
                 tooltip: 'More options',
                 onSelected: (_) => _copyPhone(phone),
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'copy', child: ListTile(leading: Icon(Icons.copy_rounded), title: Text('Copy phone'))),
+                  PopupMenuItem(value: 'copy', child: ListTile(leading: Icon(AppIcons.copy), title: Text('Copy phone'))),
                 ],
               ),
           ],
@@ -274,7 +275,7 @@ class _WonBanner extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(color: p.success, shape: BoxShape.circle),
-            child: Icon(Icons.check_rounded, color: p.onSuccess, size: 22),
+            child: Icon(AppIcons.check, color: p.onSuccess, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -346,7 +347,7 @@ class _LeadCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.sell_outlined, size: 16, color: p.violet.fg),
+                      Icon(AppIcons.tag, size: 16, color: p.violet.fg),
                       const SizedBox(width: 6),
                       Text('Your quote', style: t.bodySmall?.copyWith(fontSize: 13, color: p.muted)),
                       const SizedBox(width: 12),
@@ -392,7 +393,7 @@ class _LeadCard extends StatelessWidget {
                 decoration: BoxDecoration(color: tone.bg, borderRadius: BorderRadius.circular(12)),
                 child: Row(
                   children: [
-                    Icon(Icons.schedule_rounded, size: 18, color: tone.fg),
+                    Icon(AppIcons.clock, size: 18, color: tone.fg),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -420,7 +421,7 @@ class _TimelineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     final t = Theme.of(context).textTheme;
-    final add = TextButton.icon(onPressed: onAdd, icon: const Icon(Icons.add_rounded, size: 20), label: const Text('Add update'));
+    final add = TextButton.icon(onPressed: onAdd, icon: const Icon(AppIcons.add, size: 20), label: const Text('Add update'));
     if (r.comments.isEmpty) {
       return AppCard(
         child: Column(
@@ -464,11 +465,11 @@ class _TimelineEntry extends StatelessWidget {
     final q = parsed.quote;
     final status = c.status ?? '';
     final (icon, tone) = switch (status) {
-      'Contacted' => (Icons.chat_bubble_outline_rounded, p.info),
-      'Quoted' => (Icons.sell_outlined, p.violet),
-      'Won' => (Icons.check_rounded, p.positive),
-      'Lost' => (Icons.close_rounded, p.neutral),
-      _ => (Icons.edit_note_rounded, p.neutral),
+      'Contacted' => (AppIcons.comment, p.info),
+      'Quoted' => (AppIcons.tag, p.violet),
+      'Won' => (AppIcons.check, p.positive),
+      'Lost' => (AppIcons.close, p.neutral),
+      _ => (AppIcons.note, p.neutral),
     };
     final title = switch (status) {
       'Quoted' when q != null => 'Quote sent · ${money(q.perUnit)} per unit',
@@ -659,7 +660,7 @@ class _DealingsCardState extends State<_DealingsCard> {
             child: Row(
               children: [
                 Icon(
-                  hint.warn ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+                  hint.warn ? AppIcons.warning : AppIcons.info,
                   size: 18,
                   color: hint.warn ? p.negative.fg : p.muted,
                 ),
@@ -701,7 +702,7 @@ class _ActionBar extends StatelessWidget {
                 tooltip: 'Call ${r.fullName}',
                 style: round,
                 onPressed: () => callPhone(context, r.phone),
-                icon: Icon(Icons.call_outlined, color: p.primary),
+                icon: Icon(AppIcons.phone, color: p.primary),
               ),
               const SizedBox(width: 10),
             ],
@@ -710,7 +711,7 @@ class _ActionBar extends StatelessWidget {
                 tooltip: 'WhatsApp ${r.fullName}',
                 style: round,
                 onPressed: () => openExternal(context, r.whatsapp),
-                icon: Icon(Icons.chat_outlined, color: p.success),
+                icon: Icon(AppIcons.chat, color: p.success),
               ),
               const SizedBox(width: 10),
             ],
@@ -718,7 +719,7 @@ class _ActionBar extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onUpdate,
                 style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
-                icon: const Icon(Icons.edit_outlined, size: 20),
+                icon: const Icon(AppIcons.edit, size: 20),
                 label: const Text('Update status'),
               ),
             ),
@@ -908,10 +909,10 @@ class _UpdateLeadSheetState extends ConsumerState<_UpdateLeadSheet> {
       'Lost': 'The deal fell through',
     };
     const icons = {
-      'Contacted': Icons.chat_bubble_outline_rounded,
-      'Quoted': Icons.sell_outlined,
-      'Won': Icons.check_rounded,
-      'Lost': Icons.close_rounded,
+      'Contacted': AppIcons.comment,
+      'Quoted': AppIcons.tag,
+      'Won': AppIcons.check,
+      'Lost': AppIcons.close,
     };
     final total = _n(_price) * _n(_qty);
     final priceMissing = _tried && _n(_price) <= 0;
@@ -946,7 +947,7 @@ class _UpdateLeadSheetState extends ConsumerState<_UpdateLeadSheet> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(color: selected ? p.card : tone.bg, borderRadius: BorderRadius.circular(10)),
-                      child: Icon(icons[s] ?? Icons.flag_outlined, size: 18, color: tone.fg),
+                      child: Icon(icons[s] ?? AppIcons.flag, size: 18, color: tone.fg),
                     ),
                     const Spacer(),
                     if (selected)
@@ -954,7 +955,7 @@ class _UpdateLeadSheetState extends ConsumerState<_UpdateLeadSheet> {
                         width: 20,
                         height: 20,
                         decoration: BoxDecoration(color: tone.fg, shape: BoxShape.circle),
-                        child: Icon(Icons.check_rounded, size: 14, color: p.card),
+                        child: Icon(AppIcons.check, size: 14, color: p.card),
                       ),
                   ],
                 ),
@@ -980,7 +981,7 @@ class _UpdateLeadSheetState extends ConsumerState<_UpdateLeadSheet> {
             child: Row(
               children: [
                 Expanded(child: Text('Update lead', style: t.titleLarge?.copyWith(fontWeight: FontWeight.w700))),
-                IconButton(tooltip: 'Close', onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded)),
+                IconButton(tooltip: 'Close', onPressed: () => Navigator.pop(context), icon: const Icon(AppIcons.close)),
               ],
             ),
           ),
@@ -1062,7 +1063,7 @@ class _UpdateLeadSheetState extends ConsumerState<_UpdateLeadSheet> {
                       onTap: _pickDate,
                       borderRadius: BorderRadius.circular(AppRadius.control),
                       child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Valid until', suffixIcon: Icon(Icons.calendar_month_outlined)),
+                        decoration: const InputDecoration(labelText: 'Valid until', suffixIcon: Icon(AppIcons.calendar)),
                         child: Text(_validFmt.format(_validUntil), style: t.bodyLarge),
                       ),
                     ),

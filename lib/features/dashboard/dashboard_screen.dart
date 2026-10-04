@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/formatters.dart';
 import '../../core/session.dart';
@@ -100,7 +101,7 @@ class _Header extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 12, 20),
           child: Row(
             children: [
-              NetThumb(logo, size: 48, radius: 24, icon: Icons.storefront_rounded),
+              NetThumb(logo, size: 48, radius: 24, icon: AppIcons.store),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -129,7 +130,7 @@ class _Header extends ConsumerWidget {
                 icon: Badge(
                   isLabelVisible: unread > 0,
                   label: Text(unread > 99 ? '99+' : '$unread'),
-                  child: const Icon(Icons.notifications_none_rounded),
+                  child: const Icon(AppIcons.bell),
                 ),
               ),
             ],
@@ -168,7 +169,7 @@ class _DashboardBody extends StatelessWidget {
     final attention = [
       if ((d.ordersVerification ?? 0) > 0)
         AttentionItem(
-          icon: Icons.verified_user_outlined,
+          icon: AppIcons.shieldCheck,
           tone: p.info,
           message: plural(d.ordersVerification!, 'Order waiting for verification', 'Orders waiting for verification'),
           count: d.ordersVerification!,
@@ -176,7 +177,7 @@ class _DashboardBody extends StatelessWidget {
         ),
       if (newBulkLeads > 0)
         AttentionItem(
-          icon: Icons.phone_in_talk_outlined,
+          icon: AppIcons.phoneCall,
           tone: p.lead,
           message: plural(newBulkLeads, 'New bulk lead to call', 'New bulk leads to call'),
           count: newBulkLeads,
@@ -184,7 +185,7 @@ class _DashboardBody extends StatelessWidget {
         ),
       if (d.catalogueOutOfStock > 0)
         AttentionItem(
-          icon: Icons.remove_shopping_cart_outlined,
+          icon: AppIcons.outOfStock,
           tone: p.negative,
           message: plural(d.catalogueOutOfStock, 'Product out of stock', 'Products out of stock'),
           count: d.catalogueOutOfStock,
@@ -192,7 +193,7 @@ class _DashboardBody extends StatelessWidget {
         ),
       if (d.cataloguePending > 0)
         AttentionItem(
-          icon: Icons.hourglass_top_rounded,
+          icon: AppIcons.hourglass,
           tone: p.warning,
           message: plural(d.cataloguePending, 'Product in review', 'Products in review'),
           count: d.cataloguePending,
@@ -203,7 +204,7 @@ class _DashboardBody extends StatelessWidget {
     final kpis = <Widget>[
       if (current != null)
         KpiCard(
-          icon: Icons.payments_outlined,
+          icon: AppIcons.payments,
           tone: p.indigo,
           value: money(current.revenue),
           label: 'Revenue',
@@ -212,7 +213,7 @@ class _DashboardBody extends StatelessWidget {
         )
       else
         KpiCard(
-          icon: Icons.payments_outlined,
+          icon: AppIcons.payments,
           tone: p.indigo,
           value: money(d.ordersValue),
           label: 'Order value',
@@ -220,7 +221,7 @@ class _DashboardBody extends StatelessWidget {
         ),
       if (current != null)
         KpiCard(
-          icon: Icons.receipt_long_outlined,
+          icon: AppIcons.orders,
           tone: p.positive,
           value: count(current.orders),
           label: 'Orders',
@@ -229,7 +230,7 @@ class _DashboardBody extends StatelessWidget {
         )
       else
         KpiCard(
-          icon: Icons.receipt_long_outlined,
+          icon: AppIcons.orders,
           tone: p.positive,
           value: count(d.ordersLast30),
           label: 'Orders, 30 days',
@@ -237,7 +238,7 @@ class _DashboardBody extends StatelessWidget {
         ),
       if (d.ordersPending != null)
         KpiCard(
-          icon: Icons.schedule_rounded,
+          icon: AppIcons.clock,
           tone: p.neutral,
           value: count(d.ordersPending),
           label: 'Pending orders',
@@ -245,14 +246,14 @@ class _DashboardBody extends StatelessWidget {
         )
       else
         KpiCard(
-          icon: Icons.check_circle_outline_rounded,
+          icon: AppIcons.checkCircle,
           tone: p.neutral,
           value: count(d.cataloguePublished),
           label: 'Live products',
           onTap: () => context.go('/catalogue?status=Published'),
         ),
       KpiCard(
-        icon: Icons.campaign_outlined,
+        icon: AppIcons.bulk,
         tone: p.lead,
         value: count(newBulkLeads),
         label: 'New bulk leads',
@@ -297,7 +298,7 @@ class _DashboardBody extends StatelessWidget {
         if (d.latestOrders.isEmpty)
           AppCard(
             child: EmptyState(
-              icon: Icons.receipt_long_outlined,
+              icon: AppIcons.orders,
               message: 'No orders yet. Share your brand page to bring in buyers.',
               actionLabel: publicUrl == null ? null : 'Share brand page',
               onAction: publicUrl == null ? null : () => SharePlus.instance.share(ShareParams(uri: Uri.parse(publicUrl!))),
@@ -413,7 +414,7 @@ class _NewSellerBody extends StatelessWidget {
                     ),
                   ),
                   ?trailing,
-                  if (onTap != null) Icon(Icons.chevron_right_rounded, color: p.muted),
+                  if (onTap != null) Icon(AppIcons.chevronRight, color: p.muted),
                 ],
               ),
             ),
@@ -453,7 +454,7 @@ class _NewSellerBody extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: () => context.push('/products/new'),
                   style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
-                  icon: const Icon(Icons.add_rounded),
+                  icon: const Icon(AppIcons.add),
                   label: const Text('Add your first product'),
                 ),
               ),

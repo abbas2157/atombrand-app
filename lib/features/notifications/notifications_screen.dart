@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/session.dart';
@@ -97,7 +98,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           child: Scaffold(
             appBar: AppBar(
               leading: selecting
-                  ? IconButton(tooltip: 'Cancel selection', icon: const Icon(Icons.close_rounded), onPressed: () => setState(() => _selected = null))
+                  ? IconButton(tooltip: 'Cancel selection', icon: const Icon(AppIcons.close), onPressed: () => setState(() => _selected = null))
                   : null,
               title: Text(selecting ? '${_selected!.length} selected' : 'Notifications'),
               actions: [
@@ -233,12 +234,12 @@ Tone _toneOf(AppPalette p, NotifCategory c) => switch (c) {
     };
 
 IconData _iconOf(AppNotification n) => switch (categoryOf(n)) {
-      NotifCategory.orders => Icons.receipt_long_outlined,
-      NotifCategory.leads => Icons.campaign_outlined,
-      NotifCategory.payments => Icons.payments_outlined,
-      NotifCategory.stock => Icons.inventory_2_outlined,
-      NotifCategory.products => isUrgent(n) ? Icons.pause_circle_outline_rounded : Icons.verified_outlined,
-      NotifCategory.atomshop => Icons.campaign_rounded,
+      NotifCategory.orders => AppIcons.orders,
+      NotifCategory.leads => AppIcons.bulk,
+      NotifCategory.payments => AppIcons.payments,
+      NotifCategory.stock => AppIcons.package,
+      NotifCategory.products => isUrgent(n) ? AppIcons.pauseCircle : AppIcons.verified,
+      NotifCategory.atomshop => AppIcons.bulkFill,
     };
 
 class _FilterChips extends StatelessWidget {
@@ -346,7 +347,7 @@ class _ActionCard extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
             child: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: pal.negative.fg),
+                Icon(AppIcons.warning, color: pal.negative.fg),
                 const SizedBox(width: 10),
                 Text(
                   '$n ${n == 1 ? 'thing needs' : 'things need'} your action',
@@ -365,7 +366,7 @@ class _ActionCard extends ConsumerWidget {
                 child: Row(
                   children: [
                     Expanded(child: Text(label, style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w500, fontFeatures: tabularFigures))),
-                    Icon(Icons.chevron_right_rounded, color: pal.muted),
+                    Icon(AppIcons.chevronRight, color: pal.muted),
                   ],
                 ),
               ),
@@ -482,7 +483,7 @@ class _NotificationRow extends StatelessWidget {
                   child: selected == true
                       ? Container(
                           decoration: BoxDecoration(color: pal.primary, shape: BoxShape.circle),
-                          child: Icon(Icons.check_rounded, color: pal.onPrimary),
+                          child: Icon(AppIcons.check, color: pal.onPrimary),
                         )
                       : Container(
                           decoration: BoxDecoration(color: tone.bg, shape: BoxShape.circle),
@@ -561,7 +562,7 @@ class _NotificationRow extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.done_all_rounded, color: pal.onPrimary),
+            Icon(AppIcons.checks, color: pal.onPrimary),
             const SizedBox(height: 2),
             Text('Mark read', style: t.labelSmall?.copyWith(color: pal.onPrimary, fontWeight: FontWeight.w700)),
           ],
@@ -597,7 +598,7 @@ class _SelectionBar extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onMarkRead,
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                icon: const Icon(Icons.done_all_rounded, size: 20),
+                icon: const Icon(AppIcons.checks, size: 20),
                 label: Text('Mark $count read'),
               ),
             ],
@@ -630,7 +631,7 @@ class _Empty extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Container(decoration: BoxDecoration(color: pal.primarySoft2, shape: BoxShape.circle)),
-                  Icon(Icons.notifications_rounded, size: 60, color: pal.primary),
+                  Icon(AppIcons.bellFill, size: 60, color: pal.primary),
                   Positioned(
                     right: 12,
                     top: 16,
@@ -638,7 +639,7 @@ class _Empty extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(color: pal.success, shape: BoxShape.circle, border: Border.all(color: pal.page, width: 2)),
-                      child: Icon(Icons.check_rounded, size: 15, color: pal.onSuccess),
+                      child: Icon(AppIcons.check, size: 15, color: pal.onSuccess),
                     ),
                   ),
                 ],

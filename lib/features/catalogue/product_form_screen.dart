@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/formatters.dart';
@@ -400,17 +401,17 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         ? changes == 0
             ? ('No changes yet', pal.muted, null)
             : gaps.isNotEmpty
-                ? (missingLine(gaps, verb: 'save'), pal.danger, Icons.error_outline_rounded)
+                ? (missingLine(gaps, verb: 'save'), pal.danger, AppIcons.error)
                 : (
                     _existing!.summary.isLive
                         ? '${plural(changes, 'change')} · sends it for review again'
                         : plural(changes, 'change'),
                     pal.positive.fg,
-                    Icons.check_rounded,
+                    AppIcons.check,
                   )
         : gaps.isNotEmpty
-            ? (missingLine(gaps), _showErrors ? pal.danger : pal.muted, _showErrors ? Icons.error_outline_rounded : null)
-            : ('Ready · AtomShop reviews it in 1–2 days', pal.positive.fg, Icons.check_rounded);
+            ? (missingLine(gaps), _showErrors ? pal.danger : pal.muted, _showErrors ? AppIcons.error : null)
+            : ('Ready · AtomShop reviews it in 1–2 days', pal.positive.fg, AppIcons.check);
     final label = _isEdit ? (changes > 0 ? 'Save changes ($changes)' : 'Save changes') : 'Submit for review';
     // Add: the button looks disabled until complete but still explains what's
     // missing when tapped. Edit: really disabled until something changed.
@@ -477,26 +478,26 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     if (_isEdit && status == 'Published') {
       banner = _Banner(
         tone: pal.warning,
-        icon: Icons.warning_amber_rounded,
+        icon: AppIcons.warning,
         text: 'This product is live. Saving changes sends it back to AtomShop for review, and it\'s hidden from buyers until approved (usually 1–2 days).',
       );
     } else if (_isEdit && status == 'Out of Stock') {
       banner = _Banner(
         tone: pal.info,
-        icon: Icons.info_outline_rounded,
+        icon: AppIcons.info,
         text: 'Saving sends this product for review again. Stock stays as it is; change it from the product page or Inventory.',
       );
     } else if (!_isEdit && _showErrors && _gaps.isNotEmpty) {
       final n = _gaps.length;
       banner = _Banner(
         tone: pal.negative,
-        icon: Icons.error_outline_rounded,
+        icon: AppIcons.error,
         text: '$n ${n == 1 ? 'thing' : 'things'} to fix before you can submit. They\'re marked in red below.',
       );
     } else if (!_isEdit && !_infoDismissed) {
       banner = _Banner(
         tone: pal.info,
-        icon: Icons.info_outline_rounded,
+        icon: AppIcons.info,
         text: 'New products are reviewed by AtomShop before going live, usually within 1–2 days.',
         onDismiss: () => setState(() => _infoDismissed = true),
       );
@@ -539,7 +540,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _pickMain(ImageSource.gallery),
                       style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48), padding: const EdgeInsets.symmetric(horizontal: 8)),
-                      icon: const Icon(Icons.photo_library_outlined, size: 20),
+                      icon: const Icon(AppIcons.gallery, size: 20),
                       label: const Text('Gallery'),
                     ),
                   ),
@@ -548,7 +549,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _pickMain(ImageSource.camera),
                       style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48), padding: const EdgeInsets.symmetric(horizontal: 8)),
-                      icon: const Icon(Icons.photo_camera_outlined, size: 20),
+                      icon: const Icon(AppIcons.camera, size: 20),
                       label: const Text('Take photo'),
                     ),
                   ),
@@ -724,7 +725,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 onNewController: (c) => c.addListener(_refresh),
               ),
             _NoteRow(
-              icon: Icons.inventory_2_outlined,
+              icon: AppIcons.package,
               text: _isEdit
                   ? (_existing!.summary.canManageStock || _existing!.summary.isLive || _existing!.summary.isOutOfStock
                       ? 'Stock is changed from the product page or Inventory.'
@@ -914,7 +915,7 @@ class _Banner extends StatelessWidget {
                 tooltip: 'Dismiss',
                 visualDensity: VisualDensity.compact,
                 onPressed: onDismiss,
-                icon: Icon(Icons.close_rounded, size: 18, color: tone.fg),
+                icon: Icon(AppIcons.close, size: 18, color: tone.fg),
               ),
           ],
         ),
@@ -955,7 +956,7 @@ class _Section extends StatelessWidget {
                   decoration: BoxDecoration(color: done ? pal.positive.bg : pal.primarySoft2, shape: BoxShape.circle),
                   child: Center(
                     child: done
-                        ? Icon(Icons.check_rounded, size: 15, color: pal.positive.fg)
+                        ? Icon(AppIcons.check, size: 15, color: pal.positive.fg)
                         : Text('$number', style: t.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: pal.primary)),
                   ),
                 ),
@@ -986,7 +987,7 @@ class _ErrorLine extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(padding: const EdgeInsets.only(top: 1), child: Icon(Icons.error_outline_rounded, size: 15, color: pal.danger)),
+            Padding(padding: const EdgeInsets.only(top: 1), child: Icon(AppIcons.error, size: 15, color: pal.danger)),
             const SizedBox(width: 6),
             Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: pal.danger, fontWeight: FontWeight.w600))),
           ],
@@ -1006,7 +1007,7 @@ class _Tip extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.lightbulb_outline_rounded, size: 16, color: pal.muted),
+        Icon(AppIcons.tip, size: 16, color: pal.muted),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: pal.muted))),
       ],
@@ -1079,7 +1080,7 @@ class _MainPhoto extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add_photo_alternate_outlined, size: 36, color: error ? pal.danger : pal.muted),
+                    Icon(AppIcons.imageAdd, size: 36, color: error ? pal.danger : pal.muted),
                     const SizedBox(height: 6),
                     Text('Add main photo', style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
@@ -1218,7 +1219,7 @@ class _Thumb extends StatelessWidget {
                   width: 26,
                   height: 26,
                   decoration: BoxDecoration(color: pal.header, shape: BoxShape.circle, border: Border.all(color: pal.card, width: 2)),
-                  child: Icon(Icons.close_rounded, size: 14, color: pal.onHeader),
+                  child: Icon(AppIcons.close, size: 14, color: pal.onHeader),
                 ),
               ),
             ),
@@ -1250,7 +1251,7 @@ class _AddThumb extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_rounded, color: pal.primary),
+                Icon(AppIcons.add, color: pal.primary),
                 Text('Add', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: pal.primary, fontWeight: FontWeight.w600)),
               ],
             ),
@@ -1285,7 +1286,7 @@ class _PickerField extends StatelessWidget {
           floatingLabelBehavior: FloatingLabelBehavior.always,
           helperText: helper,
           errorText: error,
-          suffixIcon: const Icon(Icons.expand_more_rounded),
+          suffixIcon: const Icon(AppIcons.chevronDown),
         ),
         child: Text(value ?? placeholder, style: TextStyle(fontSize: 15, color: value == null ? pal.muted : pal.text)),
       ),
@@ -1330,7 +1331,7 @@ class _SearchSheetState extends State<_SearchSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: TextField(
                   onChanged: (v) => setState(() => _q = v),
-                  decoration: InputDecoration(hintText: widget.searchHint, prefixIcon: const Icon(Icons.search_rounded)),
+                  decoration: InputDecoration(hintText: widget.searchHint, prefixIcon: const Icon(AppIcons.search)),
                 ),
               ),
             Expanded(
@@ -1344,7 +1345,7 @@ class _SearchSheetState extends State<_SearchSheet> {
                         return ListTile(
                           minTileHeight: 52,
                           title: Text(label, style: t.bodyLarge?.copyWith(fontWeight: sel ? FontWeight.w700 : null, color: sel ? pal.primary : null)),
-                          trailing: sel ? Icon(Icons.check_rounded, color: pal.primary) : null,
+                          trailing: sel ? Icon(AppIcons.check, color: pal.primary) : null,
                           onTap: () => Navigator.pop(context, id),
                         );
                       },
@@ -1421,7 +1422,7 @@ class _OptionsPanelState extends State<_OptionsPanel> {
                         ],
                       ),
                     ),
-                    Icon(_open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: pal.muted),
+                    Icon(_open ? AppIcons.chevronUp : AppIcons.chevronDown, color: pal.muted),
                   ],
                 ),
               ),
@@ -1602,7 +1603,7 @@ class _FeatureInputState extends State<_FeatureInput> {
                     labelStyle: t.labelLarge?.copyWith(color: pal.primary, fontWeight: FontWeight.w600),
                     backgroundColor: pal.primarySoft2,
                     side: BorderSide.none,
-                    deleteIcon: Icon(Icons.close_rounded, size: 18, color: pal.primary),
+                    deleteIcon: Icon(AppIcons.close, size: 18, color: pal.primary),
                     deleteButtonTooltipMessage: 'Remove $f',
                     onDeleted: () => widget.onChanged([...widget.features]..removeAt(i)),
                   ),
@@ -1832,9 +1833,9 @@ class _DescriptionEditorState extends State<_DescriptionEditor> {
                 decoration: BoxDecoration(border: Border(bottom: BorderSide(color: pal.divider))),
                 child: Row(
                   children: [
-                    tool('Bold', const Icon(Icons.format_bold_rounded), cur.bold, _toggleBold),
-                    tool('Heading', const Icon(Icons.title_rounded), cur.kind == DescKind.heading, () => _setKind(DescKind.heading)),
-                    tool('Bullet list', const Icon(Icons.format_list_bulleted_rounded), cur.kind == DescKind.bullet, () => _setKind(DescKind.bullet)),
+                    tool('Bold', const Icon(AppIcons.bold), cur.bold, _toggleBold),
+                    tool('Heading', const Icon(AppIcons.heading), cur.kind == DescKind.heading, () => _setKind(DescKind.heading)),
+                    tool('Bullet list', const Icon(AppIcons.bulletList), cur.kind == DescKind.bullet, () => _setKind(DescKind.bullet)),
                   ],
                 ),
               ),
@@ -1878,7 +1879,7 @@ class _DescriptionEditorState extends State<_DescriptionEditor> {
                             IconButton(
                               tooltip: 'Remove this line',
                               onPressed: () => _removeLine(i),
-                              icon: Icon(Icons.close_rounded, size: 18, color: pal.muted),
+                              icon: Icon(AppIcons.close, size: 18, color: pal.muted),
                             ),
                         ],
                       ),
@@ -1932,7 +1933,7 @@ class _SubmittedView extends StatelessWidget {
           backgroundColor: pal.card,
           foregroundColor: pal.text,
           automaticallyImplyLeading: false,
-          actions: [IconButton(tooltip: 'Close', onPressed: onClose, icon: const Icon(Icons.close_rounded))],
+          actions: [IconButton(tooltip: 'Close', onPressed: onClose, icon: const Icon(AppIcons.close))],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
@@ -1986,7 +1987,7 @@ class _SubmittedView extends StatelessWidget {
                         width: 22,
                         height: 22,
                         decoration: BoxDecoration(color: pal.success, shape: BoxShape.circle),
-                        child: Icon(Icons.check_rounded, size: 14, color: pal.onSuccess),
+                        child: Icon(AppIcons.check, size: 14, color: pal.onSuccess),
                       ),
                       'Submitted just now',
                     ),
@@ -2007,7 +2008,7 @@ class _SubmittedView extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: onAddAnother,
                     style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
-                    icon: const Icon(Icons.add_rounded),
+                    icon: const Icon(AppIcons.add),
                     label: const Text('Add another'),
                   ),
                 ),
@@ -2046,7 +2047,7 @@ class _SuccessArt extends StatelessWidget {
               width: 88,
               height: 88,
               decoration: BoxDecoration(color: pal.success, shape: BoxShape.circle),
-              child: Icon(Icons.check_rounded, size: 52, color: pal.onSuccess),
+              child: Icon(AppIcons.check, size: 52, color: pal.onSuccess),
             ),
             Positioned(left: 10, top: 22, child: _Dot(10, pal.accent)),
             Positioned(right: 12, top: 32, child: _Dot(8, pal.primary)),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/push.dart';
@@ -87,7 +88,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 AuthField(
                   label: 'Email or phone',
                   controller: _login,
-                  icon: Icons.mail_outline_rounded,
+                  icon: AppIcons.email,
                   hint: 'you@brand.pk or 0300 1234567',
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
@@ -100,7 +101,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 AuthField(
                   label: 'Password',
                   controller: _password,
-                  icon: Icons.lock_outline_rounded,
+                  icon: AppIcons.lock,
                   password: true,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.password],

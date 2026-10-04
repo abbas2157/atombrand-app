@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/session.dart';
 
@@ -56,13 +57,13 @@ class _MainShellState extends ConsumerState<MainShell> {
               onDestinationSelected: (i) => widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex),
               destinations: [
                 const NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
+                  icon: Icon(AppIcons.home),
+                  selectedIcon: Icon(AppIcons.homeFill),
                   label: 'Home',
                 ),
                 const NavigationDestination(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  selectedIcon: Icon(Icons.receipt_long_rounded),
+                  icon: Icon(AppIcons.orders),
+                  selectedIcon: Icon(AppIcons.ordersFill),
                   label: 'Orders',
                 ),
                 NavigationDestination(
@@ -70,23 +71,23 @@ class _MainShellState extends ConsumerState<MainShell> {
                     isLabelVisible: badge > 0,
                     label: Text(badge > 99 ? '99+' : '$badge'),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: const Icon(Icons.campaign_outlined),
+                    child: const Icon(AppIcons.bulk),
                   ),
                   selectedIcon: Badge(
                     isLabelVisible: badge > 0,
                     label: Text(badge > 99 ? '99+' : '$badge'),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: const Icon(Icons.campaign_rounded),
+                    child: const Icon(AppIcons.bulkFill),
                   ),
                   label: 'Bulk',
                   tooltip: badge > 0 ? 'Bulk requests, $badge new' : 'Bulk requests',
                 ),
                 const NavigationDestination(
-                  icon: Icon(Icons.inventory_2_outlined),
-                  selectedIcon: Icon(Icons.inventory_2_rounded),
+                  icon: Icon(AppIcons.catalogue),
+                  selectedIcon: Icon(AppIcons.catalogueFill),
                   label: 'Catalogue',
                 ),
-                const NavigationDestination(icon: Icon(Icons.menu_rounded), label: 'More'),
+                const NavigationDestination(icon: Icon(AppIcons.more), selectedIcon: Icon(AppIcons.moreFill), label: 'More'),
               ],
             ),
     );

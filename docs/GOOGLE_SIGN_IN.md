@@ -20,14 +20,14 @@ The app never sees a Google password and the server never stores a Google token.
 
 ## 2. Google Cloud setup (one-time)
 
-Do this in [Google Cloud Console](https://console.cloud.google.com/) with one project for AtomBrands.
+Do this in [Google Cloud Console](https://console.cloud.google.com/) with one project for Atombrand.
 
 1. **OAuth consent screen** (APIs & Services → OAuth consent screen)
-   - User type: **External**. App name: **AtomBrands**. Support email: `atomshoppk@gmail.com`. Logo: the AB mark.
+   - User type: **External**. App name: **Atombrand**. Support email: `atomshoppk@gmail.com`. Logo: the AB mark.
    - Authorised domain: `atomshop.pk`. Add the privacy policy and terms URLs.
    - Scopes: `openid`, `email`, `profile` only (no sensitive scopes, so no Google review is needed).
    - Click **Publish app**. While it's in "Testing", only listed test users can sign in.
-2. **Web client** (Credentials → Create credentials → OAuth client ID → *Web application*), named "AtomBrands server"
+2. **Web client** (Credentials → Create credentials → OAuth client ID → *Web application*), named "Atombrand server"
    - Its **Client ID** is the token audience. The app sends it as `GOOGLE_SERVER_CLIENT_ID`, and the server checks it.
    - The client secret isn't needed for ID-token verification. Keep it out of the app.
 3. **Android client** (*Android*)
@@ -71,7 +71,7 @@ Without the define, the button shows "Google sign-in isn't set up in this versio
    - `iss` is `accounts.google.com` or `https://accounts.google.com`;
    - `exp` is in the future;
    - `email_verified` is true.
-3. `User::where('role', 'brand')->where('email', $claims['email'])->first()`. If there's none, answer **401** "No AtomBrands account uses this Google email. Sign in with your password, or contact AtomShop to update your email." Use the same message for every "not found" case, so the endpoint doesn't reveal which emails exist.
+3. `User::where('role', 'brand')->where('email', $claims['email'])->first()`. If there's none, answer **401** "No Atombrand account uses this Google email. Sign in with your password, or contact AtomShop to update your email." Use the same message for every "not found" case, so the endpoint doesn't reveal which emails exist.
 4. Run the **same checks as `auth/login`** (`accountProblem()` → 403 for blocked / no brand linked).
 5. Optional: store `sub` (Google's stable user ID) on the user to link the account, and stop email-only matching once it's linked. That needs a `google_id` column, which is a migration.
 6. Issue the Sanctum token exactly as `auth/login` does, and return the same body: `{token, token_type, user, brand}`. Register `fcm_token` the same way.

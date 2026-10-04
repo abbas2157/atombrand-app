@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/session.dart';
 import '../../core/theme.dart';
@@ -54,7 +55,7 @@ class WelcomeScreen extends ConsumerWidget {
                               const Spacer(),
                               const SizedBox(height: 24),
                               if (notice != null) ...[
-                                AuthBanner(notice, icon: Icons.lock_outline_rounded),
+                                AuthBanner(notice, icon: AppIcons.lock),
                                 const SizedBox(height: 12),
                               ],
                               AuthButton(label: 'Sign In', onPressed: () => context.push('/sign-in')),

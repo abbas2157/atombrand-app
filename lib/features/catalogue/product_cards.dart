@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/formatters.dart';
 import '../../core/theme.dart';
@@ -36,7 +37,7 @@ class ProductThumb extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.add_photo_alternate_outlined, size: size * 0.32, color: pal.muted),
+          Icon(AppIcons.imageAdd, size: size * 0.32, color: pal.muted),
           const SizedBox(height: 2),
           Text('Add photo', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: size > 90 ? 12 : 10, color: pal.muted)),
         ],
@@ -71,7 +72,7 @@ class ProductThumb extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(color: pal.accent, shape: BoxShape.circle, border: Border.all(color: pal.card, width: 2)),
-              child: const Icon(Icons.star_rounded, size: 13, color: Colors.white),
+              child: const Icon(AppIcons.starFill, size: 13, color: Colors.white),
             ),
           ),
         ),
@@ -176,7 +177,7 @@ class ProductListCard extends StatelessWidget {
                 decoration: BoxDecoration(border: Border(top: BorderSide(color: pal.divider))),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline_rounded, size: 16, color: pal.negative.fg),
+                    Icon(AppIcons.error, size: 16, color: pal.negative.fg),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Padding(
@@ -331,22 +332,22 @@ Future<void> showProductQuickActions(
                 ),
               ),
               const Divider(),
-              row(Icons.edit_outlined, pal.indigo, 'Edit', onEdit),
+              row(AppIcons.edit, pal.indigo, 'Edit', onEdit),
               row(
-                Icons.inventory_2_outlined,
+                AppIcons.package,
                 pal.positive,
                 'Update stock',
                 onUpdateStock,
                 note: onUpdateStock == null ? 'Available once AtomShop approves it' : null,
               ),
               row(
-                p.brandFeatured ? Icons.star_outline_rounded : Icons.star_rounded,
+                p.brandFeatured ? AppIcons.star : AppIcons.starFill,
                 pal.lead,
                 p.brandFeatured ? 'Remove from brand page' : 'Feature on brand page',
                 onToggleFeatured,
               ),
               if (p.publicUrl != null && p.isLive)
-                row(Icons.open_in_new_rounded, pal.neutral, 'View on AtomShop', () => openExternal(context, p.publicUrl)),
+                row(AppIcons.externalLink, pal.neutral, 'View on AtomShop', () => openExternal(context, p.publicUrl)),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'app_icons.dart';
+
 /// A status colour pair: text/icon on a soft fill.
 @immutable
 class Tone {
@@ -260,6 +262,12 @@ ThemeData buildTheme(AppPalette p) {
       );
 
   return ThemeData(
+    // Phosphor back / close everywhere Flutter draws them itself.
+    actionIconTheme: ActionIconThemeData(
+      backButtonIconBuilder: (_) => const Icon(AppIcons.back),
+      closeButtonIconBuilder: (_) => const Icon(AppIcons.close),
+      drawerButtonIconBuilder: (_) => const Icon(AppIcons.more),
+    ),
     useMaterial3: true,
     brightness: brightness,
     colorScheme: scheme,

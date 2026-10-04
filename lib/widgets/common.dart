@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../core/app_icons.dart';
 
 import '../core/theme.dart';
 
@@ -31,7 +32,7 @@ class AppCard extends StatelessWidget {
 
 /// Rounded network thumbnail with a neutral placeholder.
 class NetThumb extends StatelessWidget {
-  const NetThumb(this.url, {super.key, this.size = 48, this.radius = 10, this.icon = Icons.inventory_2_outlined});
+  const NetThumb(this.url, {super.key, this.size = 48, this.radius = 10, this.icon = AppIcons.package});
 
   final String? url;
   final double size;
@@ -66,7 +67,7 @@ class NetThumb extends StatelessWidget {
 /// Tinted info banner (§4.5), used for `locked_reason` and review warnings.
 /// [color] defaults to the info blue.
 class InfoBanner extends StatelessWidget {
-  const InfoBanner(this.text, {super.key, this.icon = Icons.info_outline_rounded, this.color});
+  const InfoBanner(this.text, {super.key, this.icon = AppIcons.info, this.color});
 
   final String text;
   final IconData icon;
@@ -138,7 +139,7 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => EmptyState(
-        icon: Icons.cloud_off_rounded,
+        icon: AppIcons.offline,
         message: message,
         actionLabel: 'Try again',
         onAction: onRetry,

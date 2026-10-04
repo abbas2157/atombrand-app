@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/app_icons.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,12 +101,12 @@ class _BulkScreenState extends ConsumerState<BulkScreen> {
               decoration: InputDecoration(
                 isDense: true,
                 hintText: 'Search name, phone or product',
-                prefixIcon: const Icon(Icons.search_rounded),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: _search.text.isEmpty
                     ? null
                     : IconButton(
                         tooltip: 'Clear search',
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(AppIcons.close),
                         onPressed: () {
                           _search.clear();
                           _onSearch('');
@@ -120,7 +121,7 @@ class _BulkScreenState extends ConsumerState<BulkScreen> {
                 onRefresh: _refresh,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 empty: EmptyState(
-                  icon: Icons.campaign_outlined,
+                  icon: AppIcons.bulk,
                   message: _status == 'New Lead' && _search.text.isEmpty
                       ? 'No new enquiries. They appear here the moment a buyer asks for a quote.'
                       : 'No requests here.',
@@ -185,7 +186,7 @@ class BulkTile extends StatelessWidget {
                       child: Text(meta, style: t.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                     if (r.commentsCount > 0) ...[
-                      Icon(Icons.chat_bubble_outline_rounded, size: 14, color: AppPalette.of(context).muted),
+                      Icon(AppIcons.comment, size: 14, color: AppPalette.of(context).muted),
                       const SizedBox(width: 2),
                       Text('${r.commentsCount}', style: t.bodySmall),
                     ],
@@ -197,13 +198,13 @@ class BulkTile extends StatelessWidget {
           if (r.phone != null)
             IconButton(
               tooltip: 'Call ${r.fullName}',
-              icon: Icon(Icons.call_outlined, color: AppPalette.of(context).primary),
+              icon: Icon(AppIcons.phone, color: AppPalette.of(context).primary),
               onPressed: () => callPhone(context, r.phone),
             ),
           if (r.whatsapp != null)
             IconButton(
               tooltip: 'WhatsApp ${r.fullName}',
-              icon: Icon(Icons.chat_outlined, color: AppPalette.of(context).success),
+              icon: Icon(AppIcons.chat, color: AppPalette.of(context).success),
               onPressed: () => openExternal(context, r.whatsapp),
             ),
         ],

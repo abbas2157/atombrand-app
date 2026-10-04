@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/formatters.dart';
@@ -140,19 +141,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           actions: d == null
               ? null
               : [
-                  IconButton(tooltip: 'Copy order number', onPressed: () => _copy(d), icon: const Icon(Icons.copy_rounded)),
+                  IconButton(tooltip: 'Copy order number', onPressed: () => _copy(d), icon: const Icon(AppIcons.copy)),
                   PopupMenuButton<String>(
                     tooltip: 'More options',
                     onSelected: (v) => v == 'share' ? _share(d) : _report(d),
                     itemBuilder: (_) => [
                       const PopupMenuItem(
                         value: 'share',
-                        child: ListTile(leading: Icon(Icons.share_outlined), title: Text('Share order')),
+                        child: ListTile(leading: Icon(AppIcons.share), title: Text('Share order')),
                       ),
                       if (canReport)
                         const PopupMenuItem(
                           value: 'report',
-                          child: ListTile(leading: Icon(Icons.flag_outlined), title: Text('Report a problem')),
+                          child: ListTile(leading: Icon(AppIcons.flag), title: Text('Report a problem')),
                         ),
                     ],
                   ),
@@ -287,7 +288,7 @@ class _LockedBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(padding: const EdgeInsets.only(top: 10), child: Icon(Icons.lock_outline_rounded, size: 20, color: p.info.fg)),
+          Padding(padding: const EdgeInsets.only(top: 10), child: Icon(AppIcons.lock, size: 20, color: p.info.fg)),
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
@@ -295,7 +296,7 @@ class _LockedBanner extends StatelessWidget {
               child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13, height: 1.45, color: p.text)),
             ),
           ),
-          IconButton(tooltip: 'Dismiss', onPressed: onDismiss, icon: Icon(Icons.close_rounded, size: 20, color: p.info.fg)),
+          IconButton(tooltip: 'Dismiss', onPressed: onDismiss, icon: Icon(AppIcons.close, size: 20, color: p.info.fg)),
         ],
       ),
     );
@@ -407,7 +408,7 @@ class _ProgressCard extends StatelessWidget {
                                   boxShadow: s.current ? [BoxShadow(color: p.primarySoft2, spreadRadius: 4)] : null,
                                 ),
                                 child: s.done
-                                    ? Icon(Icons.check_rounded, size: 15, color: p.onPrimary)
+                                    ? Icon(AppIcons.check, size: 15, color: p.onPrimary)
                                     : s.current
                                         ? Center(
                                             child: Container(
@@ -466,7 +467,7 @@ class _CancelledCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(color: p.negative.bg, borderRadius: BorderRadius.circular(10)),
-            child: Icon(Icons.block_rounded, size: 20, color: p.negative.fg),
+            child: Icon(AppIcons.blocked, size: 20, color: p.negative.fg),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -778,7 +779,7 @@ class _CustomerCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       style: buttonStyle,
                       onPressed: () => callPhone(context, c.phone),
-                      icon: const Icon(Icons.call_outlined, size: 20),
+                      icon: const Icon(AppIcons.phone, size: 20),
                       label: const Text('Call'),
                     ),
                   ),
@@ -788,7 +789,7 @@ class _CustomerCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       style: buttonStyle,
                       onPressed: () => openExternal(context, c.whatsapp),
-                      icon: const Icon(Icons.chat_outlined, size: 20),
+                      icon: const Icon(AppIcons.chat, size: 20),
                       label: const Text('WhatsApp'),
                     ),
                   ),
@@ -875,7 +876,7 @@ class _ActivityCard extends StatelessWidget {
                               child: InkWell(
                                 onTap: () => openExternal(context, e.image),
                                 borderRadius: BorderRadius.circular(10),
-                                child: NetThumb(e.image, size: 96, icon: Icons.image_outlined),
+                                child: NetThumb(e.image, size: 96, icon: AppIcons.image),
                               ),
                             ),
                           ],

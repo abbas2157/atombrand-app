@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
@@ -67,7 +68,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Widget _buildForm(BuildContext context) {
     return AuthScaffold(
       title: 'Forgot password?',
-      icon: Icons.key_rounded,
+      icon: AppIcons.key,
       subtitle: "Enter the email or phone linked to your account and we'll send you a code to reset your password.",
       bottom: AuthButton(label: 'Send Reset Code', busyLabel: 'Sending code…', busy: _busy, onPressed: _send),
       children: [
@@ -80,7 +81,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               AuthField(
                 label: 'Email or phone',
                 controller: _login,
-                icon: Icons.mail_outline_rounded,
+                icon: AppIcons.email,
                 hint: 'you@brand.pk or 0300 1234567',
                 autofocus: true,
                 enabled: !_busy,

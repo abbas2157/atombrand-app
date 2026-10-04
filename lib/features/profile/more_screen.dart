@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/formatters.dart';
 import '../../core/session.dart';
@@ -49,21 +50,21 @@ class MoreScreen extends ConsumerWidget {
             const _SectionLabel('Your store'),
             _Group([
               _Row(
-                icon: Icons.web_rounded,
+                icon: AppIcons.brandPage,
                 title: 'Brand page',
                 subtitle: missing.isEmpty ? 'Logo, banner, story and promo slides' : missingLine(missing),
                 onTap: () => context.push('/brand-page'),
               ),
               if (publicUrl != null) ...[
                 _Row(
-                  icon: Icons.public_rounded,
+                  icon: AppIcons.globe,
                   title: 'View public page',
                   subtitle: shortUrl(publicUrl),
                   external: true,
                   onTap: () => openExternal(context, publicUrl),
                 ),
                 _Row(
-                  icon: Icons.share_outlined,
+                  icon: AppIcons.share,
                   title: 'Share store link',
                   subtitle: 'Send your store to buyers on WhatsApp',
                   onTap: () => SharePlus.instance.share(ShareParams(
@@ -76,30 +77,30 @@ class MoreScreen extends ConsumerWidget {
             const _SectionLabel('Account'),
             _Group([
               _Row(
-                icon: Icons.person_outline_rounded,
+                icon: AppIcons.user,
                 title: 'Profile',
                 subtitle: 'Name, phone, business details',
                 onTap: () => context.push('/profile'),
               ),
-              _Row(icon: Icons.lock_outline_rounded, title: 'Change password', onTap: () => context.push('/change-password')),
+              _Row(icon: AppIcons.lock, title: 'Change password', onTap: () => context.push('/change-password')),
               const _Row(
-                icon: Icons.account_balance_outlined,
+                icon: AppIcons.bank,
                 title: 'Bank & payouts',
                 subtitle: 'Where AtomShop sends your payments',
                 soon: true,
               ),
-              const _Row(icon: Icons.group_outlined, title: 'Team members', subtitle: 'Give staff access', soon: true),
+              const _Row(icon: AppIcons.users, title: 'Team members', subtitle: 'Give staff access', soon: true),
             ]),
             const _SectionLabel('Help & support'),
             _Group([
               _Row(
-                icon: Icons.support_agent_rounded,
+                icon: AppIcons.support,
                 title: 'Contact AtomShop',
                 subtitle: 'WhatsApp, call or email',
                 onTap: () => showContactSheet(context, config ?? AppConfig.fallback),
               ),
               _Row(
-                icon: Icons.description_outlined,
+                icon: AppIcons.document,
                 title: 'Seller policies and terms',
                 external: true,
                 onTap: () => openExternal(context, PartnerContent.termsUrl),
@@ -108,7 +109,7 @@ class MoreScreen extends ConsumerWidget {
             const SizedBox(height: 20),
             _Group([
               _Row(
-                icon: Icons.logout_rounded,
+                icon: AppIcons.logout,
                 title: 'Sign out',
                 danger: true,
                 onTap: () => _confirmSignOut(context, ref, s),
@@ -116,7 +117,7 @@ class MoreScreen extends ConsumerWidget {
             ]),
             const SizedBox(height: 14),
             Text(
-              'AtomShop Seller · v$appVersion',
+              'Atombrand · v$appVersion',
               textAlign: TextAlign.center,
               style: t.bodySmall?.copyWith(color: pal.muted),
             ),
@@ -178,7 +179,7 @@ class MoreScreen extends ConsumerWidget {
                           backgroundColor: pal.danger,
                           foregroundColor: Colors.white,
                         ),
-                        icon: const Icon(Icons.logout_rounded, size: 20),
+                        icon: const Icon(AppIcons.logout, size: 20),
                         label: const Text('Sign out'),
                       ),
                     ),
@@ -242,7 +243,7 @@ Future<void> showContactSheet(BuildContext context, AppConfig config) {
                             child: Text(tag, style: t.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: pal.positive.fg)),
                           )
                         else
-                          Icon(Icons.open_in_new_rounded, size: 18, color: pal.muted),
+                          Icon(AppIcons.externalLink, size: 18, color: pal.muted),
                       ],
                     ),
                   ),
@@ -263,7 +264,7 @@ Future<void> showContactSheet(BuildContext context, AppConfig config) {
               const SizedBox(height: 16),
               if (config.supportWhatsapp != null)
                 option(
-                  icon: Icons.chat_outlined,
+                  icon: AppIcons.chat,
                   tone: pal.positive,
                   title: 'WhatsApp',
                   subtitle: 'Usually replies within 1 hour',
@@ -272,7 +273,7 @@ Future<void> showContactSheet(BuildContext context, AppConfig config) {
                 ),
               if (config.supportPhone != null)
                 option(
-                  icon: Icons.call_outlined,
+                  icon: AppIcons.phone,
                   tone: pal.indigo,
                   title: 'Call',
                   subtitle: formatPkPhone(config.supportPhone!),
@@ -280,7 +281,7 @@ Future<void> showContactSheet(BuildContext context, AppConfig config) {
                 ),
               if (config.supportEmail != null)
                 option(
-                  icon: Icons.mail_outline_rounded,
+                  icon: AppIcons.email,
                   tone: pal.warning,
                   title: 'Email',
                   subtitle: config.supportEmail!,
@@ -314,7 +315,7 @@ class _Logo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: pal.divider, width: 1.5)),
-      child: NetThumb(brand.logo, size: size, radius: size / 2, icon: Icons.storefront_rounded),
+      child: NetThumb(brand.logo, size: size, radius: size / 2, icon: AppIcons.store),
     );
   }
 }
@@ -475,7 +476,7 @@ class _BrandPageNudge extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(c.done ? Icons.check_rounded : Icons.add_rounded, size: 14, color: c.done ? pal.positive.fg : tone.fg),
+                          Icon(c.done ? AppIcons.check : AppIcons.add, size: 14, color: c.done ? pal.positive.fg : tone.fg),
                           const SizedBox(width: 4),
                           Text(c.label, style: t.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.w600, color: c.done ? pal.positive.fg : tone.fg)),
                         ],
@@ -578,7 +579,7 @@ class _Row extends StatelessWidget {
                 decoration: BoxDecoration(color: pal.neutral.bg, borderRadius: BorderRadius.circular(11)),
                 child: Text('Soon', style: t.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: pal.neutral.fg)),
               )
-            : Icon(external ? Icons.open_in_new_rounded : Icons.chevron_right_rounded, size: external ? 18 : 22, color: pal.muted);
+            : Icon(external ? AppIcons.externalLink : AppIcons.chevronRight, size: external ? 18 : 22, color: pal.muted);
     return Semantics(
       button: enabled,
       enabled: enabled,

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../../core/app_icons.dart';
 
 import 'package:flutter/material.dart';
 
@@ -77,7 +78,7 @@ class TrendChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!flat) ...[
-              Icon(up ? Icons.arrow_drop_up_rounded : Icons.arrow_drop_down_rounded, size: 18, color: tone.fg),
+              Icon(up ? AppIcons.trendUpArrow : AppIcons.trendDownArrow, size: 18, color: tone.fg),
               const SizedBox(width: 1),
             ],
             Text(
@@ -184,7 +185,7 @@ class AttentionCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 children: [
-                  IconTile(Icons.check_rounded, p.positive),
+                  IconTile(AppIcons.check, p.positive),
                   const SizedBox(width: 12),
                   Expanded(child: Text("You're all caught up.", style: t.bodyMedium)),
                 ],
@@ -225,7 +226,7 @@ class AttentionCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Icon(Icons.chevron_right_rounded, color: p.muted),
+                        Icon(AppIcons.chevronRight, color: p.muted),
                       ],
                     ),
                   ),
@@ -548,7 +549,7 @@ class RecoveryCard extends StatelessWidget {
                 constraints: const BoxConstraints(minHeight: 52),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, size: 20, color: p.negative.fg),
+                    Icon(AppIcons.warning, size: 20, color: p.negative.fg),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -556,7 +557,7 @@ class RecoveryCard extends StatelessWidget {
                         style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: p.negative.fg),
                       ),
                     ),
-                    Icon(Icons.chevron_right_rounded, color: p.muted),
+                    Icon(AppIcons.chevronRight, color: p.muted),
                   ],
                 ),
               ),

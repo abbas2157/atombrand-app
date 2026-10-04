@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/formatters.dart';
@@ -136,7 +137,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => context.push('/change-password'),
-              icon: const Icon(Icons.lock_reset_rounded),
+              icon: const Icon(AppIcons.lockKey),
               label: const Text('Change password'),
             ),
           ],
@@ -195,7 +196,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     Widget eye() => IconButton(
           tooltip: _obscure ? 'Show passwords' : 'Hide passwords',
-          icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+          icon: Icon(_obscure ? AppIcons.eye : AppIcons.eyeOff),
           onPressed: () => setState(() => _obscure = !_obscure),
         );
     return Scaffold(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/app_icons.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -161,7 +162,7 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
         VerifyMode.reset => 'Enter your code',
         VerifyMode.apply => 'Verify your phone',
       },
-      icon: _args.mode == VerifyMode.apply ? Icons.verified_user_outlined : Icons.mark_email_unread_outlined,
+      icon: _args.mode == VerifyMode.apply ? AppIcons.shieldCheck : AppIcons.emailOpen,
       subtitle: challengeSentText(_challenge),
       bottom: AuthButton(
         label: _args.mode == VerifyMode.apply ? 'Submit application' : 'Verify',
@@ -221,7 +222,7 @@ class _ResendRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.schedule_rounded, size: 16, color: p.accentInk),
+                Icon(AppIcons.clock, size: 16, color: p.accentInk),
                 const SizedBox(width: 5),
                 Text(
                   'Resend in $clock',

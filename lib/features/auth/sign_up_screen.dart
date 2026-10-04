@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
 import '../../widgets/feedback.dart';
@@ -126,7 +127,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: AuthFieldMessage(
                   'Please accept the terms to continue.',
                   color: p.danger,
-                  icon: Icons.error_outline_rounded,
+                  icon: AppIcons.error,
                 ),
               ),
             const SizedBox(height: 6),
@@ -146,7 +147,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 AuthField(
                   label: 'Full name',
                   controller: _name,
-                  icon: Icons.person_outline_rounded,
+                  icon: AppIcons.user,
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.name],
@@ -156,7 +157,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 AuthField(
                   label: 'Email',
                   controller: _email,
-                  icon: Icons.mail_outline_rounded,
+                  icon: AppIcons.email,
                   hint: 'name@example.com',
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
@@ -168,7 +169,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   label: 'Phone',
                   labelSuffix: '(optional)',
                   controller: _phone,
-                  icon: Icons.phone_iphone_rounded,
+                  icon: AppIcons.mobile,
                   hint: '0300 1234567',
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
@@ -179,7 +180,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 AuthField(
                   label: 'Password',
                   controller: _password,
-                  icon: Icons.lock_outline_rounded,
+                  icon: AppIcons.lock,
                   password: true,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.newPassword],
@@ -192,7 +193,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 AuthField(
                   label: 'Confirm password',
                   controller: _confirm,
-                  icon: Icons.lock_outline_rounded,
+                  icon: AppIcons.lock,
                   password: true,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.newPassword],

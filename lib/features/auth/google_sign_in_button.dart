@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../../core/app_icons.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,7 +34,7 @@ class SocialLoginRow extends StatelessWidget {
           child: _SocialButton(
             label: '$verb with Apple',
             onPressed: () => notYet('Apple'),
-            child: Icon(Icons.apple, size: 24, color: p.text),
+            child: Icon(AppIcons.apple, size: 24, color: p.text),
           ),
         ),
         const SizedBox(width: 12),
@@ -41,7 +42,7 @@ class SocialLoginRow extends StatelessWidget {
           child: _SocialButton(
             label: '$verb with Facebook',
             onPressed: () => notYet('Facebook'),
-            child: const Icon(Icons.facebook, size: 24, color: Color(0xFF1877F2)),
+            child: const Icon(AppIcons.facebook, size: 24, color: Color(0xFF1877F2)),
           ),
         ),
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/app_icons.dart';
 
 import '../../core/images.dart';
 import '../../core/theme.dart';
@@ -107,7 +108,7 @@ class _StatusSheetState extends State<_StatusSheet> {
                       right: 6,
                       child: IconButton.filledTonal(
                         tooltip: 'Remove photo',
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(AppIcons.close),
                         onPressed: () => setState(() => _picture = null),
                       ),
                     ),
@@ -119,7 +120,7 @@ class _StatusSheetState extends State<_StatusSheet> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: _picking ? null : () => _pick(ImageSource.camera),
-                        icon: const Icon(Icons.photo_camera_outlined),
+                        icon: const Icon(AppIcons.camera),
                         label: const Text('Take photo'),
                       ),
                     ),
@@ -127,7 +128,7 @@ class _StatusSheetState extends State<_StatusSheet> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: _picking ? null : () => _pick(ImageSource.gallery),
-                        icon: const Icon(Icons.photo_library_outlined),
+                        icon: const Icon(AppIcons.gallery),
                         label: const Text('Gallery'),
                       ),
                     ),

@@ -1,6 +1,6 @@
-# AtomShop Brand App: Product, Architecture, Design & API
+# Atombrand: Product, Architecture, Design & API
 
-> **What this is:** the single reference for building the **Brand Partner mobile app** (Flutter). It covers what the app is for (PRD), how it fits the backend (architecture), how it should look (design), and the complete API contract.
+> **What this is:** the single reference for building **Atombrand**, the Brand Partner mobile app (Flutter). It covers what the app is for (PRD), how it fits the backend (architecture), how it should look (design), and the complete API contract.
 > **Backend status:** API built and tested (`routes/api/brand-app.php`, `tests/Feature/BrandAppApiTest.php`).
 > **Build brief:** `docs/BRAND_APP_BUILD_PROMPT.md`, a ready-to-paste prompt for the Flutter build.
 > **Web twin:** the Brand Partner portal at `/brand-portal`. The app does the same jobs with the same rules. When in doubt, the portal's behaviour is the reference.
@@ -189,7 +189,7 @@ The **Bulk** tab shows a badge with `me.badges.new_bulk_requests` (refresh on ap
 
 ## 4. Design system
 
-Layout mirrors the Brand Partner web portal (`public/brand/css/style.css`); colours follow the AtomBrands logo (red + charcoal on white).
+Layout mirrors the Brand Partner web portal (`public/brand/css/style.css`); colours follow the Atombrand logo (red + charcoal on white).
 
 ### 4.1 Colour tokens
 
