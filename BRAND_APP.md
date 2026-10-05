@@ -4,7 +4,7 @@
 > **Backend status:** API built and tested (`routes/api/brand-app.php`, `tests/Feature/BrandAppApiTest.php`).
 > **Build brief:** `docs/BRAND_APP_BUILD_PROMPT.md`, a ready-to-paste prompt for the Flutter build.
 > **Web twin:** the Brand Partner portal at `/brand-portal`. The app does the same jobs with the same rules. When in doubt, the portal's behaviour is the reference.
-> Last updated: 2026-10-01
+> Last updated: 2026-10-05
 
 ---
 
@@ -189,72 +189,71 @@ The **Bulk** tab shows a badge with `me.badges.new_bulk_requests` (refresh on ap
 
 ## 4. Design system
 
-Layout mirrors the Brand Partner web portal (`public/brand/css/style.css`); colours follow the Atombrand logo (red + charcoal on white).
+**[DESIGN.md](DESIGN.md) is the source of truth for how the app looks**; tokens live in `lib/core/theme.dart` (`AppPalette`). This section is a summary. If the two ever disagree, DESIGN.md wins and this section gets fixed. Layout mirrors the Brand Partner web portal; the palette is the app's own (since 2026-10-03) and does not copy the web's colours.
 
 ### 4.1 Colour tokens
+One palette for every screen: deep indigo primary, orange accent, navy header, soft neutrals, in a **light and a dark variant** that follow the system setting. Key light values (dark values in DESIGN.md §3.1):
 
-| Token | Hex | Use |
+| Token | Light | Use |
 |---|---|---|
-| `primary` | `#BE1E2D` | Primary buttons, active tab, links, FAB, "new" badges |
-| `primarySoft` | `#BE1E2D` @ 10% | Selected chips, nav indicator |
-| `accent` | `#1B1C1E` | App bar, dark highlights |
-| `background` | `#F6F7FB` | Scaffold |
-| `surface` | `#FFFFFF` | Cards, sheets |
-| `ink` | `#1B1C1E` | Primary text |
-| `muted` | `#64748B` | Secondary text, captions |
-| `line` | `#E2E8F0` | Dividers, input borders |
-| `success` | `#15803D` on `#16A34A` @ 12% | Green badge |
-| `warning` | `#B45309` on `#FAA53A` @ 16% | Amber badge |
-| `danger` | `#B91C1C` on `#DC2626` @ 10% | Red badge, destructive actions |
-| `neutral` | `#64748B` on `#F1F5F9` | Grey badge |
+| `primary` | `#4136C9` | Primary buttons, active tab, links, focus |
+| `accent` / `accentInk` | `#FF7A1A` / `#B04600` | Highlights only / the accent when it has to be text |
+| `header` | `#10122B` | App bars and the dashboard header |
+| `page` / `card` | `#F5F6FA` / `#FFFFFF` | Scaffold / cards, sheets |
+| `text` / `muted` | `#10122B` / `#5B6078` | Primary / secondary text |
+| `border` / `divider` | `#D9DCE6` / `#EEF0F5` | Inputs, outlines / hairlines in cards |
+| `danger` | `#C4213A` | Errors, destructive actions |
 
-Dark mode: not required for v1. If added, keep `primary`/`accent` and invert surfaces (`#0F172A` / `#1E293B`).
+Widgets read tokens with `AppPalette.of(context)` and never use raw hex.
 
 ### 4.2 Typography
-- **Inter** (Google Fonts): 400 / 500 / 600 / 700.
-- Scale: Display 24/700 (dashboard numbers) · Title 18/600 · Body 14/400 · Label 13/500 · Caption 12/400 muted.
-- Numbers on stat cards use tabular figures.
+- **Inter** on signed-in screens, **Poppins** on the auth screens (Google Fonts, `google_fonts` pinned to 8).
+- Scale: screen title 18/600 · card title 16/600 · KPI 20/700 · body 14–15/400 · caption 12/400 muted.
+- Prices and counts use tabular figures.
 
 ### 4.3 Shape & spacing
-- Card radius **16**, input/button radius **12**, badge radius **999** (pill).
-- 4-pt spacing grid; screen padding 16; card padding 16; gap between cards 12.
-- Shadow: `0 2 10 rgba(0,0,0,.06)` on cards only.
-- Tap targets ≥ 44×44.
+- Card radius **16**, input/button radius **14**, badges and chips are pills.
+- 4-pt grid; screen padding 16 (signed in) / 24 (auth).
+- Card shadow in light mode only.
+- Tap targets ≥ 48 px (text links ≥ 44).
 
-### 4.4 Status badges (identical to web)
+### 4.4 Status badges
+Each badge is a `Tone` (text on a soft fill; DESIGN.md §2.2), mapped in `lib/widgets/status_badge.dart`.
 
-| Value | Label shown | Colour |
+| Value | Label shown | Tone |
 |---|---|---|
-| Order `Pending` | Pending | grey |
-| Order `Varification` | **Verification** | amber |
-| Order `Processing` | Processing | amber |
-| Order `Delivered` | Delivered | blue |
-| Order `Instalments` | Instalments | blue |
-| Order `Completed` | Completed | green |
-| Order `Cancelled` | Cancelled | red |
-| Bulk `New Lead` | New Lead | amber |
-| Bulk `Contacted` / `Quoted` | same | blue |
-| Bulk `Won` | Won | green |
-| Bulk `Lost` | Lost | red |
-| Product `Published` | **Live** | green |
-| Product `Pending` | **In review** | amber |
-| Product `Out of Stock` | Out of stock | red |
-| Product `On hold` / `Closed` | same | grey |
+| Order `Pending` | Pending | neutral (slate) |
+| Order `Varification` | **Verification** | info (blue) |
+| Order `Processing` | Processing | warning (amber) |
+| Order `Delivered` | Delivered | positive (green) |
+| Order `Instalments` | Instalments | info (blue) |
+| Order `Completed` | Completed | positive (green) |
+| Order `Cancelled` | Cancelled | negative (red) |
+| Bulk `New Lead` | New Lead | lead (orange) |
+| Bulk `Contacted` | Contacted | info (blue) |
+| Bulk `Quoted` | Quoted | violet |
+| Bulk `Won` | Won | positive (green) |
+| Bulk `Lost` | Lost | neutral (slate) |
+| Product `Published` | **Live** | positive (green) |
+| Product `Pending` | **In review** | info (blue) |
+| Product `Out of Stock` | Out of stock | negative (red) |
+| Product `On hold` | On hold | warning (amber) |
+| Product `Closed` | Closed | neutral (slate) |
 
-Badges never wrap. A retail order also gets a payment pill: **"Paid in full"** (blue) when `is_cash`, otherwise **"{tenure}-month plan"** (grey).
+Badges never wrap. A retail order also gets a payment pill: **"Paid in full"** (positive) when `is_cash`, otherwise **"{tenure} mo plan"** (outlined neutral).
 
 ### 4.5 Components
-- **StatCard:** icon in a soft-tinted circle, big number, caption, optional trend.
+- **StatCard:** icon in a soft-tinted tile, big number, caption, optional trend.
 - **OrderTile:** product thumb (48), title, variant line, amount, status badge, date.
 - **BulkTile:** buyer name, product, quantity, city, status badge, quick call/WhatsApp icons.
 - **ProductTile:** thumb, title, PR number, price, status badge, stock count.
-- **InfoBanner:** left border info blue `#3D5DAB`, info icon (used for `locked_reason`, review warnings).
+- **InfoBanner:** `info` tone with an info icon (used for `locked_reason`, review warnings).
 - **CodeInput:** 6 boxes, auto-advance, paste support, SMS/WhatsApp autofill where the OS allows.
 - **EmptyState:** illustration/icon, one sentence saying what's missing, one action.
-- Icons: Material Symbols Rounded (the web uses Bootstrap Icons; pick the closest equivalents).
+- Icons: **Lucide** through `AppIcons` (`lib/core/app_icons.dart`), never `Icons.*` directly.
 
 ### 4.6 Accessibility
-- Contrast ≥ 4.5:1 for text (all badge pairs above meet this).
+- Contrast ≥ 4.5:1 for text (every tone pair meets this in both modes).
 - Respect system font scaling up to 130% without clipping.
 - Every icon-only button has a semantic label.
 
@@ -797,5 +796,5 @@ Covers: envelope 401, email + any-format phone login, refusal of wrong password 
 2. **More events:** order status changed by AtomShop/a seller, low stock, a bulk request left unanswered for 24 h.
 3. **Review feedback:** when admin rejects or holds a product, there is no reason field to show the brand.
 4. **Analytics:** sales by product over time, conversion of bulk requests (Won / total).
-5. **Sign in with Apple/Google:** not planned; accounts are AtomShop-provisioned.
+5. **Sign in with Apple:** not planned; accounts are AtomShop-provisioned. Google sign-in for existing accounts is built in the app and waits on `POST auth/google` ([docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)).
 6. **Changing phone/email** does not currently require a code to the new contact. Consider adding before launch if partners share devices.

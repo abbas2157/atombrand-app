@@ -61,8 +61,8 @@ class WelcomeScreen extends ConsumerWidget {
                               AuthButton(label: 'Sign In', onPressed: () => context.push('/sign-in')),
                               const SizedBox(height: 12),
                               OutlinedButton(
-                                onPressed: () => context.push('/sign-up'),
-                                child: const Text('Create Account'),
+                                onPressed: () => context.push('/apply'),
+                                child: const Text('Become a partner'),
                               ),
                               const SizedBox(height: 4),
                               Wrap(

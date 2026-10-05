@@ -42,13 +42,7 @@ class AppNotification {
   final String? createdAt;
 
   /// The app route this notification opens, or null if it opens nothing.
-  String? get route => switch (screen) {
-        'order' when asStr(data['order_uuid']) != null =>
-          '/orders/${asStrOr(data['order_type'], 'retail')}/${data['order_uuid']}',
-        'bulk_request' when asStr(data['bulk_request_id']) != null => '/bulk/${data['bulk_request_id']}',
-        'product' when asStr(data['product_id']) != null => '/products/${data['product_id']}',
-        _ => null,
-      };
+  String? get route => notificationRoute(screen, data);
 
   AppNotification markedRead() => AppNotification(
         id: id,
@@ -62,6 +56,15 @@ class AppNotification {
         createdAt: createdAt,
       );
 }
+
+/// Where an inbox row or a push (§8.10: `screen` + its `data`) opens.
+String? notificationRoute(String? screen, Json data) => switch (screen) {
+      'order' when asStr(data['order_uuid']) != null =>
+        '/orders/${asStrOr(data['order_type'], 'retail')}/${data['order_uuid']}',
+      'bulk_request' when asStr(data['bulk_request_id']) != null => '/bulk/${data['bulk_request_id']}',
+      'product' when asStr(data['product_id']) != null => '/products/${data['product_id']}',
+      _ => null,
+    };
 
 class NotificationsRepository {
   NotificationsRepository(this._api);

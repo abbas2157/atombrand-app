@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/app_icons.dart';
 
+import '../../core/push.dart';
 import '../../core/session.dart';
+import '../../data/repositories/notifications_repository.dart';
 
 /// True while a tab shows its own bottom bar for unsaved work (Inventory's
 /// save and bulk bars), so the nav hides and nothing is left by accident.
@@ -30,18 +34,58 @@ class MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<MainShell> {
   late final AppLifecycleListener _lifecycle;
+  final _pushSubs = <StreamSubscription<PushMessage>>[];
 
   @override
   void initState() {
     super.initState();
-    // Refresh the Bulk badge whenever the app comes back to the foreground.
-    _lifecycle = AppLifecycleListener(onResume: () => ref.read(sessionProvider.notifier).refreshBadge());
+    // Refresh the badges whenever the app comes back to the foreground.
+    _lifecycle = AppLifecycleListener(onResume: _refreshBadges);
+    final push = ref.read(pushServiceProvider);
+    unawaited(push.requestPermission());
+    _pushSubs
+      ..add(push.opened.listen(_open))
+      ..add(push.foreground.listen(_onForegroundPush));
   }
 
   @override
   void dispose() {
     _lifecycle.dispose();
+    for (final s in _pushSubs) {
+      s.cancel();
+    }
     super.dispose();
+  }
+
+  void _refreshBadges() {
+    ref.read(sessionProvider.notifier).refreshBadge();
+    ref.invalidate(unreadNotificationsProvider);
+  }
+
+  void _open(PushMessage m) {
+    _refreshBadges();
+    final route = m.route;
+    if (route != null && mounted) GoRouter.of(context).push(route);
+  }
+
+  /// In the foreground the OS shows nothing, so show it in-app (§8.10).
+  void _onForegroundPush(PushMessage m) {
+    _refreshBadges();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(m.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+            if (m.body.isNotEmpty) Text(m.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+          ],
+        ),
+        action: m.route == null ? null : SnackBarAction(label: 'View', onPressed: () => _open(m)),
+      ));
   }
 
   @override

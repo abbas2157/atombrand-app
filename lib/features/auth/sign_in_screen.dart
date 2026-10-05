@@ -68,10 +68,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       title: 'Welcome back',
       subtitle: 'Sign in with the email or phone number linked to your brand.',
       footer: AuthFooterLink(
-        prompt: "Don't have an account?",
-        action: 'Sign up',
+        prompt: 'New to Atombrand?',
+        action: 'Become a partner',
         // Swap rather than stack, so Back from either returns to Welcome.
-        onPressed: () => context.pushReplacement('/sign-up'),
+        onPressed: () => context.pushReplacement('/apply'),
       ),
       children: [
         Form(

@@ -105,6 +105,13 @@ class CatalogueRepository {
   Future<bool> toggleFeatured(int id) async =>
       asBool((await _api.post('products/$id/feature')).map['brand_featured']);
 
+  /// Sets `brand_featured` to [featured]. The server only toggles, so this
+  /// checks the answer and toggles back if the product was already there
+  /// (e.g. starred from another device since the page loaded).
+  Future<void> setFeatured(int id, bool featured) async {
+    if (await toggleFeatured(id) != featured) await toggleFeatured(id);
+  }
+
   Future<void> deleteGalleryImage(int productId, int imageId) =>
       _api.delete('products/$productId/gallery/$imageId');
 

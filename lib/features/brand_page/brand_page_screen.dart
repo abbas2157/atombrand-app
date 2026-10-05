@@ -195,12 +195,19 @@ class _BrandPageScreenState extends ConsumerState<BrandPageScreen> {
           banner: _banner,
         ),
       );
-      // Featured is a star on each product: switch the differences.
+      // Featured is a flag on each product: set each one that changed. The
+      // page itself is already saved, so a failure here is reported, not thrown.
       final diff = featuredDiff(p.featured.map((f) => f.id).toList(), _featured.map((f) => f.id).toList());
       final catalogue = ref.read(catalogueRepositoryProvider);
-      for (final id in [...diff.add, ...diff.remove]) {
-        await catalogue.toggleFeatured(id);
+      var failed = 0;
+      for (final (id, on) in [for (final id in diff.add) (id, true), for (final id in diff.remove) (id, false)]) {
+        try {
+          await catalogue.setFeatured(id, on);
+        } on ApiException {
+          failed++;
+        }
       }
+      // Reload so the editor shows what the server actually has.
       final fresh = diff.add.isEmpty && diff.remove.isEmpty ? saved : await repo.page();
       if (!mounted) return;
       ref.read(sessionProvider.notifier).updateBrand(fresh.brand);
@@ -208,7 +215,12 @@ class _BrandPageScreenState extends ConsumerState<BrandPageScreen> {
         _page = fresh;
         _fill(fresh);
       });
-      showToast(context, 'Brand page saved. Buyers see it now.');
+      showToast(
+        context,
+        failed == 0
+            ? 'Brand page saved. Buyers see it now.'
+            : "Brand page saved, but ${plural(failed, 'featured product')} didn't update. Check them and save again.",
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

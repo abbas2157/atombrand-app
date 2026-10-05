@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/app_icons.dart';
 
 import '../../core/theme.dart';
@@ -19,8 +20,6 @@ class AuthScaffold extends StatelessWidget {
     required this.children,
     this.footer,
     this.bottom,
-    this.bottomDivider = false,
-    this.compactHeader = false,
     this.showBack = true,
     this.showLogo = false,
   });
@@ -38,12 +37,6 @@ class AuthScaffold extends StatelessWidget {
   /// Pinned below the scrolling content (and above the keyboard).
   final Widget? bottom;
 
-  /// Hairline above [bottom], for long forms that scroll under it.
-  final bool bottomDivider;
-
-  /// Puts the title next to the back button instead of below it, to give
-  /// long forms more room.
-  final bool compactHeader;
   final bool showBack;
 
   /// Centres the logo in the top bar, beside the back button.
@@ -52,26 +45,11 @@ class AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuthTheme(
-      child: Builder(builder: (context) {
-        final p = AppPalette.of(context);
-        final canPop = showBack && context.canPop();
-        final head = <Widget>[
-          if (compactHeader)
-            Row(
-              children: [
-                if (canPop) ...[const AuthBackButton(), const SizedBox(width: 14)],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (title != null) Text(title!, style: authTitleStyle(context)?.copyWith(fontSize: 22)),
-                      if (subtitle != null) Text(subtitle!, style: authSubtitleStyle(context)?.copyWith(fontSize: 13)),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          else ...[
+      child: Builder(
+        builder: (context) {
+          final p = AppPalette.of(context);
+          final canPop = showBack && context.canPop();
+          final head = <Widget>[
             SizedBox(
               height: 48,
               child: showLogo && canPop
@@ -93,71 +71,64 @@ class AuthScaffold extends StatelessWidget {
               const SizedBox(height: 20),
             ],
             if (title != null) Text(title!, style: authTitleStyle(context)),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
-              Text(subtitle!, style: authSubtitleStyle(context)),
-            ],
-          ],
-          const SizedBox(height: 24),
-        ];
+            if (subtitle != null) ...[const SizedBox(height: 8), Text(subtitle!, style: authSubtitleStyle(context))],
+            const SizedBox(height: 24),
+          ];
 
-        return Scaffold(
-          backgroundColor: p.bg,
-          body: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: CustomScrollView(
-                        slivers: [
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                            sliver: SliverFillRemaining(
-                              hasScrollBody: false,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  ...head,
-                                  ...children,
-                                  if (footer != null) ...[
-                                    const Spacer(),
-                                    const SizedBox(height: 16),
-                                    footer!,
+          return Scaffold(
+            backgroundColor: p.bg,
+            body: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: CustomScrollView(
+                          slivers: [
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                              sliver: SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    ...head,
+                                    ...children,
+                                    if (footer != null) ...[const Spacer(), const SizedBox(height: 16), footer!],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (bottom != null)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
-                        decoration: BoxDecoration(
-                          color: p.bg,
-                          border: bottomDivider ? Border(top: BorderSide(color: p.border)) : null,
+                          ],
                         ),
-                        child: bottom,
                       ),
-                  ],
+                      if (bottom != null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
+                          color: p.bg,
+                          child: bottom,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 }
 
-TextStyle? authTitleStyle(BuildContext context) => Theme.of(context)
-    .textTheme
-    .headlineSmall
-    ?.copyWith(fontSize: 28, height: 1.2, letterSpacing: -0.5, fontWeight: FontWeight.w700, color: AppPalette.of(context).text);
+TextStyle? authTitleStyle(BuildContext context) => Theme.of(context).textTheme.headlineSmall?.copyWith(
+  fontSize: 28,
+  height: 1.2,
+  letterSpacing: -0.5,
+  fontWeight: FontWeight.w700,
+  color: AppPalette.of(context).text,
+);
 
 TextStyle? authSubtitleStyle(BuildContext context) =>
     Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.47, color: AppPalette.of(context).muted);
@@ -205,9 +176,9 @@ class AuthTheme extends StatelessWidget {
 
     final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
     OutlineInputBorder border(Color c) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: c, width: 1.5),
-        );
+      borderRadius: BorderRadius.circular(radius),
+      borderSide: BorderSide(color: c, width: 1.5),
+    );
 
     final data = ThemeData(
       useMaterial3: true,
@@ -276,7 +247,9 @@ class AuthTheme extends StatelessWidget {
         ),
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? p.primary : Colors.transparent),
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? p.primary : Colors.transparent,
+        ),
         checkColor: WidgetStatePropertyAll(p.onPrimary),
         side: WidgetStateBorderSide.resolveWith(
           (s) => BorderSide(color: s.contains(WidgetState.error) ? p.danger : p.border, width: 1.5),
@@ -285,7 +258,10 @@ class AuthTheme extends StatelessWidget {
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: p.primary),
       dividerTheme: DividerThemeData(color: p.border, space: 1),
-      dialogTheme: DialogThemeData(backgroundColor: p.bg, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+      dialogTheme: DialogThemeData(
+        backgroundColor: p.bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
     );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -334,12 +310,8 @@ class BrandLogo extends StatelessWidget {
           SizedBox(width: height * 0.32),
           Text(
             'Atombrand',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontSize: height * 0.62,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                  color: p.text,
-                ),
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontSize: height * 0.62, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: p.text),
           ),
         ],
       );
@@ -361,11 +333,18 @@ class BrandLogo extends StatelessWidget {
               color: p.text,
             ),
           ),
-          Text('Connect. Sell. Grow.', style: t.bodyLarge?.copyWith(fontSize: height * 0.1, color: p.muted)),
+          Text(
+            'Connect. Sell. Grow.',
+            style: t.bodyLarge?.copyWith(fontSize: height * 0.1, color: p.muted),
+          ),
         ],
       );
     }
-    return Semantics(label: 'Atombrand', image: true, child: ExcludeSemantics(child: logo));
+    return Semantics(
+      label: 'Atombrand',
+      image: true,
+      child: ExcludeSemantics(child: logo),
+    );
   }
 }
 
@@ -517,7 +496,9 @@ class AuthBanner extends StatelessWidget {
         children: [
           Icon(icon, color: p.danger, size: 20),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: p.text, height: 1.4))),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: p.text, height: 1.4)),
+          ),
         ],
       ),
     );
@@ -549,5 +530,4 @@ String? emailValidator(String? v, {bool required = true}) {
   return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s) ? null : 'Enter a valid email, like name@example.com.';
 }
 
-String? passwordValidator(String? v) =>
-    (v == null || v.length < 8) ? 'Use at least 8 characters.' : null;
+String? passwordValidator(String? v) => (v == null || v.length < 8) ? 'Use at least 8 characters.' : null;

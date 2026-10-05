@@ -16,23 +16,20 @@ import 'auth_scaffold.dart';
 /// Google, Apple and Facebook as three equal icon buttons (DESIGN.md §3.4).
 /// Only Google is wired to the backend; Apple and Facebook say so when tapped.
 class SocialLoginRow extends StatelessWidget {
-  const SocialLoginRow({super.key, this.verb = 'Continue'});
-
-  /// "Continue" on Sign in, "Sign up" on Sign up; used in the button labels.
-  final String verb;
+  const SocialLoginRow({super.key});
 
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     void notYet(String provider) =>
-        showToast(context, "$verb with $provider isn't available yet. Use your email, or Google.");
+        showToast(context, "Continue with $provider isn't available yet. Use your email, or Google.");
     return Row(
       children: [
-        Expanded(child: GoogleSignInButton(semanticLabel: '$verb with Google')),
+        Expanded(child: GoogleSignInButton(semanticLabel: 'Continue with Google')),
         const SizedBox(width: 12),
         Expanded(
           child: _SocialButton(
-            label: '$verb with Apple',
+            label: 'Continue with Apple',
             onPressed: () => notYet('Apple'),
             child: Icon(AppIcons.apple, size: 24, color: p.text),
           ),
@@ -40,7 +37,7 @@ class SocialLoginRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _SocialButton(
-            label: '$verb with Facebook',
+            label: 'Continue with Facebook',
             onPressed: () => notYet('Facebook'),
             child: const Icon(AppIcons.facebook, size: 24, color: Color(0xFF1877F2)),
           ),

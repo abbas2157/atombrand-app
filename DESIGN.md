@@ -12,12 +12,12 @@ The identity comes from the **Atombrand** logo: a charcoal **A** and a red **B**
 | Asset | File | Use |
 |---|---|---|
 | Mark (AB monogram) | `assets/brand/mark.png` | Top bar of every auth screen (26 px high) |
-| Lockup (mark + wordmark + tagline) | built in code by `BrandLogo.lockup()` | Splash (150 px high). `assets/brand/lockup.png` is no longer used: its wordmark still reads "AtomBrands". |
+| Lockup (mark + wordmark + tagline) | built in code by `BrandLogo.lockup()` | Splash (150 px high). `assets/brand/lockup.png` is no longer used or bundled: its wordmark still reads "AtomBrands". |
 
 - Both are transparent PNGs cropped from the master logo. The A and the wordmark are charcoal, so on dark backgrounds the logo sits on a **white rounded tile**; `BrandLogo` does this automatically in dark mode.
 - In code, use `BrandLogo.mark()` / `.inline()` (mark + "Atombrand" in the UI font) / `.lockup()` (`auth_scaffold.dart`), never `Image.asset` directly. The one exception is the mark on the phone in `ProductsIllustration`.
 - Don't recolour, stretch or add effects to the logo.
-- **Still to do:** the Android/iOS launcher icon and native launch screen are still Flutter defaults. They should use the mark on white.
+- **Launcher icon:** the mark on white (adaptive on Android), generated from `assets/brand/mark.png`; see [docs/RELEASE.md](docs/RELEASE.md) §2. **Still to do:** the native launch screen is plain white.
 
 ## 2. Tokens (`lib/core/theme.dart`)
 
@@ -45,7 +45,7 @@ Every screen uses `AppPalette` (indigo primary, orange accent, navy, soft neutra
 | `violet` (purple) | `#6B3FA0` / `#F1E8FB` | Quoted |
 | `indigo` | `#4136C9` / `#EEEDFD` | Icon tiles only |
 
-Each tone has its own dark pair in `AppPalette.dark`. `StatusBadge` maps statuses to tones; payment plans use an outlined neutral pill ("3 mo", "Paid in full"). Chips never wrap or truncate.
+Each tone has its own dark pair in `AppPalette.dark`. `StatusBadge` maps statuses to tones; payment plans use an outlined neutral pill ("3 mo plan"); "Paid in full" uses `positive`. Chips never wrap or truncate.
 
 ### 2.3 Type
 **Inter** for signed-in screens (Google Fonts, pinned to `google_fonts` 8), **Poppins** for the auth screens (§3.1). Prices and counts use tabular figures.
@@ -108,19 +108,18 @@ All text pairs pass WCAG AA (4.5:1) in both modes.
 ### 3.3 Layout (`AuthScaffold`)
 Top: a 48 px back button (bordered, radius 14), or `BrandLogo.inline` when there's nowhere to go back to. Then an optional 56 px icon tile, title, subtitle, form, and an optional footer pushed to the bottom.
 
-**Keyboard rule:** the primary action must stay visible while typing. Screens whose action ends the form (Forgot password, Enter code, New password, Sign up) put it in `bottom:`, which is pinned and rides above the keyboard. Sign in keeps it in the flow and uses `scrollPadding` on its fields to scroll the button into view. Sign up collapses its pinned panel to just the button while the keyboard is open.
+**Keyboard rule:** the primary action must stay visible while typing. Screens whose action ends the form (Forgot password, Enter code, New password) put it in `bottom:`, which is pinned and rides above the keyboard. Sign in keeps it in the flow and uses `scrollPadding` on its fields to scroll the button into view.
 
 | Screen | Route | Notes |
 |---|---|---|
-| Welcome | `/welcome` | `BrandLogo.inline`, `ProductsIllustration` (AB mark on the phone), partner headline and pitch, three stat tiles (`PartnerContent.stats`), **Sign In** / **Create Account**, "By continuing, you agree to our *Terms & Privacy Policy*" (`PartnerContent.termsUrl`). There is no guest mode. A signed-out notice (e.g. account blocked) appears above the buttons |
-| Sign in | `/sign-in` | Email or phone, password, *Forgot password?*, Sign In, social row, "Don't have an account? Sign up" |
-| Sign up | `/sign-up` | Compact header. Name, email, phone (optional), password + strength, confirm (live match). Pinned: terms checkbox (its "Terms & Privacy Policy" opens `termsUrl`), Create Account, "Already have an account? Sign in". **UI only:** brands can't self-register (BRAND_APP.md §2), so a valid form opens a dialog that leads to `/apply` |
+| Welcome | `/welcome` | `BrandLogo.inline`, `ProductsIllustration` (AB mark on the phone), partner headline and pitch, three stat tiles (`PartnerContent.stats`), **Sign In** / **Become a partner** (opens `/apply`), "By continuing, you agree to our *Terms & Privacy Policy*" (`PartnerContent.termsUrl`). There is no guest mode. A signed-out notice (e.g. account blocked) appears above the buttons |
+| Sign in | `/sign-in` | Email or phone, password, *Forgot password?*, Sign In, social row, "New to Atombrand? Become a partner" (swaps to `/apply`) |
 | Forgot password | `/forgot` | Email or phone + channel segments, pinned *Send Reset Code*. On success the screen switches to `InboxIllustration` + "Check your messages" with *Enter Code* / *Back to Sign In* / *send again* |
 | Enter code | `/verify` | 6 boxes, "Didn't get a code? ⏱ Resend in 0:59", pinned *Verify* |
 | New password | `/new-password` | Password + strength, confirm with live match, pinned *Save password* |
 | Become a partner | `/apply` | See below |
 
-Sign in ↔ Sign up swap with `pushReplacement`, so Back from either returns to Welcome.
+There is no sign-up screen: brands can't self-register (BRAND_APP.md §1.4), so every "new account" entry point opens the partner application. Sign in → Become a partner uses `pushReplacement`, so Back returns to Welcome.
 
 ### 3.3.1 Become a partner and Application received
 - **Become a partner:** an eligibility card comes first (`surface` fill, radius 18) with *Who can apply* pills and *What we look for* green checklist lines. The form follows in three titled sections:
@@ -132,7 +131,7 @@ Sign in ↔ Sign up swap with `pushReplacement`, so Back from either returns to 
 - **Application received:** a large green tick, "We'll be in touch within 2 business days", then `PartnerSteps` with step 1 ticked: *Application sent → Review → Your login arrives*.
 
 ### 3.4 Sign in with Google
-- **Button:** the first icon in `SocialLoginRow` (Sign in and Sign up), with the four-colour G drawn by `GoogleLogo` (no image asset) and the semantic label "Continue with Google".
+- **Button:** the first icon in `SocialLoginRow` (Sign in), with the four-colour G drawn by `GoogleLogo` (no image asset) and the semantic label "Continue with Google".
 - **Flow:** Google account picker → `POST auth/google {id_token, device_name, fcm_token?}` → same `{token, user, brand}` body as `auth/login`. The server must verify the ID token's audience (the Web client ID) and match a **brand** user by email.
 - **Messages:**
 

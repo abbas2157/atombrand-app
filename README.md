@@ -37,6 +37,7 @@ State is Riverpod 3, routing is go_router with an auth redirect (`core/router.da
 
 ## Not done yet
 
-- **Push (F12):** `core/push.dart` is a stub. Add `firebase_core` + `firebase_messaging` once the Firebase project
-  files exist; registration with `POST fcm-token` is already wired into sign-in.
-- **App icon / splash artwork:** still the Flutter defaults.
+- **Push (F12):** built on `firebase_messaging`, but off until the Firebase config files are added
+  (`google-services.json`, `GoogleService-Info.plist`). See [docs/RELEASE.md](docs/RELEASE.md) §3.
+- **Release signing:** needs `android/key.properties` and the upload keystore ([docs/RELEASE.md](docs/RELEASE.md) §1).
+- **Splash artwork:** the native launch screen is still plain white. The launcher icon is done.
