@@ -148,11 +148,12 @@ Splash ─┬─ (token valid) ──────────────► Mai
                            └─ Become a partner ─► Application form ─► Verify phone ─► Submitted
 
 Main (bottom tabs)
- ├─ Home        Dashboard
- ├─ Orders      Retail | Instalment  ─► Order detail ─► Status sheets (Deliver / Cancel)
+ ├─ Home        Dashboard ─► Orders (full screen, no tab): Retail | Instalment ─► Order detail ─► Status sheets (Deliver / Cancel)
  ├─ Bulk        Tabs by status (badge) ─► Request dossier ─► Update status sheet
  ├─ Catalogue   Products | Inventory ─► Product detail ─► Product form
  └─ More        Brand page editor · Profile · Change password · Support · Sign out
+
+Orders has no bottom tab (since 2026-10-05): the dashboard's order stats, "See all" and the overdue card open it, pre-filtered where relevant. Order detail also opens from notifications, pushes and bulk dossiers.
 
 App bar (every tab): bell icon with `me.badges.unread_notifications` ─► Notifications ─► tap opens the order / bulk request / product
 ```

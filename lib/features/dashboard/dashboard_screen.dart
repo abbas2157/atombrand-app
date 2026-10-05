@@ -173,7 +173,7 @@ class _DashboardBody extends StatelessWidget {
           tone: p.info,
           message: plural(d.ordersVerification!, 'Order waiting for verification', 'Orders waiting for verification'),
           count: d.ordersVerification!,
-          onTap: () => context.go('/orders?status=Varification'),
+          onTap: () => context.push('/orders?status=Varification'),
         ),
       if (newBulkLeads > 0)
         AttentionItem(
@@ -209,7 +209,7 @@ class _DashboardBody extends StatelessWidget {
           value: money(current.revenue),
           label: 'Revenue',
           trend: current.revenueChangePct == null ? null : TrendChip(change: current.revenueChangePct!, suffix: '%'),
-          onTap: () => context.go('/orders'),
+          onTap: () => context.push('/orders'),
         )
       else
         KpiCard(
@@ -217,7 +217,7 @@ class _DashboardBody extends StatelessWidget {
           tone: p.indigo,
           value: money(d.ordersValue),
           label: 'Order value',
-          onTap: () => context.go('/orders'),
+          onTap: () => context.push('/orders'),
         ),
       if (current != null)
         KpiCard(
@@ -226,7 +226,7 @@ class _DashboardBody extends StatelessWidget {
           value: count(current.orders),
           label: 'Orders',
           trend: current.ordersChange == null ? null : TrendChip(change: current.ordersChange!),
-          onTap: () => context.go('/orders'),
+          onTap: () => context.push('/orders'),
         )
       else
         KpiCard(
@@ -234,7 +234,7 @@ class _DashboardBody extends StatelessWidget {
           tone: p.positive,
           value: count(d.ordersLast30),
           label: 'Orders, 30 days',
-          onTap: () => context.go('/orders'),
+          onTap: () => context.push('/orders'),
         ),
       if (d.ordersPending != null)
         KpiCard(
@@ -242,7 +242,7 @@ class _DashboardBody extends StatelessWidget {
           tone: p.neutral,
           value: count(d.ordersPending),
           label: 'Pending orders',
-          onTap: () => context.go('/orders?status=Pending'),
+          onTap: () => context.push('/orders?status=Pending'),
         )
       else
         KpiCard(
@@ -291,7 +291,7 @@ class _DashboardBody extends StatelessWidget {
           children: [
             Expanded(child: Text('Latest orders', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16))),
             if (d.latestOrders.isNotEmpty)
-              TextButton(onPressed: () => context.go('/orders'), child: const Text('See all')),
+              TextButton(onPressed: () => context.push('/orders'), child: const Text('See all')),
           ],
         ),
         const SizedBox(height: 4),
@@ -315,7 +315,7 @@ class _DashboardBody extends StatelessWidget {
         ],
         if (d.recovery != null) ...[
           gap,
-          RecoveryCard(recovery: d.recovery!, onOverdueTap: () => context.go('/orders?type=instalment')),
+          RecoveryCard(recovery: d.recovery!, onOverdueTap: () => context.push('/orders?type=instalment')),
         ],
       ],
     );

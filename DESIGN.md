@@ -165,6 +165,8 @@ Top to bottom:
 The API fields behind 2, 3 (trends), 4 (verification), 5 and 8 are proposed in BRAND_APP.md §8.3.
 
 ### 4.3 Orders (`orders_screen.dart`, `order_tile.dart`)
+Full screen pushed from the dashboard (back arrow, no bottom nav); there is no Orders tab. The bottom nav is Home · Bulk · Catalogue · More.
+
 Reference mockups: the *AtomShop Orders List* design canvas. Goal: find an order fast, see what needs action, and open it.
 
 1. **Type switch** (Retail | Instalment): full width, 48 px. The active side is `primarySoft2` with a tick. Counts show when the API sends `type_counts`.

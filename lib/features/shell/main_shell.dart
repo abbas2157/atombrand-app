@@ -22,7 +22,7 @@ class ShellNavHidden extends Notifier<bool> {
   }
 }
 
-/// Bottom tabs: Home · Orders · Bulk · Catalogue · More (§3.1).
+/// Bottom tabs: Home · Bulk · Catalogue · More (§3.1). Orders opens from Home.
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.shell});
 
@@ -104,11 +104,6 @@ class _MainShellState extends ConsumerState<MainShell> {
                   icon: Icon(AppIcons.home),
                   selectedIcon: Icon(AppIcons.homeFill),
                   label: 'Home',
-                ),
-                const NavigationDestination(
-                  icon: Icon(AppIcons.orders),
-                  selectedIcon: Icon(AppIcons.ordersFill),
-                  label: 'Orders',
                 ),
                 NavigationDestination(
                   icon: Badge(

@@ -14,7 +14,6 @@ abstract final class AppIcons {
   static const IconData home = LucideIcons.house;
   static const IconData homeFill = LucideIcons.house500;
   static const IconData orders = LucideIcons.receiptText;
-  static const IconData ordersFill = LucideIcons.receiptText500;
   static const IconData bulk = LucideIcons.megaphone;
   static const IconData bulkFill = LucideIcons.megaphone500;
   static const IconData catalogue = LucideIcons.archive;

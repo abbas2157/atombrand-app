@@ -84,15 +84,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: '/home', builder: (_, _) => const DashboardScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/orders',
-              builder: (_, state) => OrdersScreen(
-                initialType: state.uri.queryParameters['type'],
-                initialStatus: state.uri.queryParameters['status'],
-              ),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
             GoRoute(path: '/bulk', builder: (_, _) => const BulkScreen()),
           ]),
           StatefulShellBranch(routes: [
@@ -108,6 +99,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // Full-screen pages pushed over the tabs.
+      // Orders has no tab; the dashboard opens it, optionally filtered.
+      GoRoute(
+        parentNavigatorKey: _rootKey,
+        path: '/orders',
+        builder: (_, state) => OrdersScreen(
+          initialType: state.uri.queryParameters['type'],
+          initialStatus: state.uri.queryParameters['status'],
+        ),
+      ),
       GoRoute(
         parentNavigatorKey: _rootKey,
         path: '/orders/:type/:uuid',
