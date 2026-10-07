@@ -83,13 +83,6 @@ class MoreScreen extends ConsumerWidget {
                 onTap: () => context.push('/profile'),
               ),
               _Row(icon: AppIcons.lock, title: 'Change password', onTap: () => context.push('/change-password')),
-              const _Row(
-                icon: AppIcons.bank,
-                title: 'Bank & payouts',
-                subtitle: 'Where AtomShop sends your payments',
-                soon: true,
-              ),
-              const _Row(icon: AppIcons.users, title: 'Team members', subtitle: 'Give staff access', soon: true),
             ]),
             const _SectionLabel('Help & support'),
             _Group([
@@ -105,6 +98,12 @@ class MoreScreen extends ConsumerWidget {
                 external: true,
                 onTap: () => openExternal(context, PartnerContent.termsUrl),
               ),
+              _Row(
+                icon: AppIcons.shieldCheck,
+                title: 'Privacy policy',
+                external: true,
+                onTap: () => openExternal(context, PartnerContent.privacyUrl),
+              ),
             ]),
             const SizedBox(height: 20),
             _Group([
@@ -113,6 +112,12 @@ class MoreScreen extends ConsumerWidget {
                 title: 'Sign out',
                 danger: true,
                 onTap: () => _confirmSignOut(context, ref, s),
+              ),
+              _Row(
+                icon: AppIcons.delete,
+                title: 'Delete account',
+                danger: true,
+                onTap: () => context.push('/delete-account'),
               ),
             ]),
             const SizedBox(height: 14),
@@ -551,7 +556,6 @@ class _Row extends StatelessWidget {
     this.subtitle,
     this.onTap,
     this.external = false,
-    this.soon = false,
     this.danger = false,
   });
 
@@ -562,7 +566,6 @@ class _Row extends StatelessWidget {
 
   /// Opens outside the app: an external-link icon instead of a chevron.
   final bool external;
-  final bool soon;
   final bool danger;
 
   @override
@@ -570,23 +573,15 @@ class _Row extends StatelessWidget {
     final pal = AppPalette.of(context);
     final t = Theme.of(context).textTheme;
     final color = danger ? pal.danger : pal.primary;
-    final enabled = onTap != null && !soon;
     final Widget? trailing = danger
         ? null
-        : soon
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: pal.neutral.bg, borderRadius: BorderRadius.circular(11)),
-                child: Text('Soon', style: t.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: pal.neutral.fg)),
-              )
-            : Icon(external ? AppIcons.externalLink : AppIcons.chevronRight, size: external ? 18 : 22, color: pal.muted);
+        : Icon(external ? AppIcons.externalLink : AppIcons.chevronRight, size: external ? 18 : 22, color: pal.muted);
     return Semantics(
-      button: enabled,
-      enabled: enabled,
-      label: [title, ?subtitle, if (external) 'opens outside the app', if (soon) 'coming soon'].join(', '),
+      button: true,
+      label: [title, ?subtitle, if (external) 'opens outside the app'].join(', '),
       excludeSemantics: true,
       child: InkWell(
-        onTap: enabled ? onTap : null,
+        onTap: onTap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 60),
           child: Padding(
@@ -594,21 +589,18 @@ class _Row extends StatelessWidget {
             child: Row(
               mainAxisAlignment: danger ? MainAxisAlignment.center : MainAxisAlignment.start,
               children: [
-                Opacity(opacity: soon ? 0.5 : 1, child: Icon(icon, size: 24, color: color)),
+                Icon(icon, size: 24, color: color),
                 SizedBox(width: danger ? 10 : 20),
                 if (danger)
                   Text(title, style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: color))
                 else
                   Expanded(
-                    child: Opacity(
-                      opacity: soon ? 0.55 : 1,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(title, style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                          if (subtitle != null) Text(subtitle!, style: t.bodySmall?.copyWith(color: pal.muted)),
-                        ],
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        if (subtitle != null) Text(subtitle!, style: t.bodySmall?.copyWith(color: pal.muted)),
+                      ],
                     ),
                   ),
                 if (trailing != null) ...[const SizedBox(width: 8), trailing],

@@ -6,6 +6,8 @@ import '../../core/app_icons.dart';
 import '../../core/api_client.dart';
 import '../../core/formatters.dart';
 import '../../core/session.dart';
+import '../../core/theme.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/brand_repository.dart';
 import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
@@ -244,6 +246,118 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               BusyButton(label: 'Change password', busy: _saving, onPressed: _save),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// F13: delete the account (App Store 5.1.1(v), Google Play account deletion
+/// policy). The password confirms it's the owner; then the server deletes the
+/// login and this device signs out.
+class DeleteAccountScreen extends ConsumerStatefulWidget {
+  const DeleteAccountScreen({super.key});
+
+  @override
+  ConsumerState<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
+}
+
+class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
+  final _form = GlobalKey<FormState>();
+  final _password = TextEditingController();
+  bool _busy = false;
+  bool _obscure = true;
+  ApiException? _error;
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _delete() async {
+    if (!_form.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    final brand = ref.read(signedInProvider)?.brand.title ?? 'your brand';
+    final go = await confirm(
+      context,
+      title: 'Delete your account?',
+      message: "You'll be signed out and can't sign in to $brand again. This can't be undone.",
+      confirmLabel: 'Delete account',
+      destructive: true,
+    );
+    if (!go || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final message = await ref.read(authRepositoryProvider).deleteAccount(_password.text);
+      // The router leaves this screen once signed out.
+      await ref
+          .read(sessionProvider.notifier)
+          .accountDeleted(message.isNotEmpty ? message : 'Your account has been deleted.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e;
+        _busy = false;
+      });
+      if (e.fieldErrors.isEmpty) showApiError(context, e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = AppPalette.of(context);
+    final t = Theme.of(context).textTheme;
+    final body = t.bodyMedium?.copyWith(height: 1.5);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Delete account')),
+      body: Form(
+        key: _form,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Delete your Atombrand account', style: t.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            Text(
+              'This permanently deletes your brand login. You and anyone using it will be signed out on every '
+              "device, and order and bulk-request alerts stop. It can't be undone.",
+              style: body,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Your products are taken off AtomShop.pk. Records of orders, payouts and invoices are kept only '
+              'as long as the law requires, then deleted.',
+              style: body?.copyWith(color: pal.muted),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'If you have orders still in progress or payments due, AtomShop will tell you and settle them first.',
+              style: body?.copyWith(color: pal.muted),
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _password,
+              obscureText: _obscure,
+              autofillHints: const [AutofillHints.password],
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _delete(),
+              decoration: InputDecoration(
+                labelText: 'Enter your password to confirm',
+                errorText: _error?.fieldError('password'),
+                suffixIcon: IconButton(
+                  tooltip: _obscure ? 'Show password' : 'Hide password',
+                  icon: Icon(_obscure ? AppIcons.eye : AppIcons.eyeOff),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              validator: (v) => requiredValidator(v, 'Password'),
+            ),
+            const SizedBox(height: 24),
+            BusyButton(label: 'Delete my account', busy: _busy, danger: true, onPressed: _delete),
+          ],
         ),
       ),
     );

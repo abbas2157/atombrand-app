@@ -138,6 +138,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(parentNavigatorKey: _rootKey, path: '/brand-page', builder: (_, _) => const BrandPageScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/change-password', builder: (_, _) => const ChangePasswordScreen()),
+      GoRoute(parentNavigatorKey: _rootKey, path: '/delete-account', builder: (_, _) => const DeleteAccountScreen()),
     ],
   );
 });

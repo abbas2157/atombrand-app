@@ -93,6 +93,13 @@ class AuthRepository {
   Future<void> registerFcmToken(String token) => _api.post('fcm-token', data: {'fcm_token': token});
 
   Future<void> logout() => _api.post('auth/logout');
+
+  /// F13: permanently deletes this brand login and revokes every token
+  /// (BRAND_APP.md §8.2). The password proves it's the owner holding the phone.
+  Future<String> deleteAccount(String password) async {
+    final res = await _api.post('me/delete', data: {'password': password});
+    return res.message;
+  }
 }
 
 final authRepositoryProvider = Provider((ref) => AuthRepository(ref.watch(apiClientProvider)));

@@ -1,7 +1,8 @@
 # Release setup: signing, icons, push
 
 > One-time setup before the first Play Store / App Store build. Without it the app still builds and runs: release builds are signed with the debug key, and push is off.
-> Last updated: 2026-10-05
+> For the store consoles (privacy, data safety, review account, listing) see [STORE_SUBMISSION.md](STORE_SUBMISSION.md).
+> Last updated: 2026-10-07
 
 ## 1. Android release signing
 

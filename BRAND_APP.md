@@ -71,6 +71,7 @@ Brand partners today must open the web portal on a laptop to see new orders and 
 | F10 | Brand page editor | `page`, `page/update` | Logo, banner, story, contacts, up to 2 promo slides |
 | F11 | Profile & password | `profile/*` | Changing password signs out other devices |
 | F12 | Notifications: inbox + push for new orders, new bulk requests, product review decisions | `fcm-token`, `notifications/*` | See §8.10 |
+| F13 | Delete account | `me/delete` | Required by App Store 5.1.1(v) and Google Play; password-confirmed |
 
 ### 1.6 Success metrics
 
@@ -151,7 +152,7 @@ Main (bottom tabs)
  ├─ Home        Dashboard ─► Orders (full screen, no tab): Retail | Instalment ─► Order detail ─► Status sheets (Deliver / Cancel)
  ├─ Bulk        Tabs by status (badge) ─► Request dossier ─► Update status sheet
  ├─ Catalogue   Products | Inventory ─► Product detail ─► Product form
- └─ More        Brand page editor · Profile · Change password · Support · Sign out
+ └─ More        Brand page editor · Profile · Change password · Support · Privacy policy · Sign out · Delete account
 
 Orders has no bottom tab (since 2026-10-05): the dashboard's order stats, "See all" and the overdue card open it, pre-filtered where relevant. Order detail also opens from notifications, pushes and bulk dossiers.
 
@@ -478,6 +479,9 @@ App bootstrap data.
 | 🔒 | `GET me` | n/a | `{ user, brand, badges: { new_bulk_requests, unread_notifications } }` |
 | 🔒 | `POST fcm-token` | `fcm_token` | `[]` |
 | 🔒 | `POST auth/logout` | n/a | revokes the current token |
+| 🔒 | `POST me/delete` | `password` | **Needed before store release.** Deletes the brand login (see below) |
+
+`POST me/delete` (same contract as the AtomPay app's): `422` with `data.password` on a wrong password (§7.1 envelope). On success, revoke **every** token for the user, unlink the brand login, unpublish the brand's products, delete personal data (name, email, phone, FCM tokens), and keep order, payout and invoice records only as long as the law requires. If it can't go ahead yet (orders in progress, money owed), answer `409` with a `message` saying why; the app shows it. Returns a `message` the app shows on the Welcome screen. Apple and Google both check this works with the review account, so it must be live before submission.
 
 ### 8.3 Dashboard: 🔒 `GET dashboard`
 ```json
@@ -788,6 +792,7 @@ Covers: envelope 401, email + any-format phone login, refusal of wrong password 
 - [ ] FCM token registered after sign-in and on refresh.
 - [ ] Rs. / date formatting per §2.6 everywhere.
 - [ ] Works at 360 px width and 130% font scale.
+- [ ] Store compliance: [docs/STORE_SUBMISSION.md](docs/STORE_SUBMISSION.md) §2 blockers done, §6 checklist ticked.
 
 ---
 
@@ -797,5 +802,5 @@ Covers: envelope 401, email + any-format phone login, refusal of wrong password 
 2. **More events:** order status changed by AtomShop/a seller, low stock, a bulk request left unanswered for 24 h.
 3. **Review feedback:** when admin rejects or holds a product, there is no reason field to show the brand.
 4. **Analytics:** sales by product over time, conversion of bulk requests (Won / total).
-5. **Sign in with Apple:** not planned; accounts are AtomShop-provisioned. Google sign-in for existing accounts is built in the app and waits on `POST auth/google` ([docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)).
+5. **Sign in with Apple:** not planned; accounts are AtomShop-provisioned. Google sign-in for existing accounts is built in the app and waits on `POST auth/google` ([docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)). It is **Android only**: on iOS, App Store guideline 4.8 would also require Sign in with Apple. Add both together if Google is wanted on iOS.
 6. **Changing phone/email** does not currently require a code to the new contact. Consider adding before launch if partners share devices.

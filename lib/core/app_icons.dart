@@ -7,8 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// directly, so the whole app keeps one style and can change in one place.
 ///
 /// Lucide has no filled icons, so the active bottom tab uses the bolder 500
-/// weight. Lucide also has no brand logos; the Facebook and Apple sign-in
-/// buttons keep their real marks from Material.
+/// weight.
 abstract final class AppIcons {
   // Bottom navigation: regular when inactive, bold (500) when active.
   static const IconData home = LucideIcons.house;
@@ -116,9 +115,6 @@ abstract final class AppIcons {
   static const IconData globe = LucideIcons.globe;
   static const IconData mobile = LucideIcons.smartphone;
 
-  // Solid marks Lucide doesn't draw: a filled star for "featured", and the
-  // real brand logos on the social sign-in buttons.
+  // A solid mark Lucide doesn't draw: a filled star for "featured".
   static const IconData starFill = Icons.star_rounded;
-  static const IconData facebook = Icons.facebook;
-  static const IconData apple = Icons.apple;
 }

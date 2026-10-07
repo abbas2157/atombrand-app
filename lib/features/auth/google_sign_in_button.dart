@@ -1,6 +1,6 @@
 import 'dart:math' as math;
-import '../../core/app_icons.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,38 +13,20 @@ import '../../data/repositories/auth_repository.dart';
 import '../../widgets/feedback.dart';
 import 'auth_scaffold.dart';
 
-/// Google, Apple and Facebook as three equal icon buttons (DESIGN.md §3.4).
-/// Only Google is wired to the backend; Apple and Facebook say so when tapped.
+/// "Continue with Google" under the password form (DESIGN.md §3.4).
+///
+/// Only shown where it can work and pass store review: Android builds that
+/// have a Google client ID. Not on iOS, where App Store guideline 4.8 would
+/// also require Sign in with Apple, which the backend doesn't support
+/// (BRAND_APP.md §11). No placeholder buttons for other providers: both
+/// stores reject sign-in options that don't work.
 class SocialLoginRow extends StatelessWidget {
   const SocialLoginRow({super.key});
 
+  static bool get available => GoogleAuth.isConfigured && defaultTargetPlatform == TargetPlatform.android;
+
   @override
-  Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
-    void notYet(String provider) =>
-        showToast(context, "Continue with $provider isn't available yet. Use your email, or Google.");
-    return Row(
-      children: [
-        Expanded(child: GoogleSignInButton(semanticLabel: 'Continue with Google')),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SocialButton(
-            label: 'Continue with Apple',
-            onPressed: () => notYet('Apple'),
-            child: Icon(AppIcons.apple, size: 24, color: p.text),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SocialButton(
-            label: 'Continue with Facebook',
-            onPressed: () => notYet('Facebook'),
-            child: const Icon(AppIcons.facebook, size: 24, color: Color(0xFF1877F2)),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => const GoogleSignInButton();
 }
 
 class _SocialButton extends StatelessWidget {
@@ -66,7 +48,7 @@ class _SocialButton extends StatelessWidget {
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(AuthTheme.radius), boxShadow: p.fieldShadow),
           child: OutlinedButton(
             onPressed: onPressed,
-            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52), padding: EdgeInsets.zero),
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), padding: EdgeInsets.zero),
             child: child,
           ),
         ),
@@ -123,7 +105,10 @@ class _GoogleSignInButtonState extends ConsumerState<GoogleSignInButton> {
       onPressed: _busy ? null : _signIn,
       child: _busy
           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5))
-          : const GoogleLogo(size: 20),
+          : const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [GoogleLogo(size: 20), SizedBox(width: 10), Text('Continue with Google')],
+            ),
     );
   }
 }
