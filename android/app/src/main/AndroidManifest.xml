@@ -6,8 +6,10 @@
     <!-- No ads or analytics: keep any library from adding the advertising ID,
          so the Play Console "Advertising ID: no" declaration stays true. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
+    <!-- v2 quick unlock with fingerprint or face (local_auth). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
-        android:label="Atombrand"
+        android:label="Brand Partner"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
