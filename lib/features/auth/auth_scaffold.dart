@@ -221,28 +221,6 @@ class AuthIconBadge extends StatelessWidget {
   }
 }
 
-/// "or" between password sign-in and Google.
-class OrDivider extends StatelessWidget {
-  const OrDivider({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Row(
-        children: [
-          const Expanded(child: Divider()),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text('or', style: Theme.of(context).textTheme.bodySmall),
-          ),
-          const Expanded(child: Divider()),
-        ],
-      ),
-    );
-  }
-}
-
 /// "New to AtomShop? Become a partner".
 class PartnerLink extends StatelessWidget {
   const PartnerLink({super.key});

@@ -1,4 +1,4 @@
-package pk.atomshop.atombrand_app
+package com.ecommerce.atombrand
 
 import io.flutter.embedding.android.FlutterActivity
 

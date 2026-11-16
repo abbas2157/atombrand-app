@@ -9,7 +9,6 @@ import '../../data/repositories/auth_repository.dart';
 import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
 import 'auth_scaffold.dart';
-import 'google_sign_in_button.dart';
 
 /// F1: email or phone + password. No code at login (§6.1).
 class SignInScreen extends ConsumerStatefulWidget {
@@ -110,8 +109,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ),
                 const SizedBox(height: 8),
                 BusyButton(label: 'Sign in', busy: _busy, onPressed: _submit),
-                const OrDivider(),
-                const GoogleSignInButton(),
               ],
             ),
           ),

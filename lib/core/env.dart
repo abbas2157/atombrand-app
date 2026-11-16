@@ -10,10 +10,6 @@ class Env {
     defaultValue: 'https://atomshop.pk/api/brand-app',
   );
 
-  /// OAuth **Web** client ID from Google Cloud. Google returns the ID token
-  /// for this audience, and the server verifies it. Empty = Google sign-in off.
-  static const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
-
   /// Label stored against the Sanctum token (`device_name`).
   static const deviceName = String.fromEnvironment(
     'DEVICE_NAME',

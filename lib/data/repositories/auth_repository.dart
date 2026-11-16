@@ -29,16 +29,6 @@ class AuthRepository {
     return AuthSession.fromJson(res.map);
   }
 
-  /// Signs in the brand account whose email matches the Google ID token.
-  Future<AuthSession> loginWithGoogle(String idToken, {String? fcmToken}) async {
-    final res = await _api.post('auth/google', data: {
-      'id_token': idToken,
-      'device_name': Env.deviceName,
-      'fcm_token': ?fcmToken,
-    });
-    return AuthSession.fromJson(res.map);
-  }
-
   /// Answers the same whether or not the account exists (§6.2).
   Future<VerificationChallenge> forgotPassword(String login, {String? channel}) async {
     final res = await _api.post('auth/password/forgot', data: {

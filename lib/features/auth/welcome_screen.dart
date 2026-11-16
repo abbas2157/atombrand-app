@@ -7,7 +7,6 @@ import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/feedback.dart';
 import 'auth_scaffold.dart';
-import 'google_sign_in_button.dart';
 import 'partner_content.dart';
 import 'partner_widgets.dart';
 
@@ -108,7 +107,7 @@ class WelcomeScreen extends ConsumerWidget {
   }
 }
 
-/// White panel pinned to the bottom: Sign in, Google, Become a partner.
+/// White panel pinned to the bottom: Sign in, Become a partner.
 class _ActionPanel extends StatelessWidget {
   const _ActionPanel({this.notice});
   final String? notice;
@@ -137,15 +136,7 @@ class _ActionPanel extends StatelessWidget {
                     InfoBanner(notice!, icon: Icons.lock_outline_rounded, color: AppColors.dangerFg),
                     const SizedBox(height: 12),
                   ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton(onPressed: () => context.push('/sign-in'), child: const Text('Sign in')),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(child: GoogleSignInButton(compact: true)),
-                    ],
-                  ),
+                  FilledButton(onPressed: () => context.push('/sign-in'), child: const Text('Sign in')),
                   const PartnerLink(),
                 ],
               ),

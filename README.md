@@ -16,8 +16,6 @@ flutter run --dart-define=API_BASE=http://192.168.1.20/atomshop/api/brand-app
 On local/testing servers the code responses (forgot password, partner application) include `debug_code`; debug builds show it on the code screen so you can test without WhatsApp.
 Debug builds allow plain `http` for this; release builds do not.
 
-Sign in with Google is off unless you pass the OAuth **Web** client ID: `--dart-define=GOOGLE_SERVER_CLIENT_ID=<id>.apps.googleusercontent.com`. Setup and the server endpoint it needs: [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md).
-
 ```sh
 flutter analyze
 flutter test

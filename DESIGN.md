@@ -79,7 +79,7 @@ This is an e-commerce app for brands, so Welcome sells the partnership as well a
  │ QUESTIONS?  [WhatsApp us] [email]      │ ← from GET config, hidden if absent
  └────────────────────────────────────────┘
  ┌ pinned panel (white, top hairline + soft shadow) ┐
- │ [ Sign in ] [ G Google ]    side by side, 54 px  │
+ │ [          Sign in          ]    full width, 54 px │
  │ New to AtomShop? Become a partner                │
  └──────────────────────────────────────────────────┘
 ```
@@ -116,24 +116,9 @@ Sign in, Forgot password, Enter code, New password and Become a partner all use 
 `AuthTheme` wraps every auth screen and overrides the app theme locally:
 - **Text fields:** filled `background`, no visible border at rest, **1.6 px red border on focus**, radius 14, 18 px vertical padding. Leading icons are `muted` at rest and turn `primary` on focus. Labels are `muted`; the floating label turns red.
 - **Primary button:** 54 px high, radius 14, 15 px label. While busy it stays red at 55% with a white spinner (it never turns grey).
-- **Secondary / Google button:** outlined, 54 px, `line` border, `ink` label.
+- **Secondary button:** outlined, 54 px, `line` border, `ink` label.
 - **Segmented control** (code channel): 46 px; the selected segment uses `primarySoft` + `primary`, the rest `ink`.
 - **Code input:** 6 boxes, 58 px high, radius 14. Empty boxes use the `background` fill; the active box turns white with a red border.
-- **"or" divider:** hairline + "or" caption, 20 px above and below.
-
-### 3.4 Sign in with Google
-- **Button:** "Continue with Google", with the four-colour G drawn by `GoogleLogo` (no image asset). On Sign in it sits **below** the password form, after the "or" divider. On Welcome it sits next to **Sign in** in compact form (label "Google").
-- **Flow:** Google account picker → `POST auth/google {id_token, device_name, fcm_token?}` → same `{token, user, brand}` body as `auth/login`. The server must verify the ID token's audience (the Web client ID) and match a **brand** user by email.
-- **Messages:**
-
-| Situation | What the user sees |
-|---|---|
-| Picker closed | Nothing |
-| Build has no client ID | Toast: "Google sign-in isn't set up in this version of the app yet." |
-| Server has no `auth/google` endpoint (404) | Toast suggesting password sign-in |
-| No brand account for that email (401), or account blocked (403) | The server's message, as a toast |
-
-- **Config:** pass the OAuth **Web** client ID at build time with `--dart-define=GOOGLE_SERVER_CLIENT_ID=…`. Android also needs an Android OAuth client in the same Google Cloud project, registered with the app's package name and signing SHA-1.
 
 ## 4. Signed-in screens
 These follow the tokens above with the standard theme (`buildTheme()`): charcoal app bar with white title, white cards on `background`, red primary actions, status badges per BRAND_APP.md §4.4. They will be redesigned next, using the same principles as the auth screens.
