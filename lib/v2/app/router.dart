@@ -48,7 +48,7 @@ final wayInProvider = Provider<WayIn>((ref) {
     pinDue: lock.prefs.pinDue,
     tourDue: tour ?? false,
     readyDue: offline && ref.watch(gettingReadyDueProvider),
-    passwordMode: lock.locked && lock.passwordMode,
+    passwordMode: lock.passwordMode,
   );
 });
 

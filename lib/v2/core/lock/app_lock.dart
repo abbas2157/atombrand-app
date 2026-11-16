@@ -197,44 +197,57 @@ final biometricsCanCheckProvider = FutureProvider.autoDispose<bool>(
   (ref) => ref.read(biometricsProvider).available(),
 );
 
+/// Where the lock is.
+///
+/// loading → unlocked ⇄ quickUnlock ⇄ password / forgotPin → unlocked
+enum LockPhase {
+  /// The settings are still being read from the phone.
+  loading,
+
+  /// The app is open.
+  unlocked,
+
+  /// The lock screens cover the app: fingerprint or PIN.
+  quickUnlock,
+
+  /// Locked, and the person chose Switch account or Sign in with password.
+  /// The lock steps aside for Sign in; the locked session stays until a
+  /// sign-in succeeds, and the same person keeps their PIN.
+  password,
+
+  /// As [password], after Forgot PIN: the sign-in that follows drops this
+  /// PIN and asks for a new one, so the forgotten PIN can't lock them out
+  /// again.
+  forgotPin,
+}
+
 @immutable
 class AppLockState {
   const AppLockState({
     this.prefs = const LockPrefs(),
-    this.loaded = false,
-    this.locked = false,
-    this.passwordMode = false,
+    this.phase = LockPhase.loading,
   });
 
   final LockPrefs prefs;
+  final LockPhase phase;
 
   /// The settings have been read from the phone.
-  final bool loaded;
+  bool get loaded => phase != LockPhase.loading;
 
-  /// The lock screens cover the app.
-  final bool locked;
+  /// The app is locked (the lock screens, or Sign in in their place).
+  bool get locked => phase == LockPhase.quickUnlock || passwordMode;
 
-  /// Locked, but the person chose to sign in with the password (Forgot
-  /// PIN, Switch account, Sign in with password). The lock steps aside for
-  /// Sign in; the locked session stays until a sign-in succeeds.
-  final bool passwordMode;
+  /// Locked, and Sign in shows in place of the lock screens.
+  bool get passwordMode =>
+      phase == LockPhase.password || phase == LockPhase.forgotPin;
 
   int get wrongTries => prefs.wrong;
 
   /// Biometric unlock is offered: a PIN, and the switch on.
   bool get fingerprint => prefs.hasPin && prefs.biometric;
 
-  AppLockState copyWith({
-    LockPrefs? prefs,
-    bool? loaded,
-    bool? locked,
-    bool? passwordMode,
-  }) => AppLockState(
-    prefs: prefs ?? this.prefs,
-    loaded: loaded ?? this.loaded,
-    locked: locked ?? this.locked,
-    passwordMode: passwordMode ?? this.passwordMode,
-  );
+  AppLockState copyWith({LockPrefs? prefs, LockPhase? phase}) =>
+      AppLockState(prefs: prefs ?? this.prefs, phase: phase ?? this.phase);
 }
 
 final appLockProvider = NotifierProvider<AppLockController, AppLockState>(
@@ -281,7 +294,7 @@ class AppLockController extends Notifier<AppLockState> {
 
   Future<void> _load() async {
     final prefs = await _store.read();
-    state = state.copyWith(prefs: prefs, loaded: true);
+    state = state.copyWith(prefs: prefs, phase: LockPhase.unlocked);
     final pending = _pending;
     _pending = null;
     if (pending != null) {
@@ -303,7 +316,7 @@ class AppLockController extends Notifier<AppLockState> {
       // PIN: signing in again with the fingerprint goes straight in.
       final quick = ref.read(quickSignInProvider).profile;
       if (quick != null && quick.userId == before.session.userId) {
-        state = AppLockState(prefs: state.prefs, loaded: true);
+        state = AppLockState(prefs: state.prefs, phase: LockPhase.unlocked);
         return;
       }
       // Otherwise signing out forgets the PIN: the next person signs in
@@ -341,7 +354,7 @@ class AppLockController extends Notifier<AppLockState> {
       return;
     }
     final prefs = p.copyWith(userId: () => session.userId, pinDue: false);
-    state = state.copyWith(prefs: prefs, locked: true);
+    state = state.copyWith(prefs: prefs, phase: LockPhase.quickUnlock);
     _store.write(prefs);
   }
 
@@ -351,8 +364,7 @@ class AppLockController extends Notifier<AppLockState> {
     final p = state.prefs;
     final LockPrefs prefs;
     // After Forgot PIN the old one can't stay: a new one is due.
-    final forgot = _forgotPin;
-    _forgotPin = false;
+    final forgot = state.phase == LockPhase.forgotPin;
     if (p.hasPin && p.userId == session.userId && !forgot) {
       prefs = p.copyWith(wrong: 0, waitUntil: () => null);
       // No PIN step follows, so the typed password isn't needed any more.
@@ -364,7 +376,7 @@ class AppLockController extends Notifier<AppLockState> {
         lockAfterSeconds: p.lockAfterSeconds,
       );
     }
-    state = AppLockState(prefs: prefs, loaded: true);
+    state = AppLockState(prefs: prefs, phase: LockPhase.unlocked);
     _store.write(prefs);
   }
 
@@ -567,7 +579,7 @@ class AppLockController extends Notifier<AppLockState> {
   }
 
   Future<void> _unlocked() async {
-    state = state.copyWith(locked: false, passwordMode: false);
+    state = state.copyWith(phase: LockPhase.unlocked);
     if (state.prefs.wrong != 0 || state.prefs.waitUntil != null) {
       await _save(state.prefs.copyWith(wrong: 0, waitUntil: () => null));
     }
@@ -581,17 +593,16 @@ class AppLockController extends Notifier<AppLockState> {
   /// new one, so the forgotten PIN can't lock them out again.
   void usePassword({bool forgotPin = false}) {
     if (!state.locked) return;
-    _forgotPin = forgotPin;
-    state = state.copyWith(passwordMode: true);
+    state = state.copyWith(
+      phase: forgotPin ? LockPhase.forgotPin : LockPhase.password,
+    );
   }
 
   /// Back from Sign in to the fingerprint or PIN.
   void backToQuickUnlock() {
-    _forgotPin = false;
-    state = state.copyWith(passwordMode: false);
+    if (!state.passwordMode) return;
+    state = state.copyWith(phase: LockPhase.quickUnlock);
   }
-
-  bool _forgotPin = false;
 
   void paused() => _pausedAt = DateTime.now();
 
@@ -600,13 +611,15 @@ class AppLockController extends Notifier<AppLockState> {
     _pausedAt = null;
     if (at == null || !state.prefs.hasPin || !_signedIn) return;
     final away = DateTime.now().difference(at).inSeconds;
-    if (away >= state.prefs.lockAfterSeconds) {
-      state = state.copyWith(locked: true);
+    // Already locked (or on Sign in from the lock): it stays where it is.
+    if (away >= state.prefs.lockAfterSeconds &&
+        state.phase == LockPhase.unlocked) {
+      state = state.copyWith(phase: LockPhase.quickUnlock);
     }
   }
 
   Future<void> _forget() async {
-    state = const AppLockState(loaded: true);
+    state = const AppLockState(phase: LockPhase.unlocked);
     await _store.clear();
     // The key leaves memory; nothing is deleted. Ten wrong PINs end here
     // too, and wrong PINs never wipe (§5).

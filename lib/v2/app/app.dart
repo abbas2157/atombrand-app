@@ -213,7 +213,9 @@ class _RefreshOnResumeState extends ConsumerState<_RefreshOnResume> {
     final splash = ref.watch(splashHoldProvider);
     final locked =
         !splash &&
-        ref.watch(appLockProvider.select((s) => s.locked && !s.passwordMode));
+        ref.watch(
+          appLockProvider.select((s) => s.phase == LockPhase.quickUnlock),
+        );
     // Inside the lock, not outside it: a phone that has been on its own
     // too long (11.6) or whose add-on has ended (11.7) still asks for
     // the PIN first.
