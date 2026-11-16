@@ -5164,6 +5164,84 @@ abstract class AppLocalizations {
   /// **'Products'**
   String get tabProducts;
 
+  /// No description provided for @tabBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get tabBusiness;
+
+  /// No description provided for @tabInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get tabInsights;
+
+  /// No description provided for @tabAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get tabAccount;
+
+  /// No description provided for @businessSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders, bulk deals, products and stock'**
+  String get businessSub;
+
+  /// No description provided for @insightsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports and answers about your brand'**
+  String get insightsSub;
+
+  /// No description provided for @bizOrdersSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm, deliver and track orders'**
+  String get bizOrdersSub;
+
+  /// No description provided for @bizAtompaySub.
+  ///
+  /// In en, this message translates to:
+  /// **'AtomPay orders to hand over'**
+  String get bizAtompaySub;
+
+  /// No description provided for @bizBulkSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests from Atomshop sellers, quotes and deals'**
+  String get bizBulkSub;
+
+  /// No description provided for @bizProductsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Your catalogue on Atomshop'**
+  String get bizProductsSub;
+
+  /// No description provided for @bizStockSub.
+  ///
+  /// In en, this message translates to:
+  /// **'What you have, by product and warehouse'**
+  String get bizStockSub;
+
+  /// No description provided for @bizWarehousesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Where your stock is kept'**
+  String get bizWarehousesSub;
+
+  /// No description provided for @insReportsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales, orders and stock, to view or download'**
+  String get insReportsSub;
+
+  /// No description provided for @insAskAtomSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your sales, orders and stock'**
+  String get insAskAtomSub;
+
   /// No description provided for @tabQuickActions.
   ///
   /// In en, this message translates to:

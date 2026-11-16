@@ -2997,6 +2997,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabProducts => 'Products';
 
   @override
+  String get tabBusiness => 'Business';
+
+  @override
+  String get tabInsights => 'Insights';
+
+  @override
+  String get tabAccount => 'Account';
+
+  @override
+  String get businessSub => 'Orders, bulk deals, products and stock';
+
+  @override
+  String get insightsSub => 'Reports and answers about your brand';
+
+  @override
+  String get bizOrdersSub => 'Confirm, deliver and track orders';
+
+  @override
+  String get bizAtompaySub => 'AtomPay orders to hand over';
+
+  @override
+  String get bizBulkSub => 'Requests from Atomshop sellers, quotes and deals';
+
+  @override
+  String get bizProductsSub => 'Your catalogue on Atomshop';
+
+  @override
+  String get bizStockSub => 'What you have, by product and warehouse';
+
+  @override
+  String get bizWarehousesSub => 'Where your stock is kept';
+
+  @override
+  String get insReportsSub => 'Sales, orders and stock, to view or download';
+
+  @override
+  String get insAskAtomSub => 'Ask about your sales, orders and stock';
+
+  @override
   String get tabQuickActions => 'New';
 
   @override

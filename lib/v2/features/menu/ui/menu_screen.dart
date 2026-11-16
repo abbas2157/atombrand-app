@@ -87,7 +87,6 @@ class MenuScreen extends ConsumerWidget {
     final unsent = sync.waiting + sync.attention;
     final openOutlets = session?.outlets.where((o) => o.active).length ?? 0;
     final paidUntil = counts?.paidUntil;
-    final requests = counts?.requestsWaiting ?? 0;
 
     _Badge? red(int? n) => n == null || n <= 0
         ? null
@@ -96,92 +95,9 @@ class MenuScreen extends ConsumerWidget {
         ? null
         : _Badge(say == null ? '$n' : say(n), _BadgeKind.amber);
 
+    // Orders, bulk deals, products and stock live in the bar's Business
+    // sheet; reports in Insights. The Menu keeps the brand's own set-up.
     final groups = <(String, List<Widget>)>[
-      (
-        l.menuSell,
-        [
-          if (can(BrandPermission.ordersView))
-            _MenuItem(
-              icon: LucideIcons.box,
-              label: l.tabOrders,
-              badge: red(counts?.ordersToConfirm),
-              onTap: () => context.go(V2Routes.orders),
-            ),
-          if (can(BrandPermission.atompayView))
-            _MenuItem(
-              icon: LucideIcons.creditCard,
-              label: l.menuAtompay,
-              badge: amber(counts?.atompayToHandOver),
-              onTap: () => context.go(V2Routes.atompayOrders),
-            ),
-          if (can(BrandPermission.bulkView))
-            _MenuItem(
-              icon: LucideIcons.funnel,
-              label: l.tabBulk,
-              badge: requests > 0
-                  ? _Badge(l.menuBadgeNew(requests), _BadgeKind.blue)
-                  : null,
-              onTap: () => context.go(V2Routes.bulk),
-            ),
-        ],
-      ),
-      // Lapsed, Inventory still opens read-only (as in Atom Seller): no
-      // Stock in until the bill is paid.
-      if (access.canRead(Addon.inventory))
-        (
-          l.menuInventory,
-          [
-            if (can(BrandPermission.stockView))
-              _MenuItem(
-                icon: LucideIcons.layoutGrid,
-                tone: AtomTone.green,
-                label: l.menuStock,
-                badge: amber(counts?.outOfStock, l.menuBadgeOut),
-                onTap: () => context.push(V2Routes.stock),
-              ),
-            if (can(BrandPermission.stockChange) && access.has(Addon.inventory))
-              _MenuItem(
-                icon: LucideIcons.plus,
-                tone: AtomTone.green,
-                label: l.menuStockIn,
-                onTap: () => context.push(V2Routes.stockIn()),
-              ),
-            if (can(BrandPermission.stockManage))
-              _MenuItem(
-                icon: LucideIcons.building,
-                tone: AtomTone.green,
-                label: l.menuWarehouses,
-                onTap: () => context.push(V2Routes.warehouses),
-              ),
-            if (can(BrandPermission.stockView))
-              _MenuItem(
-                icon: LucideIcons.clock,
-                tone: AtomTone.green,
-                label: l.menuStockHistory,
-                onTap: () => context.push(V2Routes.stockHistory),
-              ),
-          ],
-        ),
-      (
-        l.menuCatalogue,
-        [
-          if (can(BrandPermission.catalogueView))
-            _MenuItem(
-              icon: LucideIcons.tag,
-              tone: AtomTone.amber,
-              label: l.tabProducts,
-              badge: amber(counts?.productsToCheck),
-              onTap: () => context.go(V2Routes.products),
-            ),
-          if (can(BrandPermission.pageEdit))
-            _MenuItem(
-              icon: LucideIcons.globe,
-              tone: AtomTone.amber,
-              label: l.menuBrandPage,
-              onTap: () => context.push(V2Routes.brandPage),
-            ),
-        ],
-      ),
       (
         l.menuBusiness,
         [
@@ -193,12 +109,29 @@ class MenuScreen extends ConsumerWidget {
               trailing: openOutlets > 0 ? l.menuOutletsOpen(openOutlets) : null,
               onTap: () => context.push(V2Routes.outlets),
             ),
-          if (can(BrandPermission.moneyReports))
+          if (can(BrandPermission.pageEdit))
             _MenuItem(
-              icon: LucideIcons.chartColumn,
-              tone: AtomTone.grey,
-              label: l.menuReports,
-              onTap: () => context.push(V2Routes.reports),
+              icon: LucideIcons.globe,
+              tone: AtomTone.amber,
+              label: l.menuBrandPage,
+              onTap: () => context.push(V2Routes.brandPage),
+            ),
+          // Stock and Warehouses are in the bar's Business sheet; these two
+          // are only here. No Stock in while the bill is unpaid.
+          if (can(BrandPermission.stockChange) && access.has(Addon.inventory))
+            _MenuItem(
+              icon: LucideIcons.plus,
+              tone: AtomTone.green,
+              label: l.menuStockIn,
+              onTap: () => context.push(V2Routes.stockIn()),
+            ),
+          if (can(BrandPermission.stockView) &&
+              access.canRead(Addon.inventory))
+            _MenuItem(
+              icon: LucideIcons.clock,
+              tone: AtomTone.green,
+              label: l.menuStockHistory,
+              onTap: () => context.push(V2Routes.stockHistory),
             ),
           if (can(BrandPermission.teamManage) && access.has(Addon.team))
             _MenuItem(
@@ -371,7 +304,7 @@ class MenuScreen extends ConsumerWidget {
               ),
               children: [
                 if (!workKnown) ...[
-                  _GroupLabel(l.menuSell),
+                  _GroupLabel(l.menuBusiness),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: AtomSpace.gutter),
                     child: AtomLoadingCard(count: 3),

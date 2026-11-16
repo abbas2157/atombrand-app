@@ -120,13 +120,6 @@ class HomeTablet extends ConsumerWidget {
                 ref.invalidate(homeUnreadProvider);
               },
             ),
-            const SizedBox(width: 6),
-            AtomAvatar(
-              initials: session?.initials ?? '',
-              size: 38,
-              semanticLabel: l.homeMenu,
-              onTap: () => context.push(V2Routes.menu),
-            ),
           ],
         ),
       ),

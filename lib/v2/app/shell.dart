@@ -5,19 +5,25 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../core/session/session.dart';
+import '../core/access/access_controller.dart';
 import '../core/session/session_controller.dart';
 import '../design/design.dart';
+import '../features/menu/data/menu_counts.dart';
 import '../features/notifications/ui/allow_notifications_screen.dart';
+import '../features/settings/data/settings_repository.dart'
+    show myProfileProvider;
 import '../widgets/widgets.dart';
 import 'routes.dart';
+import 'tab_sheets.dart';
 
-/// The frame around the four tabs: a tab bar on phones, a navy rail from
-/// 600dp (14.1).
+/// The frame around the tabs: a tab bar on phones, a navy rail from 600dp
+/// (14.1). Laid out as in Atom Seller.
 ///
-/// The bar is Home Â· Orders Â· ï¼‹ Â· Bulk deals Â· Products. The ï¼‹ opens
-/// Quick actions (5.6); the avatar on Home's header opens the Menu (12.1),
-/// and on a tablet the rail's More does.
+/// The bar is Home, Business (a sheet: Orders, AtomPay orders, Bulk deals,
+/// Products, Stock, Warehouses), ＋ (Quick actions, 5.6), Insights (a
+/// sheet: Reports, Ask Atom), Account (the Menu, with the person's
+/// initials). Rows the role can't use are left out; on a tablet the rail's
+/// More opens the Menu too.
 ///
 /// Each tab keeps its own stack (StatefulShellRoute). The bar shows only on
 /// the tab roots; a screen opened inside a tab has the whole height.
@@ -63,6 +69,38 @@ class _AtomShellState extends ConsumerState<AtomShell> {
     );
   }
 
+  /// Business: Orders, AtomPay orders, Bulk deals, Products, Stock,
+  /// Warehouses (what this role works); one choice opens straight away.
+  void _business() {
+    final l = AppLocalizations.of(context);
+    openTabChoices(
+      context,
+      ref,
+      title: l.tabBusiness,
+      subtitle: l.businessSub,
+      build: (c, r) => businessChoices(
+        c,
+        r,
+        openOrders: () => _go(_orders),
+        openBulk: () => _go(_bulk),
+        openProducts: () => _go(_products),
+      ),
+      watch: [menuCountsProvider],
+    );
+  }
+
+  /// Insights: Reports and Ask Atom.
+  void _insights() {
+    final l = AppLocalizations.of(context);
+    openTabChoices(
+      context,
+      ref,
+      title: l.tabInsights,
+      subtitle: l.insightsSub,
+      build: insightsChoices,
+    );
+  }
+
   void _onBack() {
     if (widget.navigationShell.currentIndex != _home) {
       widget.navigationShell.goBranch(_home);
@@ -86,33 +124,53 @@ class _AtomShellState extends ConsumerState<AtomShell> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     ref.watch(sessionProvider);
-    final who = ref.read(sessionProvider.notifier).current?.who;
-    final seesBulk =
-        who == null ||
-        who.can(BrandPermission.bulkView) ||
-        !who.can(BrandPermission.atompayView);
+    ref.watch(accessProvider);
+    final session = ref.read(sessionProvider.notifier).current;
     final wide = MediaQuery.sizeOf(context).width >= AtomSize.tabletBreakpoint;
     final atRoot = V2Routes.tabs.contains(GoRouterState.of(context).uri.path);
     final branch = widget.navigationShell.currentIndex;
+    // A tab whose sheet would be empty for this role is left out.
+    final hasBusiness = businessChoices(
+      context,
+      ref,
+      openOrders: () {},
+      openBulk: () {},
+      openProducts: () {},
+    ).isNotEmpty;
+    final hasInsights = insightsChoices(context, ref).isNotEmpty;
 
-    // (destination, its branch)
-    final tabs = <(AtomDestination, int)>[
-      (AtomDestination(icon: LucideIcons.house, label: l.tabHome), _home),
+    // (destination, what a tap does, the branches it is lit for)
+    final tabs = <(AtomDestination, VoidCallback, Set<int>)>[
       (
-        AtomDestination(icon: LucideIcons.fileText, label: l.tabOrders),
-        _orders,
+        AtomDestination(icon: LucideIcons.house, label: l.tabHome),
+        () => _go(_home),
+        {_home},
       ),
-      // A role without bulk deals has AtomPay orders here (5.2).
-      if (seesBulk)
-        (AtomDestination(icon: LucideIcons.funnel, label: l.tabBulk), _bulk)
-      else
+      if (hasBusiness)
         (
-          AtomDestination(icon: LucideIcons.handCoins, label: l.tabAtompay),
-          _bulk,
+          AtomDestination(icon: LucideIcons.shoppingBag, label: l.tabBusiness),
+          _business,
+          {_orders, _bulk, _products},
         ),
-      (AtomDestination(icon: LucideIcons.tag, label: l.tabProducts), _products),
+      if (hasInsights)
+        (
+          AtomDestination(icon: LucideIcons.chartLine, label: l.tabInsights),
+          _insights,
+          const <int>{},
+        ),
+      (
+        AtomDestination(
+          icon: LucideIcons.circleUserRound,
+          label: l.tabAccount,
+          initials: session?.initials,
+          imageUrl: ref.watch(myProfileProvider).value?.pictureUrl,
+        ),
+        // The Menu: outlets, team, plan, settings, help.
+        () => context.push(V2Routes.menu),
+        const <int>{},
+      ),
     ];
-    final selected = tabs.indexWhere((t) => t.$2 == branch);
+    final selected = tabs.indexWhere((t) => t.$3.contains(branch));
     final plusLabel = l.tabQuickActions;
     void plus() => context.push(V2Routes.quickActions);
 
@@ -123,7 +181,7 @@ class _AtomShellState extends ConsumerState<AtomShell> {
           AtomRail(
             destinations: [for (final t in tabs) t.$1],
             selected: selected,
-            onSelect: (i) => _go(tabs[i].$2),
+            onSelect: (i) => tabs[i].$2(),
             onPlus: plus,
             plusLabel: plusLabel,
             onMore: () => context.push(V2Routes.menu),
@@ -140,7 +198,7 @@ class _AtomShellState extends ConsumerState<AtomShell> {
             AtomTabBar(
               destinations: [for (final t in tabs) t.$1],
               selected: selected,
-              onSelect: (i) => _go(tabs[i].$2),
+              onSelect: (i) => tabs[i].$2(),
               onPlus: plus,
               plusLabel: plusLabel,
             ),

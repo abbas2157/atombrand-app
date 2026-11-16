@@ -191,12 +191,6 @@ class _Header extends ConsumerWidget {
               ref.invalidate(homeUnreadProvider);
             },
           ),
-          const SizedBox(width: 6),
-          AtomAvatar(
-            initials: session?.initials ?? '',
-            semanticLabel: l.homeMenu,
-            onTap: () => context.push(V2Routes.menu),
-          ),
         ],
       ),
       child: Column(
