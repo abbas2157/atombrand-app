@@ -134,6 +134,61 @@ class BillingAddon {
   }
 }
 
+/// A bill's status (`invoices[].status`).
+enum InvoiceStatus {
+  open,
+  partPaid,
+  paid,
+
+  /// Cancelled.
+  voided;
+
+  /// A missing or unknown status is an open bill.
+  static InvoiceStatus fromKey(Object? key) => switch (key) {
+    'part_paid' => partPaid,
+    'paid' => paid,
+    'void' => voided,
+    _ => open,
+  };
+
+  /// Still owed.
+  bool get owed => this == open || this == partPaid;
+}
+
+/// A payment's status (`payments[].status`).
+enum PaymentStatus {
+  /// Being checked; also a missing or unknown status.
+  pending,
+  received,
+
+  /// Not found.
+  rejected,
+  reversed;
+
+  static PaymentStatus fromKey(Object? key) => switch (key) {
+    'received' => received,
+    'rejected' => rejected,
+    'reversed' => reversed,
+    _ => pending,
+  };
+}
+
+/// The plan's status (`account.status`).
+enum PlanStatus {
+  none,
+  trial,
+  active,
+  ended;
+
+  /// Missing is no plan; an unknown status counts as a running plan.
+  static PlanStatus fromKey(Object? key) => switch (key) {
+    null || 'none' => none,
+    'trial' => trial,
+    'ended' => ended,
+    _ => active,
+  };
+}
+
 /// A bill from Atomshop (`invoices[]`, `open_invoices[]`, or the `invoice`
 /// that checkout and an add-on switch answer with).
 @immutable
@@ -161,8 +216,7 @@ class Invoice {
   final int due;
   final int paid;
 
-  /// open, part_paid, paid or void.
-  final String status;
+  final InvoiceStatus status;
   final String? kind;
   final String? kindLabel;
   final int? periodMonths;
@@ -172,11 +226,11 @@ class Invoice {
   final bool overdue;
   final List<({String description, int amount})> lines;
 
-  bool get open => status == 'open' || status == 'part_paid';
+  bool get open => status.owed;
 
   factory Invoice.fromJson(Object? raw) {
     final j = Json.map(raw);
-    final status = Json.str(j['status']) ?? 'open';
+    final status = InvoiceStatus.fromKey(Json.str(j['status']));
     return Invoice(
       id: Json.integer(j['id']) ?? 0,
       number: Json.str(j['number']) ?? '',
@@ -190,9 +244,7 @@ class Invoice {
       coversFrom: AtomDates.parse(j['covers_from']),
       coversTo: AtomDates.parse(j['covers_to']),
       dueOn: AtomDates.parse(j['due_on']),
-      overdue:
-          Json.flag(j['overdue']) &&
-          (status == 'open' || status == 'part_paid'),
+      overdue: Json.flag(j['overdue']) && status.owed,
       lines: [
         for (final l in Json.list(j['lines']))
           (
@@ -232,13 +284,13 @@ class BillPayment {
   final String? reference;
 
   /// pending ("being checked"), received, rejected or reversed.
-  final String status;
+  final PaymentStatus status;
 
   /// Why Atomshop didn't find it.
   final String? reason;
 
   /// A receipt PDF is there only once Atomshop received it.
-  bool get hasReceipt => status == 'received' && (number ?? '').isNotEmpty;
+  bool get hasReceipt => status == PaymentStatus.received && (number ?? '').isNotEmpty;
 
   factory BillPayment.fromJson(Object? raw) {
     final j = Json.map(raw);
@@ -251,7 +303,7 @@ class BillPayment {
       methodLabel: Json.str(j['method_label']),
       paidOn: AtomDates.parse(j['paid_on']),
       reference: Json.str(j['reference']),
-      status: Json.str(j['status']) ?? 'pending',
+      status: PaymentStatus.fromKey(Json.str(j['status'])),
       reason: Json.str(j['reason']),
     );
   }
@@ -264,7 +316,7 @@ class BillingOverview {
     required this.accessState,
     this.shopType = 'single',
     this.outlets = 0,
-    this.status = 'none',
+    this.status = PlanStatus.none,
     this.periodMonths,
     this.periodStartsOn,
     this.periodEndsOn,
@@ -291,8 +343,7 @@ class BillingOverview {
   final String shopType;
   final int outlets;
 
-  /// The plan: none, trial, active or ended.
-  final String status;
+  final PlanStatus status;
   final int? periodMonths;
   final DateTime? periodStartsOn;
   final DateTime? periodEndsOn;
@@ -302,8 +353,7 @@ class BillingOverview {
   final int credit;
   final double discountPct;
 
-  /// ok, due, late, overdue, readonly or none.
-  final String accessState;
+  final AccountStatus accessState;
   final int daysLate;
   final int due;
 
@@ -359,7 +409,7 @@ class BillingOverview {
     return BillingOverview(
       shopType: Json.str(a['shop_type']) ?? 'single',
       outlets: Json.integer(a['outlets']) ?? 0,
-      status: Json.str(a['status']) ?? 'none',
+      status: PlanStatus.fromKey(Json.str(a['status'])),
       periodMonths: Json.integer(a['period_months']),
       periodStartsOn: AtomDates.parse(a['period_starts_on']),
       periodEndsOn: AtomDates.parse(a['period_ends_on']),
@@ -372,7 +422,7 @@ class BillingOverview {
         final String t => double.tryParse(t) ?? 0,
         _ => 0,
       },
-      accessState: Json.str(s['state']) ?? 'ok',
+      accessState: AccountStatus.fromAccessState(Json.str(s['state'])),
       daysLate: Json.integer(s['days_late']) ?? 0,
       due: Json.integer(s['due']) ?? 0,
       paused: Json.flag(s['paused']),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/access/access.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/format/dates.dart';
 import '../../notifications/data/notifications_repository.dart' show Notice;
@@ -740,7 +741,7 @@ class AddonEnd {
 
   final String key;
   final String name;
-  final String state;
+  final AddonState state;
   final DateTime? endsOn;
 
   /// It carries on into the next bill unless switched off.
@@ -751,7 +752,7 @@ class AddonEnd {
     return AddonEnd(
       key: Json.str(j['key']) ?? '',
       name: Json.str(j['name']) ?? '',
-      state: Json.str(j['state']) ?? 'off',
+      state: AddonState.fromKey(j['state']),
       endsOn: AtomDates.parse(j['ends_on']),
       renew: j['renew'] == null || Json.flag(j['renew']),
     );

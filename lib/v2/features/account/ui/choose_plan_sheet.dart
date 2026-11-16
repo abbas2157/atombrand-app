@@ -114,7 +114,7 @@ class _ChoosePlanSheetState extends ConsumerState<ChoosePlanSheet> {
         ref.invalidate(billingProvider);
         unawaited(ref.read(accessProvider.notifier).refresh());
         final router = GoRouter.of(context);
-        final paid = bill.status == 'paid' || bill.due <= 0;
+        final paid = bill.status == InvoiceStatus.paid || bill.due <= 0;
         // The toast first: this sheet's context is gone once it closes.
         showAtomToast(
           context,

@@ -105,7 +105,7 @@ void main() {
         AddonEnd(
           key: 'inventory',
           name: 'Inventory',
-          state: 'trial',
+          state: AddonState.trial,
           endsOn: DateTime(2026, 11, 10),
         ),
       ],
@@ -183,7 +183,7 @@ void main() {
             AddonEnd(
               key: 'team',
               name: 'Roles management',
-              state: 'trial',
+              state: AddonState.trial,
               endsOn: DateTime(2026, 11, 30),
             ),
           ],

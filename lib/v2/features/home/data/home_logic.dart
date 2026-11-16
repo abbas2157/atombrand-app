@@ -287,7 +287,7 @@ HomeBanner? _trialBanner(
   AddonEnd? soonest;
   for (final a in billing?.addons ?? const <AddonEnd>[]) {
     final end = a.endsOn;
-    if (a.state != 'trial' || end == null) continue;
+    if (a.state != AddonState.trial || end == null) continue;
     final left = AtomDates.daysFrom(end, today: today);
     if (left < 0 || left > trialWarnDays) continue;
     if (soonest == null || end.isBefore(soonest.endsOn!)) soonest = a;

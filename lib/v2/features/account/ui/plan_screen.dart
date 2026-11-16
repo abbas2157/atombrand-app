@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/routes.dart';
+import '../../../core/access/access.dart';
 import '../../../core/format/dates.dart';
 import '../../../core/format/money.dart';
 import '../../../design/design.dart';
@@ -187,11 +188,12 @@ class _Body extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (p.message != null && p.accessState != 'ok') ...[
+        if (p.message != null && p.accessState != AccountStatus.ok) ...[
           AtomNote(
             kind: switch (p.accessState) {
-              'readonly' => AtomNoteKind.problem,
-              'late' || 'overdue' => AtomNoteKind.warning,
+              AccountStatus.readOnly => AtomNoteKind.problem,
+              AccountStatus.late ||
+              AccountStatus.overdue => AtomNoteKind.warning,
               _ => AtomNoteKind.info,
             },
             message: p.message!,
@@ -204,7 +206,9 @@ class _Body extends ConsumerWidget {
               valueSize: 16,
               label: l.acctPlan,
               value: p.periodMonths == null
-                  ? (p.status == 'trial' ? l.acctFreeTrial : l.acctNoneYet)
+                  ? (p.status == PlanStatus.trial
+                        ? l.acctFreeTrial
+                        : l.acctNoneYet)
                   : periodLabel(l, p.periodMonths!),
               note: p.multiOutlet ? l.acctMultiOutlet : l.acctSingleOutlet,
             ),
@@ -221,9 +225,12 @@ class _Body extends ConsumerWidget {
               label: l.acctAmountDue,
               value: formatRs(p.due),
               valueColour:
-                  p.accessState == 'late' ||
-                      p.accessState == 'overdue' ||
-                      p.accessState == 'readonly'
+                  switch (p.accessState) {
+                    AccountStatus.late ||
+                    AccountStatus.overdue ||
+                    AccountStatus.readOnly => true,
+                    _ => false,
+                  }
                   ? AtomColors.rose
                   : null,
               note: open.isEmpty
@@ -293,7 +300,7 @@ class _Body extends ConsumerWidget {
                   pay.methodLabel ?? pay.method ?? '',
                   formatRs(pay.amountReceived ?? pay.amountClaimed),
                 ].where((s) => s.isNotEmpty).join(' · '),
-                sub: pay.status == 'rejected' ? pay.reason : null,
+                sub: pay.status == PaymentStatus.rejected ? pay.reason : null,
                 pill: AtomPill(
                   label: paymentStatus(l, pay).label,
                   tone: paymentStatus(l, pay).tone,

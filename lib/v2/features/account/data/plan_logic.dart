@@ -17,11 +17,12 @@ import 'billing_models.dart';
 ) {
   if (p.paused) return (label: l.acctBeingChecked, tone: AtomTone.blue);
   return switch (p.accessState) {
-    'readonly' => (label: l.acctReadOnly, tone: AtomTone.rose),
-    'late' || 'overdue' => (label: l.acctLate, tone: AtomTone.rose),
-    'due' => (label: l.acctBillWaiting, tone: AtomTone.amber),
-    'none' => (label: l.acctNoPlanYet, tone: AtomTone.grey),
-    _ when p.status == 'trial' => (
+    AccountStatus.readOnly => (label: l.acctReadOnly, tone: AtomTone.rose),
+    AccountStatus.late ||
+    AccountStatus.overdue => (label: l.acctLate, tone: AtomTone.rose),
+    AccountStatus.due => (label: l.acctBillWaiting, tone: AtomTone.amber),
+    AccountStatus.noPlan => (label: l.acctNoPlanYet, tone: AtomTone.grey),
+    _ when p.status == PlanStatus.trial => (
       label: l.acctFreeTrial,
       tone: AtomTone.amber,
     ),
@@ -36,11 +37,11 @@ import 'billing_models.dart';
 /// The big line in the header: "Paid until 30 Nov", "Free trial until
 /// 20 Nov", "Free until 31 Dec 2026" or "No plan yet".
 String planHeadline(AppLocalizations l, BillingOverview p) {
-  if (p.accessState == 'none' || p.status == 'none') {
+  if (p.accessState == AccountStatus.noPlan || p.status == PlanStatus.none) {
     if (p.legacyUntil case final d?) return l.acctFreeUntil(AtomDates.day(d));
     return l.acctNoPlanYet;
   }
-  if (p.status == 'trial' && p.trialEndsOn != null) {
+  if (p.status == PlanStatus.trial && p.trialEndsOn != null) {
     return l.acctFreeTrialUntil(AtomDates.short(p.trialEndsOn!));
   }
   final until = p.paidUntil ?? p.periodEndsOn;
@@ -165,9 +166,9 @@ String billTitle(AppLocalizations l, Invoice b) {
 /// "To pay", "Part paid", "Paid", "Cancelled", "Late".
 ({String label, AtomTone tone}) billStatus(AppLocalizations l, Invoice b) =>
     switch (b.status) {
-      'paid' => (label: l.acctPaid, tone: AtomTone.green),
-      'void' => (label: l.acctCancelled, tone: AtomTone.grey),
-      'part_paid' => (label: l.acctPartPaid, tone: AtomTone.amber),
+      InvoiceStatus.paid => (label: l.acctPaid, tone: AtomTone.green),
+      InvoiceStatus.voided => (label: l.acctCancelled, tone: AtomTone.grey),
+      InvoiceStatus.partPaid => (label: l.acctPartPaid, tone: AtomTone.amber),
       _ when b.overdue => (label: l.acctLate, tone: AtomTone.rose),
       _ => (label: l.acctToPay, tone: AtomTone.amber),
     };
@@ -177,10 +178,10 @@ String billTitle(AppLocalizations l, Invoice b) {
   AppLocalizations l,
   BillPayment p,
 ) => switch (p.status) {
-  'received' => (label: l.acctReceived, tone: AtomTone.green),
-  'rejected' => (label: l.acctNotFound, tone: AtomTone.rose),
-  'reversed' => (label: l.acctReversed, tone: AtomTone.rose),
-  _ => (label: l.acctBeingChecked, tone: AtomTone.blue),
+  PaymentStatus.received => (label: l.acctReceived, tone: AtomTone.green),
+  PaymentStatus.rejected => (label: l.acctNotFound, tone: AtomTone.rose),
+  PaymentStatus.reversed => (label: l.acctReversed, tone: AtomTone.rose),
+  PaymentStatus.pending => (label: l.acctBeingChecked, tone: AtomTone.blue),
 };
 
 /// The methods "I've paid" offers, in the canvas's order, labelled short

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/access/access.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/format/dates.dart';
 
@@ -35,21 +36,20 @@ enum Tracking {
 @immutable
 class StockAccess {
   const StockAccess({
-    this.state = 'active',
+    this.state = AddonState.active,
     this.readOnly = false,
     this.daysLeft,
     this.canChange = false,
     this.canManage = false,
   });
 
-  /// `trial`, `active`, `lapsed`.
-  final String state;
+  final AddonState state;
   final bool readOnly;
   final int? daysLeft;
   final bool canChange;
   final bool canManage;
 
-  bool get trial => state == 'trial';
+  bool get trial => state == AddonState.trial;
 
   /// Stock in, move and adjust may run.
   bool get changes => canChange && !readOnly;
@@ -60,7 +60,7 @@ class StockAccess {
   factory StockAccess.fromJson(Object? data) {
     final j = Json.map(data);
     return StockAccess(
-      state: Json.str(j['state']) ?? 'active',
+      state: AddonState.fromKey(j['state'] ?? 'active'),
       readOnly: Json.flag(j['read_only']),
       daysLeft: Json.integer(j['days_left']),
       canChange: Json.flag(j['can_change']),
