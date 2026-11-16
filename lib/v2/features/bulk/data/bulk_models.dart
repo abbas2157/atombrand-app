@@ -121,6 +121,28 @@ class SellerOtherRequest {
   }
 }
 
+/// What the seller did with the brand's quote (`seller_answer.action`).
+enum SellerAction {
+  accepted,
+  changeAsked,
+  declined,
+  cancelled,
+
+  /// An action this app doesn't know.
+  other;
+
+  static SellerAction fromKey(String key) => switch (key) {
+    'accepted' => accepted,
+    'change_asked' => changeAsked,
+    'declined' => declined,
+    'cancelled' => cancelled,
+    _ => other,
+  };
+
+  /// The seller said no (declined or cancelled).
+  bool get saidNo => this == declined || this == cancelled;
+}
+
 /// The seller's latest answer to the brand's quote.
 @immutable
 class SellerAnswer {
@@ -133,8 +155,7 @@ class SellerAnswer {
     this.at,
   });
 
-  /// `accepted`, `change_asked`, `declined` or `cancelled`.
-  final String action;
+  final SellerAction action;
   final String? label;
 
   /// What they asked to change (change_asked).
@@ -153,7 +174,7 @@ class SellerAnswer {
     final action = Json.str(j['action']);
     if (action == null) return null;
     return SellerAnswer(
-      action: action,
+      action: SellerAction.fromKey(action),
       label: Json.str(j['label']),
       message: Json.str(j['message']) ?? Json.str(j['details']),
       reason: Json.str(j['reason']),
@@ -503,7 +524,7 @@ class DealRef {
 
   final int id;
   final String number;
-  final String? status;
+  final DealStatus? status;
 
   static DealRef? fromJson(Object? data) {
     if (data is! Map) return null;
@@ -513,7 +534,7 @@ class DealRef {
     return DealRef(
       id: id,
       number: Json.str(j['number']) ?? '',
-      status: Json.str(j['status']),
+      status: j['status'] == null ? null : DealStatus.of(j['status']),
     );
   }
 }
@@ -711,6 +732,29 @@ class QuoteLine {
   }
 }
 
+/// A quote's status (`quotes[].status`).
+enum QuoteStatus {
+  draft,
+  sent,
+  accepted,
+
+  /// A newer revision replaced it.
+  superseded,
+  expired;
+
+  /// Missing is a draft; an unknown status reads as sent.
+  static QuoteStatus fromKey(Object? key) => switch (key) {
+    null || 'draft' => draft,
+    'accepted' => accepted,
+    'superseded' => superseded,
+    'expired' => expired,
+    _ => sent,
+  };
+
+  /// With the seller or agreed: the quote a deal can be won on.
+  bool get live => this == sent || this == accepted;
+}
+
 /// A quote (`QT-0007`, revision 2).
 @immutable
 class Quote {
@@ -743,8 +787,7 @@ class Quote {
   final int revision;
   final String? label;
 
-  /// `draft`, `sent`, `accepted`, `superseded` or `expired`.
-  final String status;
+  final QuoteStatus status;
   final List<QuoteLine> items;
 
   /// The lines after their discounts (the server's `subtotal`).
@@ -762,17 +805,20 @@ class Quote {
   final DateTime? sentAt;
   final String? createdBy;
   final String? whatsappLink;
+
+  /// Past its validity: the server's `expired` flag, or the expired
+  /// status. A sent quote can be expired and still be [QuoteStatus.sent].
   final bool expired;
 
   String get name => label ?? '$number rev $revision';
 
-  bool get isDraft => status == 'draft';
+  bool get isDraft => status == QuoteStatus.draft;
 
   int get units => items.fold(0, (s, l) => s + l.qty);
 
   factory Quote.fromJson(Object? data) {
     final j = Json.map(data);
-    final status = Json.str(j['status']) ?? 'draft';
+    final status = QuoteStatus.fromKey(Json.str(j['status']));
     return Quote(
       id: _int(j['id']),
       bulkOrderId: Json.integer(j['bulk_order_id']),
@@ -793,7 +839,7 @@ class Quote {
       sentAt: AtomDates.parse(j['sent_at']),
       createdBy: Json.str(j['created_by']),
       whatsappLink: Json.str(j['whatsapp_link']),
-      expired: Json.flag(j['expired']) || status == 'expired',
+      expired: Json.flag(j['expired']) || status == QuoteStatus.expired,
     );
   }
 }
@@ -939,6 +985,10 @@ enum DealStatus {
   }
 
   bool get finished => this == closed || this == lost;
+
+  /// The goods have reached the buyer (Delivered, Paid or Closed).
+  bool get deliveredOrLater =>
+      this == delivered || this == paid || this == closed;
 }
 
 @immutable

@@ -164,7 +164,7 @@ void main() {
   });
 
   group('revisions', () {
-    Quote q(int rev, String status) =>
+    Quote q(int rev, QuoteStatus status) =>
         Quote(id: rev, number: 'QT-0007', revision: rev, status: status);
 
     test('the first quote is rev 1', () {
@@ -174,14 +174,17 @@ void main() {
     });
 
     test('sending after a sent one makes the next revision', () {
-      final r = nextRevision([q(2, 'sent'), q(1, 'superseded')]);
+      final r = nextRevision([
+        q(2, QuoteStatus.sent),
+        q(1, QuoteStatus.superseded),
+      ]);
       expect(r.revision, 3);
       expect(r.replaces?.revision, 2);
       expect(r.draft, isNull);
     });
 
     test('a draft is changed in place', () {
-      final r = nextRevision([q(3, 'draft'), q(2, 'sent')]);
+      final r = nextRevision([q(3, QuoteStatus.draft), q(2, QuoteStatus.sent)]);
       expect(r.revision, 3);
       expect(r.draft?.revision, 3);
       expect(r.replaces?.revision, 2);
@@ -193,7 +196,7 @@ void main() {
       id: 1,
       number: 'QT-1',
       revision: 1,
-      status: 'sent',
+      status: QuoteStatus.sent,
       sentAt: DateTime(2026, 11, 10, 10),
     );
 
@@ -214,7 +217,10 @@ void main() {
     });
 
     test('a change asked stays until a new revision', () {
-      const asked = SellerAnswer(action: 'change_asked', pending: true);
+      const asked = SellerAnswer(
+        action: SellerAction.changeAsked,
+        pending: true,
+      );
       expect(
         sourcingStateOf(
           status: RequestStatus.quoted,
@@ -223,7 +229,10 @@ void main() {
         ),
         SourcingState.changeAsked,
       );
-      const answered = SellerAnswer(action: 'change_asked', pending: false);
+      const answered = SellerAnswer(
+        action: SellerAction.changeAsked,
+        pending: false,
+      );
       expect(
         sourcingStateOf(
           status: RequestStatus.quoted,
@@ -235,7 +244,10 @@ void main() {
     });
 
     test('a decline holds until a newer quote is sent', () {
-      final no = SellerAnswer(action: 'declined', at: DateTime(2026, 11, 11));
+      final no = SellerAnswer(
+        action: SellerAction.declined,
+        at: DateTime(2026, 11, 11),
+      );
       expect(
         sourcingStateOf(
           status: RequestStatus.quoted,
@@ -248,7 +260,7 @@ void main() {
         id: 2,
         number: 'QT-1',
         revision: 2,
-        status: 'sent',
+        status: QuoteStatus.sent,
         sentAt: DateTime(2026, 11, 12),
       );
       expect(
@@ -273,7 +285,10 @@ void main() {
       expect(sourcingStepsReached(SourcingState.changeAsked), 3);
       expect(sourcingStepsReached(SourcingState.accepted), 4);
       expect(
-        sourcingStepsReached(SourcingState.accepted, dealStatus: 'paid'),
+        sourcingStepsReached(
+          SourcingState.accepted,
+          dealStatus: DealStatus.paid,
+        ),
         5,
       );
     });

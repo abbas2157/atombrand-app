@@ -56,12 +56,12 @@ AtomTone dealTone(DealStatus s) => switch (s) {
 
 /// A quote's state for its pill.
 (String, AtomTone) quoteLook(AppLocalizations l, Quote q) => switch (q.status) {
-  'draft' => (l.bulkQuoteDraft, AtomTone.grey),
-  'accepted' => (l.bulkStatusAccepted, AtomTone.green),
-  'superseded' => (l.bulkQuoteSuperseded, AtomTone.grey),
-  'expired' => (l.bulkQuoteExpired, AtomTone.rose),
-  _ when q.expired => (l.bulkQuoteExpired, AtomTone.rose),
-  _ => (l.bulkQuoteSent, AtomTone.amber),
+  QuoteStatus.draft => (l.bulkQuoteDraft, AtomTone.grey),
+  QuoteStatus.accepted => (l.bulkStatusAccepted, AtomTone.green),
+  QuoteStatus.superseded => (l.bulkQuoteSuperseded, AtomTone.grey),
+  QuoteStatus.expired => (l.bulkQuoteExpired, AtomTone.rose),
+  QuoteStatus.sent when q.expired => (l.bulkQuoteExpired, AtomTone.rose),
+  QuoteStatus.sent => (l.bulkQuoteSent, AtomTone.amber),
 };
 
 /// "Today 10:20", "Yesterday 4:10 pm", "12 Nov 4:10 pm".

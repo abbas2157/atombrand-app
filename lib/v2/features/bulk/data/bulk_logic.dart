@@ -48,18 +48,18 @@ SourcingState sourcingStateOf({
   if (deal != null || status == RequestStatus.won) {
     return SourcingState.accepted;
   }
-  if (answer?.action == 'accepted') return SourcingState.accepted;
+  if (answer?.action == SellerAction.accepted) return SourcingState.accepted;
   if (status == RequestStatus.lost) {
-    return answer != null &&
-            (answer.action == 'declined' || answer.action == 'cancelled')
+    return answer != null && answer.action.saidNo
         ? SourcingState.declined
         : SourcingState.closed;
   }
-  if (answer != null && answer.pending && answer.action == 'change_asked') {
+  if (answer != null &&
+      answer.pending &&
+      answer.action == SellerAction.changeAsked) {
     return SourcingState.changeAsked;
   }
-  if (answer != null &&
-      (answer.action == 'declined' || answer.action == 'cancelled')) {
+  if (answer != null && answer.action.saidNo) {
     final sent = liveQuote?.sentAt;
     final at = answer.at;
     // a revision sent after the "no" puts it back with the seller
@@ -78,12 +78,9 @@ SourcingState sourcingStateOfRow(BulkRequest r) =>
 
 /// How many of 7.2's five steps (Asked, Quoted, Seller answers, Deal,
 /// Delivered) are reached.
-int sourcingStepsReached(SourcingState s, {String? dealStatus}) {
+int sourcingStepsReached(SourcingState s, {DealStatus? dealStatus}) {
   if (s == SourcingState.accepted) {
-    return switch (dealStatus) {
-      'delivered' || 'paid' || 'closed' => 5,
-      _ => 4,
-    };
+    return (dealStatus?.deliveredOrLater ?? false) ? 5 : 4;
   }
   return switch (s) {
     SourcingState.fresh => 1,
@@ -399,7 +396,8 @@ Map<String, String> quoteProblems(
   final latest = quotes.reduce((a, b) => a.revision >= b.revision ? a : b);
   Quote? sent;
   for (final q in quotes) {
-    if (q.status == 'sent' && (sent == null || q.revision > sent.revision)) {
+    if (q.status == QuoteStatus.sent &&
+        (sent == null || q.revision > sent.revision)) {
       sent = q;
     }
   }

@@ -752,10 +752,16 @@ class _QuoteRow extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final q = quote;
     var (label, tone) = quoteLook(l, q);
-    if (answer case SellerAnswer(action: 'change_asked', pending: true)) {
+    if (answer case SellerAnswer(
+      action: SellerAction.changeAsked,
+      pending: true,
+    )) {
       (label, tone) = (l.bulkStatusChangeAsked, AtomTone.amber);
-    } else if (answer case SellerAnswer(action: 'declined' || 'cancelled')
-        when q.status == 'sent') {
+    } else if (answer
+        case SellerAnswer(
+          action: SellerAction.declined || SellerAction.cancelled,
+        )
+        when q.status == QuoteStatus.sent) {
       (label, tone) = (l.bulkStatusDeclined, AtomTone.rose);
     }
     final line = [
@@ -925,16 +931,10 @@ class _WebsiteView extends ConsumerWidget {
     final open = r.status.open;
     final latest = _latestSent(list);
     final canWin =
-        canQuote &&
-        deal == null &&
-        open &&
-        list.any((q) => q.status == 'sent' || q.status == 'accepted');
+        canQuote && deal == null && open && list.any((q) => q.status.live);
     final price = _priceOf(ref, r.productId);
     final lost = r.status == RequestStatus.lost;
-    final delivered = switch (deal?.status) {
-      'delivered' || 'paid' || 'closed' => true,
-      _ => false,
-    };
+    final delivered = deal?.status?.deliveredOrLater ?? false;
     final req = d.requester;
 
     return Scaffold(

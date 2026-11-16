@@ -982,7 +982,7 @@ class _SellerCard extends StatelessWidget {
     final typed = r.productId == null;
     final price = [
       // A saved draft shows on the card, so it isn't forgotten.
-      if (r.quote case final q? when q.status == 'draft')
+      if (r.quote case final q? when q.isDraft)
         l.bulkDraftLine(q.name, formatRs(q.total))
       else if (r.quote case final q?)
         l.bulkQuoteLine(q.name, formatRs(q.total)) +
@@ -995,14 +995,18 @@ class _SellerCard extends StatelessWidget {
         l.bulkYourPrice(formatRs(r.productPrice!)),
     ].join(' · ');
     final note = switch (r.answer) {
-      SellerAnswer(action: 'change_asked', :final message?) => '“$message”',
-      SellerAnswer(action: 'declined' || 'cancelled', :final reason?) =>
+      SellerAnswer(action: SellerAction.changeAsked, :final message?) =>
+        '“$message”',
+      SellerAnswer(
+        action: SellerAction.declined || SellerAction.cancelled,
+        :final reason?,
+      ) =>
         l.bulkSellerSaid(reason),
       _ => null,
     };
     final (String act, bool primary, String path) = switch (state) {
       SourcingState.fresh when canQuote => (
-        r.quote?.status == 'draft' ? l.bulkActFinishQuote : l.bulkActSendQuote,
+        (r.quote?.isDraft ?? false) ? l.bulkActFinishQuote : l.bulkActSendQuote,
         true,
         V2Routes.sellerRequestQuoteOf(r.id),
       ),

@@ -456,7 +456,7 @@ class _WonSheetState extends ConsumerState<WonSheet> {
         data: (q) {
           final sendable = [
             for (final x in q.quotes)
-              if (x.status == 'sent' || x.status == 'accepted') x,
+              if (x.status.live) x,
           ];
           final picked = sendable
               .where((x) => x.id == (_quoteId ?? sendable.firstOrNull?.id))
