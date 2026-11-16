@@ -45,8 +45,11 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
   bool _ready = false;
   TeamRole? _role;
   Set<String> _before = {};
-  bool _saving = false;
-  bool _deleting = false;
+
+  /// Saving and deleting never overlap.
+  _RoleBusy _busy = _RoleBusy.idle;
+  bool get _saving => _busy == _RoleBusy.saving;
+  bool get _deleting => _busy == _RoleBusy.deleting;
   String? _error;
   String? _nameError;
 
@@ -90,7 +93,7 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
   Future<void> _save(TeamRoles all) async {
     final l = AppLocalizations.of(context);
     setState(() {
-      _saving = true;
+      _busy = _RoleBusy.saving;
       _error = null;
       _nameError = null;
     });
@@ -114,7 +117,7 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
         Navigator.of(context).pop();
       case ApiErr(:final failure):
         setState(() {
-          _saving = false;
+          _busy = _RoleBusy.idle;
           _nameError = failure.fieldErrors['name'];
           _error = _nameError == null ? sayFailure(l, failure) : null;
         });
@@ -132,7 +135,7 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
     );
     if (!ok || !mounted) return;
     setState(() {
-      _deleting = true;
+      _busy = _RoleBusy.deleting;
       _error = null;
     });
     final r = await ref.read(teamRepositoryProvider).deleteRole(role.id);
@@ -148,7 +151,7 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
         Navigator.of(context).pop();
       case ApiErr(:final failure):
         setState(() {
-          _deleting = false;
+          _busy = _RoleBusy.idle;
           _error = sayFailure(l, failure);
         });
     }
@@ -503,3 +506,5 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
     );
   }
 }
+
+enum _RoleBusy { idle, saving, deleting }

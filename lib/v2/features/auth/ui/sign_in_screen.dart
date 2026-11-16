@@ -35,27 +35,40 @@ class SignInScreen extends ConsumerStatefulWidget {
 
 enum _Who { owner, agent }
 
+/// Where a sign-in attempt stands.
+enum _Attempt {
+  /// Typing; Sign in is ready.
+  editing,
+
+  /// The call is out. On success it stays here and the router moves on.
+  signingIn,
+
+  /// The last call couldn't reach the server.
+  offline,
+
+  /// The server knows the seller, but Atomshop hasn't verified them yet.
+  unverified,
+}
+
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _login = TextEditingController();
   final _password = TextEditingController();
   _Who _who = _Who.owner;
-  bool _saving = false;
+  _Attempt _attempt = _Attempt.editing;
   String? _loginError;
   String? _passwordError;
   String? _formError;
 
-  /// The last call couldn't reach the server.
-  bool _callOffline = false;
-
-  /// The server knows the seller, but Atomshop hasn't verified them yet.
-  bool _pending = false;
+  bool get _saving => _attempt == _Attempt.signingIn;
+  bool get _callOffline => _attempt == _Attempt.offline;
+  bool get _pending => _attempt == _Attempt.unverified;
 
   @override
   void initState() {
     super.initState();
     // Changing what is typed starts again after "being checked".
     void edited() {
-      if (_pending) setState(() => _pending = false);
+      if (_pending) setState(() => _attempt = _Attempt.editing);
     }
 
     _login.addListener(edited);
@@ -85,7 +98,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
     setState(() {
       _formError = null;
-      _pending = false;
+      if (_pending) _attempt = _Attempt.editing;
       _loginError = login == null
           ? (_who == _Who.owner ? l.signInEmailInvalid : l.signInMobileInvalid)
           : null;
@@ -93,7 +106,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
     if (_loginError != null || _passwordError != null) return;
 
-    setState(() => _saving = true);
+    setState(() => _attempt = _Attempt.signingIn);
     final result = await ref
         .read(authRepositoryProvider)
         .signIn(login: login!, password: _password.text);
@@ -101,7 +114,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     switch (result) {
       case ApiOk(:final value):
-        _callOffline = false;
         ref.read(quickNoticeProvider.notifier).clear();
         // In memory only, for 2.4's "Open with fingerprint".
         ref.read(pendingSignInProvider.notifier).keep(login, _password.text);
@@ -116,10 +128,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         await ref.read(sessionProvider.notifier).signIn(value);
       case ApiErr(:final failure):
         setState(() {
-          _saving = false;
-          _callOffline = false;
+          _attempt = _Attempt.editing;
           if (failure.body?['reason'] == unverifiedBrandReason) {
-            _pending = true;
+            _attempt = _Attempt.unverified;
             return;
           }
           switch (failure.kind) {
@@ -135,7 +146,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 _formError = failure.message ?? l.signInFailed;
               }
             case ApiFailureKind.offline || ApiFailureKind.timeout:
-              _callOffline = true;
+              _attempt = _Attempt.offline;
             case ApiFailureKind.notInRole || ApiFailureKind.ownerOnly:
               // A switched-off agent or a non-seller account: the server
               // says why.
@@ -151,13 +162,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     ref.invalidate(onlineProvider);
     final online = await ref.read(networkStatusProvider).check();
     if (!mounted || !online) return;
-    setState(() => _callOffline = false);
+    setState(() => _attempt = _Attempt.editing);
     if (_login.text.isNotEmpty && _password.text.isNotEmpty) await _submit();
   }
 
   void _back() {
     final lock = ref.read(appLockProvider);
-    if (lock.locked && lock.passwordMode) {
+    if (lock.passwordMode) {
       ref.read(appLockProvider.notifier).backToQuickUnlock();
     } else if (context.canPop()) {
       context.pop();
@@ -174,14 +185,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     // The network came back: whatever failed to connect can go again.
     ref.listen(onlineProvider, (before, now) {
       if (now.value == true && before?.value == false && _callOffline) {
-        setState(() => _callOffline = false);
+        setState(() => _attempt = _Attempt.editing);
       }
     });
     final offline = !online || _callOffline;
     final lock = ref.watch(appLockProvider);
     // Locked, signing in with the password: back to the lock's fingerprint.
-    final lockFingerprint =
-        lock.locked && lock.passwordMode && lock.fingerprint;
+    final lockFingerprint = lock.passwordMode && lock.fingerprint;
     // Signed out, with a sign-in saved behind the fingerprint: 3.0.
     final quickFingerprint =
         !lockFingerprint &&
@@ -274,7 +284,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       _loginError = null;
                       _passwordError = null;
                       _formError = null;
-                      _pending = false;
+                      if (_pending) _attempt = _Attempt.editing;
                     }),
                   ),
                   const SizedBox(height: 22),

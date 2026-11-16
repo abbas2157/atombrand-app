@@ -98,8 +98,8 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
   Map<String, String> _problems = const {};
   bool _dirty = false;
 
-  /// 'send', 'draft' or 'pdf' while saving.
-  String? _saving;
+  /// What is being saved, while it is.
+  _QuoteSave? _saving;
 
   BulkRequest get _request => widget.dossier.request;
 
@@ -258,9 +258,8 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
     if (picked != null) _changed(() => _validUntil = picked);
   }
 
-  /// Saves the quote; [mode] is `send`, `draft` or `pdf` (a draft, then
-  /// its PDF).
-  Future<void> _save(String mode) async {
+  /// Saves the quote as [mode].
+  Future<void> _save(_QuoteSave mode) async {
     final l = AppLocalizations.of(context);
     final problems = quoteProblems(
       l,
@@ -292,14 +291,14 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
       advancePct: _advance,
       balanceTerms: _terms,
       notes: _notes.text,
-      send: mode == 'send',
+      send: mode == _QuoteSave.send,
     );
     if (!mounted) return;
     switch (r) {
       case ApiOk(:final value):
         refreshRequest(ref, _request.id);
         _dirty = false;
-        if (mode == 'pdf') {
+        if (mode == _QuoteSave.pdf) {
           final failure = await handOverServerPdf(
             ref.read(apiClientProvider),
             repo.quotePdf(value),
@@ -325,14 +324,14 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
         showAtomToast(
           context,
           kind: AtomToastKind.ok,
-          message: mode == 'send'
+          message: mode == _QuoteSave.send
               ? l.bulkQuoteSentToast(value.name)
               : rev.draft == null
               ? l.bulkDraftSaved
               : l.bulkDraftSavedName(value.name),
         );
         Navigator.of(context).pop();
-        if (mode == 'send' && value.whatsappLink != null) {
+        if (mode == _QuoteSave.send && value.whatsappLink != null) {
           await openWhatsApp(link: value.whatsappLink);
         }
       case ApiErr(:final failure):
@@ -579,8 +578,8 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
                     savingLabel: l.bulkGettingPdf,
                     icon: LucideIcons.fileText,
                     kind: AtomButtonKind.outline,
-                    saving: _saving == 'pdf',
-                    onPressed: busy ? null : () => _save('pdf'),
+                    saving: _saving == _QuoteSave.pdf,
+                    onPressed: busy ? null : () => _save(_QuoteSave.pdf),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -594,8 +593,8 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
             _Totals(
               totals: t,
               busy: _saving,
-              onDraft: busy ? null : () => _save('draft'),
-              onSend: busy ? null : () => _save('send'),
+              onDraft: busy ? null : () => _save(_QuoteSave.draft),
+              onSend: busy ? null : () => _save(_QuoteSave.send),
             ),
           ],
         ),
@@ -871,7 +870,7 @@ class _Totals extends StatelessWidget {
   });
 
   final QuoteTotals totals;
-  final String? busy;
+  final _QuoteSave? busy;
   final VoidCallback? onDraft;
   final VoidCallback? onSend;
 
@@ -987,7 +986,7 @@ class _Totals extends StatelessWidget {
                 child: AtomButton(
                   label: l.bulkSaveDraft,
                   kind: AtomButtonKind.outline,
-                  saving: busy == 'draft',
+                  saving: busy == _QuoteSave.draft,
                   oneLine: true,
                   padding: 8,
                   onPressed: onDraft,
@@ -1000,7 +999,7 @@ class _Totals extends StatelessWidget {
                   label: l.bulkSaveSendWhatsApp,
                   icon: AtomBrandIcons.whatsapp,
                   kind: AtomButtonKind.whatsapp,
-                  saving: busy == 'send',
+                  saving: busy == _QuoteSave.send,
                   oneLine: true,
                   padding: 8,
                   onPressed: onSend,
@@ -1012,4 +1011,16 @@ class _Totals extends StatelessWidget {
       ),
     );
   }
+}
+
+/// How the quote form saves.
+enum _QuoteSave {
+  /// Kept as a draft.
+  draft,
+
+  /// Sent to the buyer.
+  send,
+
+  /// A draft, then its PDF.
+  pdf,
 }

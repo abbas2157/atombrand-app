@@ -58,12 +58,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   String _term = '';
   Timer? _searchTimer;
 
-  /// Pages after the first, for the query they were read for.
-  final _more = <ProductRow>[];
-  ProductsQuery? _moreFor;
-  int _page = 1;
-  bool _lastPage = false;
-  bool _loadingMore = false;
+  /// Pages after the first, for the query they were read for. A new query
+  /// starts afresh, so a page that lands late can't join the wrong list.
+  _MorePages? _pages;
 
   /// Rows changed here (featured, AtomPay) before the list reloads.
   final _patched = <int, ProductRow>{};
@@ -88,23 +85,26 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   }
 
   Future<void> _showMore(ProductsQuery q) async {
-    setState(() => _loadingMore = true);
+    final pages = _pages;
+    if (pages == null || pages.query != q || pages.loading) return;
+    setState(() => pages.loading = true);
     final r = await ref
         .read(catalogueRepositoryProvider)
         .products(
           search: q.search,
           status: q.status,
           sort: q.sort,
-          page: _page + 1,
+          page: pages.page + 1,
         );
-    if (!mounted) return;
+    // The query changed, or the list was read again, while it loaded.
+    if (!mounted || !identical(pages, _pages)) return;
     setState(() {
-      _loadingMore = false;
+      pages.loading = false;
       switch (r) {
         case ApiOk(:final value):
-          _more.addAll(value.rows);
-          _page = value.page;
-          _lastPage = !value.hasMore;
+          pages.rows.addAll(value.rows);
+          pages.page = value.page;
+          pages.last = !value.hasMore;
         case ApiErr(:final failure):
           showAtomToast(
             context,
@@ -119,7 +119,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   /// went).
   void _reload() {
     setState(() {
-      _moreFor = null;
+      _pages = null;
       _patched.clear();
     });
     ref.invalidate(productsProvider);
@@ -234,12 +234,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final query = _query;
-    if (_moreFor != query) {
-      _moreFor = query;
-      _more.clear();
-      _page = 1;
-      _lastPage = false;
-    }
+    if (_pages?.query != query) _pages = _MorePages(query);
     final data = ref.watch(productsProvider(query));
     if (data.value case final v? when !v.fromCopy || _lastCounts == null) {
       _lastCounts = v;
@@ -302,7 +297,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             child: RefreshIndicator(
               onRefresh: () {
                 setState(() {
-                  _moreFor = null;
+                  _pages = null;
                   _patched.clear();
                 });
                 return ref.refresh(productsProvider(query).future);
@@ -442,7 +437,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     if (held == 0) return null;
     ProductRow? one;
     if (held == 1) {
-      for (final p in [...?page?.rows, ..._more]) {
+      for (final p in [...?page?.rows, ...?_pages?.rows]) {
         if (p.status == ProductStatus.onHold) {
           one = p;
           break;
@@ -515,9 +510,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     required bool? inventoryOn,
   }) {
     final rows = sortProducts([
-      for (final p in [...page.rows, ..._more]) _patched[p.id] ?? p,
+      for (final p in [...page.rows, ...?_pages?.rows]) _patched[p.id] ?? p,
     ], _sort);
-    final more = !page.fromCopy && (_page == 1 ? page.hasMore : !_lastPage);
+    final more = !page.fromCopy && (_pages?.hasMore(page) ?? page.hasMore);
     final filtered = query.status != null || query.search.isNotEmpty;
     return [
       if (rows.isEmpty)
@@ -593,7 +588,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
               label: l.catShowMore,
               kind: AtomButtonKind.outline,
               small: true,
-              saving: _loadingMore,
+              saving: _pages?.loading ?? false,
               onPressed: () => _showMore(query),
             ),
           ],
@@ -928,4 +923,20 @@ class ProductListRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The pages read after the first, for one query.
+class _MorePages {
+  _MorePages(this.query);
+
+  final ProductsQuery query;
+  final rows = <ProductRow>[];
+  int page = 1;
+
+  /// The last page read was the end.
+  bool last = false;
+  bool loading = false;
+
+  /// Another page can be asked for, given the first.
+  bool hasMore(ProductsPage first) => page == 1 ? first.hasMore : !last;
 }

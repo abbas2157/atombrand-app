@@ -150,22 +150,43 @@ class PinSetupScreen extends ConsumerStatefulWidget {
   ConsumerState<PinSetupScreen> createState() => _PinSetupScreenState();
 }
 
+/// Where Set PIN is:
+/// current → checking → create ⇄ confirm → saving → done.
+enum _PinStep {
+  /// Type the PIN in use (Change PIN).
+  current,
+
+  /// The PIN in use is being checked: no digits until it answers.
+  checking,
+  create,
+
+  /// The new PIN typed again.
+  confirm,
+
+  /// The new PIN is being stored.
+  saving,
+  done;
+
+  bool get takesDigits => this == current || this == create || this == confirm;
+}
+
 class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
   String _pin = '';
-  String? _first;
-  late bool _checkingCurrent = widget.askCurrent;
 
-  /// The current PIN is being checked: no digits until it answers.
-  bool _asking = false;
+  /// The first entry, kept while it is typed again ([_PinStep.confirm]).
+  String? _first;
+  late _PinStep _step = widget.askCurrent ? _PinStep.current : _PinStep.create;
 
   /// The line under the dots, in rose; the dots turn rose with it.
   String? _error;
-  bool _done = false;
+
+  bool get _done => _step == _PinStep.done;
 
   void _reset() => setState(() {
     _pin = '';
     _first = null;
     _error = null;
+    if (_step == _PinStep.confirm) _step = _PinStep.create;
   });
 
   void _leave() => widget.onClose != null
@@ -175,14 +196,13 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
   Future<void> _current(String pin) async {
     final l = AppLocalizations.of(context);
     final lock = ref.read(appLockProvider.notifier);
-    _asking = true;
+    setState(() => _step = _PinStep.checking);
     final result = await lock.checkCurrent(pin);
-    _asking = false;
     if (!mounted) return;
     switch (result) {
       case PinCheck.ok:
         setState(() {
-          _checkingCurrent = false;
+          _step = _PinStep.create;
           _pin = '';
           _error = null;
         });
@@ -190,6 +210,7 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
         HapticFeedback.heavyImpact();
         final wrong = ref.read(appLockProvider).wrongTries;
         setState(() {
+          _step = _PinStep.current;
           _pin = '';
           _error = wrong < maxPinTries
               ? l.qa3PinCurrentWrong(maxPinTries - wrong)
@@ -207,6 +228,7 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
               ? l.qa3PinCurrentWait(minutes)
               : l.qa3PinCurrentTooMany,
         );
+        setState(() => _step = _PinStep.current);
         _leave();
       case PinCheck.tooMany:
         // The tenth: as on the lock screen, the password is needed, the
@@ -219,7 +241,7 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
   }
 
   Future<void> _digit(String d) async {
-    if (_done || _asking || _pin.length >= 4) return;
+    if (!_step.takesDigits || _pin.length >= 4) return;
     final l = AppLocalizations.of(context);
     final pin = _pin + d;
     if (pin.length < 4) {
@@ -228,8 +250,8 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
         _error = null;
       });
     }
-    if (_checkingCurrent) return _current(pin);
-    if (_first == null) {
+    if (_step == _PinStep.current) return _current(pin);
+    if (_step == _PinStep.create) {
       if (isEasyPin(pin)) {
         return setState(() {
           _pin = '';
@@ -239,21 +261,26 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
       return setState(() {
         _first = pin;
         _pin = '';
+        _step = _PinStep.confirm;
       });
     }
     if (pin != _first) {
       return setState(() {
         _pin = '';
         _first = null;
+        _step = _PinStep.create;
         _error = l.pinMismatch;
       });
     }
-    setState(() => _pin = pin);
+    setState(() {
+      _pin = pin;
+      _step = _PinStep.saving;
+    });
     final lock = ref.read(appLockProvider.notifier);
     await lock.setPin(pin);
     // Fingerprint is the seller's choice: the switch on the next step
     // starts off, and turning it on is what asks for a finger.
-    if (mounted) setState(() => _done = true);
+    if (mounted) setState(() => _step = _PinStep.done);
   }
 
   void _delete() => setState(
@@ -263,18 +290,17 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final title = _done
-        ? l.pinDoneTitle
-        : _checkingCurrent
-        ? l.qa3PinCurrentTitle
-        : _first == null
-        ? l.pinCreateTitle
-        : l.pinConfirmTitle;
-    final body = _done
-        ? l.pinDoneBody
-        : _checkingCurrent
-        ? l.qa3PinCurrentBody
-        : l.pinCreateBody;
+    final title = switch (_step) {
+      _PinStep.done => l.pinDoneTitle,
+      _PinStep.current || _PinStep.checking => l.qa3PinCurrentTitle,
+      _PinStep.create => l.pinCreateTitle,
+      _PinStep.confirm || _PinStep.saving => l.pinConfirmTitle,
+    };
+    final body = switch (_step) {
+      _PinStep.done => l.pinDoneBody,
+      _PinStep.current || _PinStep.checking => l.qa3PinCurrentBody,
+      _ => l.pinCreateBody,
+    };
     return Scaffold(
       backgroundColor: AtomColors.paper,
       body: Column(

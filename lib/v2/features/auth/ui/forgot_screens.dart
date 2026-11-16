@@ -338,8 +338,12 @@ class _ForgotCodeScreenState extends ConsumerState<ForgotCodeScreen> {
   final _code = TextEditingController();
   Timer? _timer;
   int _wait = ForgotCodeScreen.resendAfter.inSeconds;
-  bool _verifying = false;
-  bool _resending = false;
+
+  /// Verify and another code never run together: a code sent while one
+  /// is being checked would replace it under the check.
+  _CodeBusy _busy = _CodeBusy.idle;
+  bool get _verifying => _busy == _CodeBusy.verifying;
+  bool get _resending => _busy == _CodeBusy.resending;
   String? _error;
 
   @override
@@ -366,6 +370,7 @@ class _ForgotCodeScreenState extends ConsumerState<ForgotCodeScreen> {
   }
 
   Future<void> _verify() async {
+    if (_busy != _CodeBusy.idle) return;
     final l = AppLocalizations.of(context);
     if (_code.text.length != 6) {
       setState(() => _error = l.codeIncomplete);
@@ -373,11 +378,11 @@ class _ForgotCodeScreenState extends ConsumerState<ForgotCodeScreen> {
     }
     setState(() {
       _error = null;
-      _verifying = true;
+      _busy = _CodeBusy.verifying;
     });
     final failure = await ref.read(forgotProvider.notifier).verify(_code.text);
     if (!mounted) return;
-    setState(() => _verifying = false);
+    setState(() => _busy = _CodeBusy.idle);
     if (failure == null) {
       context.pushReplacement(V2Routes.forgotNew);
     } else {
@@ -386,17 +391,17 @@ class _ForgotCodeScreenState extends ConsumerState<ForgotCodeScreen> {
   }
 
   Future<void> _resend({ResetChannel? channel}) async {
-    if (_resending) return;
+    if (_busy != _CodeBusy.idle) return;
     final l = AppLocalizations.of(context);
     setState(() {
-      _resending = true;
+      _busy = _CodeBusy.resending;
       _error = null;
     });
     final failure = await ref
         .read(forgotProvider.notifier)
         .send(channel: channel);
     if (!mounted) return;
-    setState(() => _resending = false);
+    setState(() => _busy = _CodeBusy.idle);
     if (failure != null) {
       setState(() => _error = _say(l, failure));
       return;
@@ -423,7 +428,7 @@ class _ForgotCodeScreenState extends ConsumerState<ForgotCodeScreen> {
           // Another code, so the same wait as Resend: the server sends three
           // a person in ten minutes, whichever way, and switching back and
           // forth used them up and locked the person out.
-          onPressed: _resending || _wait > 0
+          onPressed: _busy != _CodeBusy.idle || _wait > 0
               ? null
               : () => _resend(
                   channel: byWhatsApp
@@ -612,7 +617,7 @@ class ForgotDoneScreen extends ConsumerWidget {
     // Reset from the lock ("Forgot PIN?", then Forgot password): the PIN on
     // this phone stays for the same person.
     final lock = ref.watch(appLockProvider);
-    final pinKept = lock.locked && lock.passwordMode;
+    final pinKept = lock.passwordMode;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -708,3 +713,5 @@ class ForgotDoneScreen extends ConsumerWidget {
     );
   }
 }
+
+enum _CodeBusy { idle, verifying, resending }

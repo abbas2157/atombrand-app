@@ -1761,11 +1761,12 @@ class SupportThreadScreen extends ConsumerStatefulWidget {
 class _SupportThreadScreenState extends ConsumerState<SupportThreadScreen> {
   late SupportRequest? _r = widget.request;
   final _reply = TextEditingController();
-  bool _sending = false;
 
-  /// "Yes, close it" is on its way. A second tap sent a second close, and
-  /// a close could cross a reply still being sent.
-  bool _closing = false;
+  /// A reply or "Yes, close it" on its way, one at a time: a second tap
+  /// sent a second close, and a close could cross a reply still being sent.
+  _ThreadBusy _busy = _ThreadBusy.idle;
+  bool get _sending => _busy == _ThreadBusy.sending;
+  bool get _closing => _busy == _ThreadBusy.closing;
 
   @override
   void dispose() {
@@ -1776,11 +1777,11 @@ class _SupportThreadScreenState extends ConsumerState<SupportThreadScreen> {
   Future<void> _send() async {
     final r = _r;
     final text = _reply.text.trim();
-    if (r == null || text.isEmpty || _sending || _closing) return;
-    setState(() => _sending = true);
+    if (r == null || text.isEmpty || _busy != _ThreadBusy.idle) return;
+    setState(() => _busy = _ThreadBusy.sending);
     final res = await ref.read(helpRepositoryProvider).reply(r.uuid, text);
     if (!mounted) return;
-    setState(() => _sending = false);
+    setState(() => _busy = _ThreadBusy.idle);
     switch (res) {
       case ApiOk(:final value):
         _reply.clear();
@@ -1799,12 +1800,12 @@ class _SupportThreadScreenState extends ConsumerState<SupportThreadScreen> {
 
   Future<void> _close() async {
     final r = _r;
-    if (r == null || _closing || _sending) return;
+    if (r == null || _busy != _ThreadBusy.idle) return;
     final l = AppLocalizations.of(context);
-    setState(() => _closing = true);
+    setState(() => _busy = _ThreadBusy.closing);
     final res = await ref.read(helpRepositoryProvider).close(r.uuid);
     if (!mounted) return;
-    setState(() => _closing = false);
+    setState(() => _busy = _ThreadBusy.idle);
     switch (res) {
       case ApiOk():
         ref.invalidate(supportRequestsProvider);
@@ -2839,3 +2840,5 @@ class _AppCard extends StatelessWidget {
     ),
   );
 }
+
+enum _ThreadBusy { idle, sending, closing }
