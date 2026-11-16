@@ -74,8 +74,8 @@ class OrderView extends ConsumerWidget {
                     ? null
                     : () => Navigator.of(context).maybePop(),
               )
-            : AtomErrorState(
-                message: e is ApiFailure ? sayOrderFailure(e, l) : null,
+            : OrdersLoadError(
+                error: e,
                 onRetry: () => ref.invalidate(orderDetailProvider(uuid)),
               ),
       ),
@@ -405,6 +405,7 @@ class _StatusCard extends StatelessWidget {
           l.ordersStatus,
           trailing: Text(
             l.ordersTapStep,
+            textAlign: TextAlign.end,
             style: AtomText.small.copyWith(color: AtomColors.faint),
           ),
         ),
@@ -488,14 +489,15 @@ class _OrderedCard extends StatelessWidget {
     return LinesCard(
       title: l.ordersWhatOrdered,
       lines: [
+        // "Zenvo Refrigerator 14 cft · Silver × 1"
         OrderLine(
-          label: [
-            c.productTitle,
-            if (c.variant case final v? when v.isNotEmpty) v,
-            '${c.quantity}',
-          ].join(' · '),
+          label:
+              '${[c.productTitle, if (c.variant case final v? when v.isNotEmpty) v].join(' · ')}'
+              ' × ${c.quantity}',
           value: formatRs(c.total),
         ),
+        // Storefront orders carry no delivery charge.
+        OrderLine(label: l.ordersDelivery, value: l.ordersDeliveryFree),
         OrderLine(label: l.ordersTotal, value: formatRs(c.total), bold: true),
         if (order.serial case final s?)
           OrderLine(label: l.ordersSerial, value: s),
@@ -600,7 +602,7 @@ class _CustomerCard extends StatelessWidget {
       title: l.ordersCustomer,
       trailing: c.verified
           ? AtomPill(label: l.ordersVerified, tone: AtomTone.green)
-          : null,
+          : AtomPill(label: l.ordersNotVerified, tone: AtomTone.amber),
       lines: [
         OrderLine(label: l.ordersName, value: c.name),
         if (c.since != null)
@@ -633,15 +635,23 @@ class _DeliveryCard extends StatelessWidget {
       if (c?.address case final a? when a.isNotEmpty) a,
       if (c?.area case final a? when a.isNotEmpty) a,
     ].join(', ');
-    final city = c?.city ?? order.order.city;
-    final lines = [
-      if (address.isNotEmpty) OrderLine(label: l.ordersAddress, value: address),
-      if (city != null && city.isNotEmpty)
-        OrderLine(label: l.ordersCity, value: city),
-      if (multi && order.order.outlet != null)
-        OrderLine(label: l.ordersOutlet, value: order.order.outlet!.name),
-    ];
-    if (lines.isEmpty) return const SizedBox.shrink();
-    return LinesCard(title: l.ordersDelivery, lines: lines);
+    final city = [
+      order.order.city,
+      c?.city,
+    ].firstWhere((v) => v != null && v.isNotEmpty, orElse: () => null);
+    // Address and City always show (as on the board); the customer's
+    // profile may simply not have them yet.
+    return LinesCard(
+      title: l.ordersDelivery,
+      lines: [
+        OrderLine(
+          label: l.ordersAddress,
+          value: address.isEmpty ? l.ordersNotGiven : address,
+        ),
+        OrderLine(label: l.ordersCity, value: city ?? l.ordersNotGiven),
+        if (multi && order.order.outlet != null)
+          OrderLine(label: l.ordersOutlet, value: order.order.outlet!.name),
+      ],
+    );
   }
 }

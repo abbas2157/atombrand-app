@@ -218,13 +218,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             child: AutofillGroup(
               child: AuthScrollBody(
                 children: [
-                  // The mark over the heading: the way in carries the
-                  // brand from Welcome through to the tour.
-                  const Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: AtomBrandTile(size: 56, onLight: true),
-                  ),
-                  const SizedBox(height: 18),
                   Semantics(
                     header: true,
                     child: Text(l.signInTitle, style: AuthText.h1),
@@ -456,24 +449,11 @@ class _Trouble extends StatelessWidget {
           l.signInTrouble,
           style: AtomText.body.copyWith(color: AtomColors.muted),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(width: 4),
-            const Icon(
-              AtomBrandIcons.whatsapp,
-              size: 16,
-              color: AtomColors.whatsapp,
-            ),
-            // Flexible: at 200% text on a 320dp phone the link is wider
-            // than the screen, and wraps rather than running off it.
-            Flexible(
-              child: AuthLink(
-                label: l.signInWhatsApp,
-                onTap: openAtomshopWhatsApp,
-              ),
-            ),
-          ],
+        // A plain link, as on 2.1 (no icon). At 200% text on a 320dp
+        // phone the Wrap moves it to its own line.
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 4),
+          child: AuthLink(label: l.signInWhatsApp, onTap: openAtomshopWhatsApp),
         ),
       ],
     );

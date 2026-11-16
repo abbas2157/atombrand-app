@@ -47,6 +47,7 @@ class ProductFormScreen extends ConsumerWidget {
                     ? l.catProductNotFound
                     : sayFailure(AppLocalizations.of(context), failure))
               : null,
+          error: failure,
           onRetry: () {
             ref.invalidate(formOptionsProvider);
             if (id != null) ref.invalidate(productDetailProvider(id!));
@@ -507,13 +508,38 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       _Section.photos,
       _Section.details,
       _Section.price,
-      if (_hasVariants) _Section.variants,
+      // Always listed (the board's five chips): before a category is
+      // picked, or for a one-version category, it says so.
+      _Section.variants,
       _Section.description,
     ];
 
     final (String statusLabel, AtomTone statusColour) = row == null
         ? (l.catNotSentYet, AtomTone.grey)
         : (row.statusLabel(l), statusTone(row.status));
+
+    // At large text on a short screen a fixed foot would leave no room
+    // for the form: it then scrolls with it, at the end.
+    final scrollBar =
+        MediaQuery.textScalerOf(context).scale(10) > 15 &&
+        MediaQuery.sizeOf(context).height < 900;
+    final bar = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (missingLine(gaps, l) case final reason?)
+          AtomButtonReason(reason: reason),
+        AtomButton(
+          label: ctaLabel(_mode, l),
+          saving: _saving,
+          onPressed: gaps.isEmpty ? _save : null,
+        ),
+        if (goesForReview(_mode)) ...[
+          const SizedBox(height: 6),
+          Tiny(l.catReviewedBy, center: true),
+        ],
+      ],
+    );
 
     return AtomUnsavedGuard(
       dirty: _dirty && !_readOnly,
@@ -542,9 +568,18 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                     trailing: [
                       Padding(
                         padding: const EdgeInsets.only(right: 12, left: 8),
-                        child: StatusPill(
-                          label: statusLabel,
-                          tone: statusColour,
+                        // Shrinks at large text so the title keeps room.
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.sizeOf(context).width * 0.3,
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: StatusPill(
+                              label: statusLabel,
+                              tone: statusColour,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -578,36 +613,24 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                             child: _section(s, i + 1, draft),
                           ),
                         ],
+                        if (!_readOnly && scrollBar) ...[
+                          const SizedBox(height: 16),
+                          bar,
+                        ],
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-            if (!_readOnly)
+            if (!_readOnly && !scrollBar)
               FormBottomBar(
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
                       maxWidth: AtomSize.formMaxWidth,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (missingLine(gaps, l) case final reason?)
-                          AtomButtonReason(reason: reason),
-                        AtomButton(
-                          label: ctaLabel(_mode, l),
-                          saving: _saving,
-                          onPressed: gaps.isEmpty ? _save : null,
-                        ),
-                        if (goesForReview(_mode)) ...[
-                          const SizedBox(height: 6),
-                          Tiny(l.catReviewedBy, center: true),
-                        ],
-                      ],
-                    ),
+                    child: bar,
                   ),
                 ),
               ),
@@ -809,8 +832,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
 
   List<Widget> _details() {
     final l = AppLocalizations.of(context);
-    final brands = _o.brands;
-    final brandLabel = _o.nameOf(brands, _brandId);
+    final brandLabel = _o.nameOf(_o.brands, _brandId);
     return [
       AtomTextField(
         label: l.catTitleLabel,
@@ -821,46 +843,32 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
         textInputAction: TextInputAction.next,
         inputFormatters: [LengthLimitingTextInputFormatter(255)],
       ),
-      AtomSelectField<int>(
-        label: l.catCategory,
-        value: _categoryId,
-        valueLabel: _o.nameOf(_o.categories, _categoryId),
-        placeholder: l.commonChoose,
-        sheetTitle: l.catCategory,
-        searchHint: l.catCategorySearch,
-        error: _err('category_id'),
-        options: [
-          for (final c in _o.categories)
-            AtomOption(value: c.id, label: c.title),
-        ],
-        onChanged: _readOnly ? null : _setCategory,
-      ),
-      AtomSelectField<int>(
-        label: l.catBrand,
-        value: _brandId,
-        valueLabel: brandLabel,
-        placeholder: l.commonChoose,
-        sheetTitle: l.catBrand,
-        searchHint: l.catBrandSearch,
-        mineLabel: l.catBrandsInCategory,
-        othersLabel: l.catOtherBrands,
-        error: _err('brand_id'),
-        options: [
-          for (final b in brands)
-            AtomOption(
-              value: b.id,
-              label: b.title,
-              mine: _categoryId != null && b.categoryIds.contains(_categoryId),
-            ),
-        ],
-        // One brand to choose from: shown, not changeable (the board's
-        // greyed Brand).
-        onChanged: _readOnly || brands.length <= 1
-            ? null
-            : (id) => setState(() {
-                _brandId = id;
-                _dirty = true;
-              }),
+      _CategoryBrandRow(
+        category: AtomSelectField<int>(
+          label: l.catCategory,
+          value: _categoryId,
+          valueLabel: _o.nameOf(_o.categories, _categoryId),
+          placeholder: l.commonChoose,
+          sheetTitle: l.catCategory,
+          searchHint: l.catCategorySearch,
+          error: _err('category_id'),
+          options: [
+            for (final c in _o.categories)
+              AtomOption(value: c.id, label: c.title),
+          ],
+          onChanged: _readOnly ? null : _setCategory,
+        ),
+        // The partner's own brand: shown, never changeable (the board's
+        // greyed Brand with a padlock).
+        brand: AtomSelectField<int>(
+          label: l.catBrand,
+          value: _brandId,
+          valueLabel: brandLabel,
+          placeholder: l.commonChoose,
+          error: _err('brand_id'),
+          icon: LucideIcons.lock,
+          onChanged: null,
+        ),
       ),
       AtomTextField(
         label: l.catDetailHeading,
@@ -987,6 +995,11 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     final colours = coloursFor(_categoryId, _o);
     final pricedError =
         _err('memories') ?? _err('sizes') ?? _err('memories.name');
+    if (_categoryId == null) return [Tiny(l.catVarPickCategory)];
+    if (!_hasVariants) return [Tiny(l.catVarOneVersion)];
+    final options = priced == PricedVariant.none
+        ? const <NamedOption>[]
+        : _optionsFor(priced);
     return [
       if (colours) _colourPicker(),
       if (priced != PricedVariant.none)
@@ -1002,7 +1015,19 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                 _pricedRow(r, priced),
                 const SizedBox(height: 8),
               ],
-              if (!_readOnly && _priced.length < _optionsFor(priced).length)
+              // Atomshop keeps the list of sizes and storage; until it has
+              // some there is nothing to add, and the screen says so.
+              if (options.isEmpty) ...[
+                Tiny(
+                  priced == PricedVariant.storage
+                      ? l.catVarNoStorage
+                      : l.catVarNoSizes,
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (!_readOnly &&
+                  options.isNotEmpty &&
+                  _priced.length < options.length)
                 Align(
                   alignment: Alignment.centerLeft,
                   child: AtomButton.small(
@@ -1040,7 +1065,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     final swatches = all.length <= 12;
     return AtomField(
       label: l.catColours,
-      labelNote: l.catColoursPicked(_colors.length),
+      labelNote: all.isEmpty ? null : l.catColoursPicked(_colors.length),
       labelNoteInline: true,
       error: _err('colors'),
       child: Column(
@@ -1068,6 +1093,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             ),
             if (picked.isNotEmpty) const SizedBox(height: 8),
           ],
+          if (all.isEmpty) Tiny(l.catVarNoColours),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -1075,6 +1101,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               for (final c in swatches ? all : picked)
                 _Swatch(
                   name: c.title,
+                  code: c.code,
                   on: _colors.contains(c.id),
                   onTap: _readOnly ? null : () => toggle(c.id),
                 ),
@@ -1089,10 +1116,13 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     final l = AppLocalizations.of(context);
     final name = _o.nameOf(_optionsFor(kind), r.draft.id);
     final label = kind == PricedVariant.storage ? l.catStorage : l.catSize;
+    // `.vrow`'s 96 column for the option; narrower at large text so the
+    // price keeps room on a small phone.
+    final big = MediaQuery.textScalerOf(context).scale(10) > 13;
     return Row(
       children: [
         SizedBox(
-          width: 110,
+          width: big ? 84 : 96,
           child: AtomSelectBox(
             text: name,
             placeholder: label,
@@ -1138,6 +1168,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
         keyboardType: TextInputType.multiline,
         error: tooLong ? l.catShortTooLong : _err('short'),
         hint: l.catShortCount(n, maxShortChars),
+        countHint: true,
       ),
       AtomTextField(
         label: l.catFullDescription,
@@ -1147,11 +1178,40 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
         enabled: !_readOnly,
         minLines: 5,
         keyboardType: TextInputType.multiline,
-        hint: l.catFullHint,
         error: _err('long'),
       ),
     ];
   }
+}
+
+/// Category and Brand side by side (`.two2`); one under the other when
+/// the screen is narrow or the text is large.
+class _CategoryBrandRow extends StatelessWidget {
+  const _CategoryBrandRow({required this.category, required this.brand});
+
+  final Widget category;
+  final Widget brand;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
+      if (box.maxWidth < 300 || scale > 1.3) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [category, const SizedBox(height: 14), brand],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: category),
+          const SizedBox(width: 10),
+          Expanded(child: brand),
+        ],
+      );
+    },
+  );
 }
 
 /// The section jump bar (`.jump`): one chip per section, green with a tick
@@ -1181,17 +1241,48 @@ class _JumpBar extends StatelessWidget {
     return Semantics(
       label: l.catSections,
       container: true,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Row(
-          children: [
-            for (final (i, s) in sections.indexed) ...[
-              if (i > 0) const SizedBox(width: 6),
-              _chip(s, done(s), l),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final row = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (i, s) in sections.indexed) ...[
+                if (i > 0) const SizedBox(width: 6),
+                _chip(s, done(s), l),
+              ],
             ],
-          ],
-        ),
+          );
+          // Every chip in view when it can be: measured, then shrunk a
+          // little if that is enough; otherwise the row scrolls.
+          final scaler = MediaQuery.textScalerOf(context);
+          final style = AtomText.small.copyWith(fontWeight: FontWeight.w600);
+          var need = 6.0 * (sections.length - 1);
+          for (final s in sections) {
+            final tp = TextPainter(
+              text: TextSpan(text: _label(s, l), style: style),
+              textDirection: Directionality.of(context),
+              textScaler: scaler,
+              maxLines: 1,
+            )..layout();
+            need += tp.width + 22 + (done(s) ? 19 : 0);
+            tp.dispose();
+          }
+          final room = box.maxWidth - 32;
+          if (need <= room / 0.86) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: FittedBox(fit: BoxFit.scaleDown, child: row),
+              ),
+            );
+          }
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: row,
+          );
+        },
       ),
     );
   }
@@ -1307,36 +1398,93 @@ class _AddTile extends StatelessWidget {
     return AtomPressable(
       onTap: onTap,
       semanticLabel: '${l.catAdd} ${l.catMorePhotos.toLowerCase()}',
-      builder: (context, pressed) => Container(
-        decoration: BoxDecoration(
-          color: pressed ? AtomColors.head : AtomColors.paper,
-          borderRadius: AtomRadius.brControl,
-          border: Border.all(color: AtomColors.line2, width: 1.5),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(LucideIcons.plus, size: 18, color: AtomColors.primary),
-            const SizedBox(height: 2),
-            Text(
-              l.catAdd,
-              style: AtomText.small.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AtomColors.primary,
-              ),
+      builder: (context, pressed) => CustomPaint(
+        // The board's `border: 1.5px dashed`.
+        foregroundPainter: const _DashedBox(),
+        child: Container(
+          // Fills its square in the grid (the board's `.gal button`).
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: pressed ? AtomColors.head : AtomColors.paper,
+            borderRadius: AtomRadius.brControl,
+          ),
+          alignment: Alignment.center,
+          // Shrinks to the square at large text.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  LucideIcons.plus,
+                  size: 18,
+                  color: AtomColors.primary,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l.catAdd,
+                  style: AtomText.small.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AtomColors.primary,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// The Add tile's 1.5px dashed `#D0D5DD` border.
+class _DashedBox extends CustomPainter {
+  const _DashedBox();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AtomColors.line2
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    final path = Path()
+      ..addRRect(
+        AtomRadius.brControl.toRRect(Offset.zero & size).deflate(0.75),
+      );
+    for (final m in path.computeMetrics()) {
+      for (var d = 0.0; d < m.length; d += 7) {
+        canvas.drawPath(m.extractPath(d, (d + 4).clamp(0, m.length)), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBox old) => false;
+}
+
 /// A colour chip (`.swatch`): a dot in the colour and its name.
 class _Swatch extends StatelessWidget {
-  const _Swatch({required this.name, required this.on, required this.onTap});
+  const _Swatch({
+    required this.name,
+    required this.on,
+    required this.onTap,
+    this.code,
+  });
 
   final String name;
+
+  /// The catalogue's hex for the colour (`#101828`), when it has one.
+  final String? code;
+
+  static Color? _parse(String? hex) {
+    final h = hex?.trim().replaceFirst('#', '') ?? '';
+    if (h.length != 6 && h.length != 8) return null;
+    final v = int.tryParse(h, radix: 16);
+    if (v == null) return null;
+    return Color(h.length == 6 ? 0xFF000000 | v : v);
+  }
+
   final bool on;
   final VoidCallback? onTap;
 
@@ -1397,7 +1545,7 @@ class _Swatch extends StatelessWidget {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: dotFor(name),
+              color: _parse(code) ?? dotFor(name),
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0x26101828)),
             ),

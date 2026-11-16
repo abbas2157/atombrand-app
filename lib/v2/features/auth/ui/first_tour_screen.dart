@@ -72,8 +72,7 @@ class _FirstTourScreenState extends ConsumerState<FirstTourScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // The mark and the name at the start, Skip at the end: the
-                // same lockup the Welcome bar opens with.
+                // Only Skip, at the end (16.7).
                 ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 52),
                   child: Padding(
@@ -83,18 +82,7 @@ class _FirstTourScreenState extends ConsumerState<FirstTourScreen> {
                     ),
                     child: Row(
                       children: [
-                        const AtomBrandTile(size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            l.appName,
-                            style: AtomText.secondary.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
+                        const Spacer(),
                         _SkipButton(label: l.tourSkip, onTap: _finish),
                       ],
                     ),

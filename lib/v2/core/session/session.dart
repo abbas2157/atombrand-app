@@ -147,6 +147,8 @@ class Outlet {
     this.city,
     this.isMain = false,
     this.active = true,
+    this.serves = const [],
+    this.paused = false,
   });
 
   final int id;
@@ -154,6 +156,13 @@ class Outlet {
   final String? city;
   final bool isMain;
   final bool active;
+
+  /// The cities the outlet serves (`cities[].title`), for "Lahore · serves
+  /// Lahore, Faisalabad" (2.6, 5.7).
+  final List<String> serves;
+
+  /// `status` is `paused` (not `closed`).
+  final bool paused;
 
   factory Outlet.fromJson(Object? data) {
     final j = Json.map(data);
@@ -167,6 +176,11 @@ class Outlet {
       isMain: Json.flag(j['is_main'] ?? j['main']),
       // `status` is `open`, `paused` or `closed` (`POST outlets/{id}/status`).
       active: j['status'] == null || j['status'] == 'open',
+      paused: j['status'] == 'paused',
+      serves: [
+        for (final c in Json.list(j['cities']))
+          if (c is Map) ?Json.str(c['title'] ?? c['name']) else ?Json.str(c),
+      ],
     );
   }
 
@@ -175,7 +189,8 @@ class Outlet {
     'name': name,
     'city': city,
     'is_main': isMain,
-    'status': active ? 'open' : 'paused',
+    'status': active ? 'open' : (paused ? 'paused' : 'closed'),
+    'cities': serves,
   };
 
   @override

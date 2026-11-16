@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../core/session/session.dart';
 import '../core/session/session_controller.dart';
 import '../design/design.dart';
 import '../features/notifications/ui/allow_notifications_screen.dart';
@@ -14,7 +15,7 @@ import 'routes.dart';
 /// The frame around the four tabs: a tab bar on phones, a navy rail from
 /// 600dp (14.1).
 ///
-/// The bar is Home · Orders · ＋ · Bulk deals · Products. The ＋ opens
+/// The bar is Home Â· Orders Â· ï¼‹ Â· Bulk deals Â· Products. The ï¼‹ opens
 /// Quick actions (5.6); the avatar on Home's header opens the Menu (12.1),
 /// and on a tablet the rail's More does.
 ///
@@ -85,6 +86,11 @@ class _AtomShellState extends ConsumerState<AtomShell> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     ref.watch(sessionProvider);
+    final who = ref.read(sessionProvider.notifier).current?.who;
+    final seesBulk =
+        who == null ||
+        who.can(BrandPermission.bulkView) ||
+        !who.can(BrandPermission.atompayView);
     final wide = MediaQuery.sizeOf(context).width >= AtomSize.tabletBreakpoint;
     final atRoot = V2Routes.tabs.contains(GoRouterState.of(context).uri.path);
     final branch = widget.navigationShell.currentIndex;
@@ -96,7 +102,14 @@ class _AtomShellState extends ConsumerState<AtomShell> {
         AtomDestination(icon: LucideIcons.fileText, label: l.tabOrders),
         _orders,
       ),
-      (AtomDestination(icon: LucideIcons.funnel, label: l.tabBulk), _bulk),
+      // A role without bulk deals has AtomPay orders here (5.2).
+      if (seesBulk)
+        (AtomDestination(icon: LucideIcons.funnel, label: l.tabBulk), _bulk)
+      else
+        (
+          AtomDestination(icon: LucideIcons.handCoins, label: l.tabAtompay),
+          _bulk,
+        ),
       (AtomDestination(icon: LucideIcons.tag, label: l.tabProducts), _products),
     ];
     final selected = tabs.indexWhere((t) => t.$2 == branch);

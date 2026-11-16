@@ -18,9 +18,9 @@ import '../../sync/ui/offline_bar.dart';
 import '../data/reports_repository.dart';
 import 'account_parts.dart';
 
-/// Reports (12.4, `money.reports`): the period chips, the four headline
-/// numbers, the last six months, then each report the person can open,
-/// grouped. Every figure is the server's.
+/// Reports (12.4, `money.reports`): the period tabs, the four headline
+/// numbers with the line under each, then each report the person can
+/// open, grouped. Every figure is the server's.
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -71,7 +71,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final who = ref.watch(sessionProvider.notifier).current?.who;
     final canExport = who?.can(BrandPermission.moneyExport) ?? false;
     final online = ref.watch(onlineProvider).value ?? true;
-    final home = data.value;
     return Scaffold(
       backgroundColor: AtomColors.surface,
       body: Column(
@@ -100,16 +99,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   24 + MediaQuery.paddingOf(context).bottom,
                 ),
                 children: [
-                  if (home != null && home.outlets.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _OutletPick(
-                      outlets: home.outlets,
-                      value: _filter.outletId,
-                      onChanged: (id) => setState(
-                        () => _filter = _filter.copyWith(outletId: () => id),
-                      ),
-                    ),
-                  ],
                   ...switch (data) {
                     AsyncValue(value: final h?) => _body(h, canExport, online),
                     AsyncError(:final error) => [
@@ -140,7 +129,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             AtomDates.short(_filter.from!),
             AtomDates.short(_filter.to!),
           ),
-        final p => h.labels[p.key] ?? p.label(l),
+        // The board names the tab ("Sales · This month"), not the month.
+        final p => p.label(l),
       };
 
   List<Widget> _body(ReportsHome h, bool canExport, bool online) {
@@ -151,16 +141,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       AccountLabel(l.acctSalesPeriod(_periodLabel(l, h))),
       AtomKpiGrid(
         kpis: [
-          AtomKpi(label: l.acctCashOrders, value: formatRs(t.cashSales)),
-          AtomKpi(label: l.acctPaymentsReceived, value: formatRs(t.received)),
-          AtomKpi(label: l.acctAtompayPaid, value: formatRs(t.atompayPaid)),
-          AtomKpi(label: l.acctBulkWon, value: formatRs(t.bulkWon)),
+          AtomKpi(
+            label: l.acctCashOrders,
+            value: formatRs(t.cashSales),
+            note: _count(t.cashOrders, l.accountReportOrders),
+          ),
+          AtomKpi(
+            label: l.acctPaymentsReceived,
+            value: formatRs(t.received),
+            note: t.stillDue == null
+                ? null
+                : l.accountReportStillDue(formatRs(t.stillDue!)),
+          ),
+          AtomKpi(
+            label: l.acctAtompayPaid,
+            value: formatRs(t.atompayPaid),
+            note: _count(t.atompayUnits, l.accountReportUnits),
+          ),
+          AtomKpi(
+            label: l.acctBulkWon,
+            value: formatRs(t.bulkWon),
+            note: _count(t.bulkDeals, l.accountReportDeals),
+          ),
         ],
       ),
-      if (h.months.isNotEmpty) ...[
-        AccountLabel(l.acctLast6Months),
-        _MonthsChart(months: h.months),
-      ],
       for (final (group, cards) in h.groups)
         if (cards.any((c) => _shown(c, access))) ...[
           AccountLabel(group.isEmpty ? l.menuReports : group),
@@ -208,40 +212,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     ];
   }
 
+  /// "18 orders"; "None today" for nothing today; null when not sent.
+  String? _count(int? n, String Function(int) say) {
+    if (n == null) return null;
+    if (n == 0 && _filter.period == ReportPeriod.today) {
+      return AppLocalizations.of(context).accountReportNoneToday;
+    }
+    return say(n);
+  }
+
   /// The server lists only what the brand and person may open; the stock
   /// report also needs the Inventory add-on on this phone's view.
   bool _shown(ReportCard c, AccessState access) =>
       c.key != 'stock' || access.addons == null || access.has(Addon.inventory);
-}
-
-/// "Outlet: All outlets", opening the searchable list.
-class _OutletPick extends StatelessWidget {
-  const _OutletPick({
-    required this.outlets,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final List<({int id, String name})> outlets;
-  final int? value;
-  final ValueChanged<int?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final name = outlets.where((o) => o.id == value).firstOrNull?.name;
-    return AtomSelectField<int>(
-      label: l.acctOutlet,
-      value: value ?? 0,
-      valueLabel: name ?? l.outletAll,
-      sheetTitle: l.acctWhichOutlet,
-      options: [
-        AtomOption(value: 0, label: l.outletAll),
-        for (final o in outlets) AtomOption(value: o.id, label: o.name),
-      ],
-      onChanged: (id) => onChanged(id == 0 ? null : id),
-    );
-  }
 }
 
 /// `.rp`: a report, what it holds, and a chevron.
@@ -263,7 +246,7 @@ class _ReportRow extends StatelessWidget {
           child: Row(
             children: [
               const AtomIconTile(
-                icon: LucideIcons.fileChartColumn,
+                icon: LucideIcons.chartColumn,
                 tone: AtomTone.grey,
               ),
               const SizedBox(width: 12),
@@ -288,126 +271,4 @@ class _ReportRow extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Six months as bars: cash orders, with received in a lighter bar beside.
-class _MonthsChart extends StatelessWidget {
-  const _MonthsChart({required this.months});
-  final List<({String label, int cashSales, int received})> months;
-
-  @override
-  Widget build(BuildContext context) {
-    final top = months.fold<int>(
-      1,
-      (m, x) => [m, x.cashSales, x.received].reduce((a, b) => a > b ? a : b),
-    );
-    final l = AppLocalizations.of(context);
-    return Semantics(
-      label: [
-        for (final m in months)
-          l.acctMonthSemantics(
-            m.label,
-            formatRs(m.cashSales),
-            formatRs(m.received),
-          ),
-      ].join('; '),
-      child: ExcludeSemantics(
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-          decoration: AtomDecor.card,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 120,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    for (final m in months)
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            _Bar(
-                              fraction: m.cashSales / top,
-                              colour: AtomColors.primary,
-                            ),
-                            const SizedBox(width: 3),
-                            _Bar(
-                              fraction: m.received / top,
-                              colour: AtomColors.chartBar,
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  for (final m in months)
-                    Expanded(
-                      child: Text(
-                        m.label,
-                        textAlign: TextAlign.center,
-                        style: AtomText.small,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _Key(colour: AtomColors.primary, label: l.acctCashOrders),
-                  const SizedBox(width: 16),
-                  _Key(colour: AtomColors.chartBar, label: l.acctReceived),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Bar extends StatelessWidget {
-  const _Bar({required this.fraction, required this.colour});
-  final double fraction;
-  final Color colour;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 10,
-    height: fraction <= 0 ? 0 : (120 * fraction).clamp(4, 120),
-    decoration: BoxDecoration(
-      color: colour,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-    ),
-  );
-}
-
-class _Key extends StatelessWidget {
-  const _Key({required this.colour, required this.label});
-  final Color colour;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(
-          color: colour,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-      const SizedBox(width: 6),
-      Text(label, style: AtomText.small),
-    ],
-  );
 }

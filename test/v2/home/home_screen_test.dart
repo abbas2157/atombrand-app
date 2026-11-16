@@ -285,6 +285,54 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a member in every outlet sees All outlets and Confirm orders', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      session: const BrandSession(
+        token: 't',
+        userId: 2,
+        name: 'Hamza Saeed',
+        brandName: 'Zenvo Appliances',
+        outlets: [
+          Outlet(id: 1, name: 'Lahore · Gulberg'),
+          Outlet(id: 2, name: 'Karachi · Tariq Road'),
+        ],
+        who: Who(
+          isOwner: false,
+          roleName: 'Order handler',
+          permissions: {'orders.view', 'orders.status', 'atompay.view'},
+        ),
+      ),
+      json: {
+        'home': {
+          'hero': {'orders_to_confirm': 3, 'atompay_to_hand_over': 0},
+          'tasks': [],
+          'latest_orders': [],
+        },
+      },
+    );
+    // 5.2: the outlet over "Brand · Role", and in the hero's corner.
+    expect(find.text('All outlets'), findsNWidgets(2));
+    expect(find.text('Zenvo Appliances · Order handler'), findsOneWidget);
+    expect(find.text(l.homeConfirmOrders), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home fits 320dp at 200% text', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(
+      tester,
+      session: _owner,
+      json: _ownerJson,
+      size: const Size(320, 6000),
+    );
+    expect(find.text('Confirm 4 new orders'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a new brand sees its first steps', (tester) async {
     await _pump(
       tester,

@@ -34,7 +34,12 @@ import '../../../core/session/session.dart' show BrandPermission, BrandSession;
 import 'security_screens.dart' show SecurityScreen;
 import 'settings_parts.dart';
 import 'device_screens.dart'
-    show cacheBytesProvider, megabytes, notificationsAllowedProvider;
+    show
+        cacheBytesProvider,
+        megabytes,
+        notificationsAllowedProvider,
+        offlineBytesProvider;
+import '../../account/ui/daily_summary_screen.dart' show dailySummaryProvider;
 
 export 'settings_parts.dart' show SettingsPane, settingsLeading;
 
@@ -158,10 +163,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final offline = online ? null : l.dpDdNeedsInternet;
     final profile = ref.watch(myProfileProvider).value;
     final devices = ref.watch(devicesProvider);
-    final cache = ref.watch(cacheBytesProvider).value;
+    final cacheOnly = ref.watch(cacheBytesProvider).value;
+    final copyBytes = access.has(Addon.offline)
+        ? ref.watch(offlineBytesProvider).value
+        : 0;
+    final cache = cacheOnly == null || copyBytes == null
+        ? null
+        : cacheOnly + copyBytes;
     final notifOff = ref.watch(notificationsAllowedProvider).value == false;
     final terms = access.terms;
-    final role = owner ? l.menuOwner : (session?.who.roleName ?? '');
+    final role = owner ? l.menuRoleOwner : (session?.who.roleName ?? '');
     final business = profile?.brandName ?? session?.brandName ?? '';
 
     /// Opens [pane] on the right on a wide tablet, else pushes [route].
@@ -204,6 +215,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     final shop = owner ? ref.watch(shopSettingsProvider).value : null;
+    final daily = owner ? ref.watch(dailySummaryProvider).value : null;
     final account = shop?.account;
     final inventory = access.stateOf(Addon.inventory);
     final groups = <(String, String?, List<Widget>)>[
@@ -222,7 +234,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           row(
             icon: LucideIcons.keyRound,
             tone: AtomTone.blue,
-            title: owner ? l.passwordTitle : l.menuMyPassword,
+            title: owner ? l.settingsPasswordRow : l.menuMyPassword,
             sub: owner
                 ? l.settingsPasswordSubOwner
                 : l.settingsPasswordSubAgent,
@@ -305,6 +317,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               tone: AtomTone.green,
               title: l.settingsDaily,
               sub: l.settingsDailySub,
+              value: switch (daily) {
+                null => null,
+                final d => d.on ? l.settingsOn : l.dpDcOff,
+              },
               onTap: push(V2Routes.dailySummary),
             ),
             if (session?.who.can(BrandPermission.pageEdit) ?? false)
@@ -318,6 +334,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       '',
                     ) ??
                     l.menuBrandPageSub,
+                value: switch (profile?.brandStatus) {
+                  null => null,
+                  'active' => l.settingsPageLive,
+                  _ => l.settingsPageNotLive,
+                },
                 onTap: push(V2Routes.brandPage),
               ),
           ],
@@ -332,7 +353,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               tone: AtomTone.blue,
               title: l.settingsStatus,
               sub: [
-                _statusLabel(l, account?.status),
+                account?.status == 'active'
+                    ? l.settingsStatusActivePartner
+                    : _statusLabel(l, account?.status),
                 if (account?.partnerSince != null)
                   l.settingsPartnerSince(AtomDates.day(account!.partnerSince!)),
               ].join(' · '),
@@ -537,8 +560,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (owner)
             row(
               icon: LucideIcons.trash,
-              title: l.acctCloseTitle,
-              sub: l.acctCloseSub(business),
+              title: l.settingsDeleteTitle,
+              sub: l.settingsDeleteRowSub,
               danger: true,
               needsInternet: true,
               onTap: push(V2Routes.settingsStep('close-account')),
@@ -802,8 +825,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _missing() =>
       profileProblem(AppLocalizations.of(context), _name.text, _phone.text);
 
-  bool _dirty(MyProfile p) {
+  bool _dirty(MyProfile p, {required bool owner}) {
     final phone = _phone.text.trim();
+    if (!owner) return _name.text.trim() != p.name;
     return _name.text.trim() != p.name ||
         (AtomIds.normaliseMobile(phone) ?? phone) != (p.phone ?? '');
   }
@@ -814,7 +838,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   });
 
-  Future<void> _save(MyProfile p) async {
+  Future<void> _save(MyProfile p, {required bool owner}) async {
     final l = AppLocalizations.of(context);
     setState(() {
       _saving = true;
@@ -825,13 +849,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final phone = _phone.text.trim().isEmpty
         ? null
         : AtomIds.normaliseMobile(_phone.text);
-    final r = await ref
-        .read(settingsRepositoryProvider)
-        .updateProfile(name: name, email: p.email ?? '', phone: phone);
+    final repo = ref.read(settingsRepositoryProvider);
+    final r = owner
+        ? await repo.updateProfile(
+            name: name,
+            email: p.email ?? '',
+            phone: phone,
+          )
+        : await repo.updateMyName(name);
     if (!mounted) return;
     switch (r) {
       case ApiOk():
-        _loaded = p.copyWith(name: name, phone: phone ?? '');
+        _loaded = owner
+            ? p.copyWith(name: name, phone: phone ?? '')
+            : p.copyWith(name: name);
         ref.invalidate(myProfileProvider);
         showAtomToast(context, kind: AtomToastKind.ok, message: l.profileSaved);
         if (SettingsPane.of(context)) {
@@ -866,13 +897,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final p = profile.value;
     if (p != null) _fill(p, session, owner);
     final base = _loaded;
-    final missing = base == null ? null : _missing();
-    final changed = owner && base != null && _dirty(base);
+    // Team members change their own name; the owner also the mobile (16.1).
+    final missing = base == null
+        ? null
+        : owner
+        ? _missing()
+        : profileProblem(l, _name.text, '');
+    final changed = base != null && _dirty(base, owner: owner);
     final pane = SettingsPane.of(context);
     final brand = p?.brandName ?? session?.brandName ?? '';
 
     final Widget? save;
-    if (!owner || base == null) {
+    if (base == null) {
       save = null;
     } else if (!online) {
       save = AtomButton(label: l.dpDdNeedsInternet, onPressed: null);
@@ -889,7 +925,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           AtomButton(
             label: l.commonSave,
             saving: _saving,
-            onPressed: changed && missing == null ? () => _save(base) : null,
+            onPressed: changed && missing == null
+                ? () => _save(base, owner: owner)
+                : null,
           ),
         ],
       );
@@ -925,7 +963,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: 8),
               Text(
                 [
-                  owner ? l.menuOwner : (session?.who.roleName ?? ''),
+                  owner ? l.menuRoleOwner : (session?.who.roleName ?? ''),
                   brand,
                 ].where((s) => s.isNotEmpty).join(' · '),
                 style: AtomText.small.copyWith(color: AtomColors.faint),
@@ -943,10 +981,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 boxHeight: 48,
                 label: l.customerName,
                 controller: _name,
-                enabled: owner,
-                hint: owner
-                    ? (_fieldErrors['name'] == null ? l.profileNameHint : null)
-                    : l.settingsOwnerOnly,
+                hint: _fieldErrors['name'] == null ? l.profileNameHint : null,
                 error: _fieldErrors['name'],
                 textInputAction: TextInputAction.next,
                 onChanged: (_) => _edited('name'),
@@ -996,7 +1031,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (!pane) AtomFlowBar(title: l.profileTitle),
+            if (!pane)
+              AtomFlowBar(
+                leading: AtomFlowLeading.close,
+                title: l.profileTitle,
+              ),
             Expanded(
               child: ListView(
                 padding: pane
@@ -1355,6 +1394,31 @@ class DevicesScreen extends ConsumerWidget {
     );
   }
 
+  /// Sign out all other devices (18.3): asks first, keeps this phone.
+  Future<void> _signOutOthers(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
+    final yes = await showAtomConfirm(
+      context,
+      title: l.settingsSignOutOthersTitle,
+      body: l.settingsSignOutOthersBody,
+      confirmLabel: l.devicesSignOutOthers,
+      destructive: true,
+    );
+    if (!yes || !context.mounted) return;
+    final r = await ref.read(settingsRepositoryProvider).signOutOthers();
+    if (!context.mounted) return;
+    ref.invalidate(devicesProvider);
+    showAtomToast(
+      context,
+      kind: r is ApiOk ? AtomToastKind.ok : AtomToastKind.bad,
+      message: switch (r) {
+        ApiOk(:final value) =>
+          value > 0 ? l.settingsSignOutOthersDone : l.settingsSignOutOthersNone,
+        ApiErr(:final failure) => sayFailure(l, failure),
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
@@ -1367,8 +1431,9 @@ class DevicesScreen extends ConsumerWidget {
         icon: _deviceIcon(d),
         tone: d.thisDevice ? AtomTone.blue : AtomTone.grey,
         title: d.thisDevice ? l.devicesThisPhone(d.name) : d.name,
-        // One line with "…" beside the button, as the board's
-        // `.set-item .tx span` (nowrap); large text wraps.
+        // Wraps rather than cutting off "last used …": the board's lines
+        // are short enough for one line, real device names often aren't.
+        subWraps: true,
         subtitle: d.thisDevice
             ? l.devicesNow
             : at == null
@@ -1395,7 +1460,7 @@ class DevicesScreen extends ConsumerWidget {
               error: (e, _) => [
                 SetPad(
                   child: AtomErrorState(
-                    message: e is ApiFailure ? e.message : null,
+                    message: e is ApiFailure ? sayFailure(l, e) : null,
                     onRetry: () => ref.invalidate(devicesProvider),
                   ),
                 ),
@@ -1424,17 +1489,24 @@ class DevicesScreen extends ConsumerWidget {
                     ],
                   ),
                 ],
-                if (d.mine.length > 1)
-                  SetPad(
-                    top: 14,
-                    child: _DangerOutlineButton(
-                      label: l.devicesSignOutOthers,
-                      onPressed: online
-                          ? () => _out(context, ref, repo.signOutOthers)
-                          : null,
-                    ),
+                // Always there (18.3); with nowhere else signed in the
+                // server says so.
+                SetPad(
+                  top: 14,
+                  child: _DangerOutlineButton(
+                    label: online
+                        ? l.devicesSignOutOthers
+                        : l.dpDdNeedsInternet,
+                    onPressed: online
+                        ? () => _signOutOthers(context, ref)
+                        : null,
                   ),
-                SetTiny(l.dpDdDevicesNote),
+                ),
+                SetTiny(
+                  ref.watch(accessProvider).has(Addon.offline)
+                      ? l.settingsSessionsNote
+                      : l.dpDdDevicesNote,
+                ),
               ],
             ),
       ],
@@ -1885,6 +1957,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     final owner =
         ref.watch(sessionProvider.notifier).current?.who.isOwner ?? false;
     final atom = ref.watch(accessProvider).has(Addon.askAtom);
+    final offline = ref.watch(accessProvider).has(Addon.offline);
     final online = ref.watch(onlineProvider).value ?? true;
     Widget kept(IconData icon, String title, String body) => SetItem(
       icon: icon,
@@ -1900,7 +1973,12 @@ class _DataScreenState extends ConsumerState<DataScreen> {
         AtomRowGroup(
           children: [
             kept(LucideIcons.file, l.dataShop, l.dataShopBody),
-            kept(LucideIcons.smartphone, l.dataPhone, l.dataPhoneBody),
+            kept(
+              LucideIcons.smartphone,
+              l.dataPhone,
+              // With Offline working on, a copy does stay on the phone.
+              offline ? l.dataPhoneOfflineBody : l.dataPhoneBody,
+            ),
             kept(LucideIcons.camera, l.dataCamera, l.dpDdDataCameraBody),
             if (atom) kept(LucideIcons.mic, l.dpDdDataAtom, l.dpDdDataAtomBody),
             kept(LucideIcons.clock, l.dataUsage, l.dataUsageBody),
@@ -1958,7 +2036,7 @@ class _DataScreenState extends ConsumerState<DataScreen> {
             if (owner)
               SetItem(
                 icon: LucideIcons.trash,
-                title: l.acctCloseTitle,
+                title: l.settingsDeleteTitle,
                 danger: true,
                 chevron: true,
                 onTap: () =>

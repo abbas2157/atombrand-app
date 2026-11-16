@@ -9,7 +9,10 @@ import 'package:atombrand_app/v2/core/session/session.dart';
 import 'package:atombrand_app/v2/core/session/session_controller.dart';
 import 'package:atombrand_app/v2/features/orders/data/orders_models.dart';
 import 'package:atombrand_app/v2/features/orders/data/orders_providers.dart';
+import 'package:atombrand_app/v2/core/api/api_result.dart';
 import 'package:atombrand_app/v2/features/orders/ui/order_detail_screen.dart';
+import 'package:atombrand_app/v2/features/orders/ui/order_parts.dart';
+import 'package:atombrand_app/v2/features/orders/ui/order_payment_screen.dart';
 import 'package:atombrand_app/v2/features/orders/ui/orders_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,5 +154,84 @@ void main() {
     expect(find.text('Mark delivered'), findsOneWidget);
     expect(find.text('Unpaid'), findsOneWidget);
     expect(find.text('Rs 112,500'), findsOneWidget);
+  });
+
+  for (final scale in [1.0, 2.0]) {
+    Future<void> narrow(WidgetTester t, Widget child, Map<String, dynamic>? d) {
+      t.view.physicalSize = const Size(320, 700);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      return t.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(
+            size: const Size(320, 700),
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: _app(child, detail: d),
+        ),
+      );
+    }
+
+    testWidgets('order page at 320dp, text x$scale: no overflow', (t) async {
+      await narrow(
+        t,
+        const OrderView(uuid: 'u-1'),
+        _detail('Delivered', paid: 50000),
+      );
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      await t.scrollUntilVisible(find.text('Free'), 300);
+      expect(find.text('Free'), findsOneWidget);
+      await t.scrollUntilVisible(find.text('Not given').first, 300);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('list card at 320dp, text x$scale', (t) async {
+      final o = CashOrder.fromJson({
+        ..._detail('Delivered', paid: 50000)['order'] as Map<String, dynamic>,
+        'customer': {'name': 'Faisal Qureshi'},
+        'city': 'Lahore',
+      });
+      await narrow(
+        t,
+        ListView(children: [CashOrderCard(order: o, multiOutlet: true)]),
+        null,
+      );
+      await t.pumpAndSettle();
+      expect(find.text('Take payment'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('record a payment at 320dp, text x$scale', (t) async {
+      await narrow(
+        t,
+        const OrderPaymentScreen(uuid: 'u-1'),
+        _detail('Delivered', paid: 50000),
+      );
+      await t.pumpAndSettle();
+      expect(find.text('Rs'), findsWidgets);
+      expect(find.text('Half'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a crash shows the board copy, a 403 the role, never raw text', (
+    t,
+  ) async {
+    await t.pumpWidget(
+      _app(
+        OrdersLoadError(
+          error: classifyFailure(
+            statusCode: 500,
+            body: {'message': 'SQLSTATE[42S22]: Column not found'},
+          ),
+          onRetry: () {},
+        ),
+      ),
+    );
+    await t.pumpAndSettle();
+    expect(find.text("That didn't load"), findsOneWidget);
+    expect(find.textContaining('SQLSTATE'), findsNothing);
+    expect(find.text('Try again'), findsOneWidget);
   });
 }

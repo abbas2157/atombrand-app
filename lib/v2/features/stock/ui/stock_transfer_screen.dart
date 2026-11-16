@@ -154,10 +154,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
         backgroundColor: AtomColors.surface,
         body: Column(
           children: [
-            AtomFlowBar(
-              leading: AtomFlowLeading.close,
-              title: AppLocalizations.of(context).stockMoveTitle,
-            ),
+            StockFormBar(title: AppLocalizations.of(context).stockMoveTitle),
             const OfflineBar(),
             Expanded(
               child: options.when(
@@ -187,114 +184,133 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
     ].length;
     final problem = moveProblem(l, from: _from, to: _to, picked: picked);
     final canSwap = _to != null && o.warehouses.any((w) => w.id == _to!.id);
-    final products = <int, String>{};
-    final productOf = _productOf(o);
-    for (final u in o.inStockUnits) {
-      final pid = productOf[u.variantId];
-      if (u.warehouseId == _from?.id && pid != null) {
-        products[pid] = u.product ?? '';
-      }
-    }
+    // Every stock product can be picked (the board's "Product: …" chip);
+    // the list then shows its units in the From warehouse.
+    final products = <int, String>{
+      for (final v in o.variants) v.productId: v.product,
+    };
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: _Place(
-                label: l.stockFrom,
-                name: _from?.name,
-                line: _from == null
-                    ? null
-                    : l.stockUnitsN(_count(o, _from!.id)),
-                onTap: () async {
-                  final id = await showAtomSelect<int>(
-                    context,
-                    title: l.stockMoveFrom,
-                    selected: _from?.id,
-                    options: [
-                      for (final w in o.warehouses)
-                        AtomOption(
-                          value: w.id,
-                          label: w.name,
-                          subtitle: w.outlet,
-                        ),
-                    ],
-                  );
-                  if (id != null && id != _from?.id) {
-                    setState(() {
-                      _from = o.warehouses.firstWhere((w) => w.id == id);
-                      _picked.clear();
-                      if (_to?.id == id) _to = null;
-                    });
-                  }
-                },
-              ),
-            ),
-            if (canSwap)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: AtomIconButton(
-                  icon: LucideIcons.arrowLeftRight,
-                  label: l.stockSwap,
-                  onTap: () => setState(() {
-                    final f = _from;
-                    _from = o.warehouses.firstWhere((w) => w.id == _to!.id);
-                    _to = f;
-                    _picked.clear();
-                  }),
-                ),
-              )
-            else
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10),
-                child: Icon(
-                  LucideIcons.arrowRight,
-                  color: AtomColors.muted,
-                  size: AtomIcon.row,
-                ),
-              ),
-            Expanded(
-              child: _Place(
-                label: l.stockTo,
-                name: _to?.name,
-                line: _to?.outlet,
-                onTap: () async {
-                  final id = await showAtomSelect<int>(
-                    context,
-                    title: l.stockMoveTo,
-                    selected: _to?.id,
-                    options: [
-                      for (final w in o.allWarehouses)
-                        if (w.id != _from?.id)
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _Place(
+                  label: l.stockFrom,
+                  name: _from?.name,
+                  line: _from == null
+                      ? null
+                      : l.stockUnitsN(_count(o, _from!.id)),
+                  onTap: () async {
+                    final id = await showAtomSelect<int>(
+                      context,
+                      title: l.stockMoveFrom,
+                      selected: _from?.id,
+                      options: [
+                        for (final w in o.warehouses)
                           AtomOption(
                             value: w.id,
                             label: w.name,
                             subtitle: w.outlet,
                           ),
-                    ],
-                  );
-                  if (id != null) {
-                    setState(
-                      () => _to = o.allWarehouses.firstWhere((w) => w.id == id),
+                      ],
                     );
-                  }
-                },
+                    if (id != null && id != _from?.id) {
+                      setState(() {
+                        _from = o.warehouses.firstWhere((w) => w.id == id);
+                        _picked.clear();
+                        if (_to?.id == id) _to = null;
+                      });
+                    }
+                  },
+                ),
               ),
-            ),
-          ],
+              if (canSwap)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Center(
+                    // `.swap`: a 44 round white button with a line.
+                    child: AtomPressable(
+                      semanticLabel: l.stockSwap,
+                      onTap: () => setState(() {
+                        final f = _from;
+                        _from = o.warehouses.firstWhere((w) => w.id == _to!.id);
+                        _to = f;
+                        _picked.clear();
+                      }),
+                      builder: (context, pressed) => Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: pressed ? AtomColors.head : AtomColors.paper,
+                          border: Border.all(color: AtomColors.line2),
+                        ),
+                        child: const Icon(
+                          LucideIcons.arrowLeftRight,
+                          size: 18,
+                          color: AtomColors.ink,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Center(
+                    child: Icon(
+                      LucideIcons.arrowRight,
+                      color: AtomColors.muted,
+                      size: AtomIcon.row,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: _Place(
+                  label: l.stockTo,
+                  name: _to?.name,
+                  // a unit count, like From (`.place small`)
+                  line: _to == null ? null : l.stockUnitsN(_count(o, _to!.id)),
+                  onTap: () async {
+                    final id = await showAtomSelect<int>(
+                      context,
+                      title: l.stockMoveTo,
+                      selected: _to?.id,
+                      options: [
+                        for (final w in o.allWarehouses)
+                          if (w.id != _from?.id)
+                            AtomOption(
+                              value: w.id,
+                              label: w.name,
+                              subtitle: w.outlet,
+                            ),
+                      ],
+                    );
+                    if (id != null) {
+                      setState(
+                        () =>
+                            _to = o.allWarehouses.firstWhere((w) => w.id == id),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
-        if (products.length > 1)
+        if (products.isNotEmpty)
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: StockFilterChip(
               label: l.stockProductFilter(
                 _productId == null
-                    ? l.stockAll
-                    : products[_productId] ?? l.stockAll,
+                    ? l.stockAllProducts
+                    : products[_productId] ?? l.stockAllProducts,
               ),
               active: _productId != null,
               onTap: () async {
@@ -309,7 +325,12 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                   ],
                 );
                 if (id != null) {
-                  setState(() => _productId = id == 0 ? null : id);
+                  setState(() {
+                    _productId = id == 0 ? null : id;
+                    // only ticks of the product shown stay
+                    final keep = {for (final u in _units(o)) u.serial};
+                    _picked.retainWhere(keep.contains);
+                  });
                 }
               },
             ),
@@ -389,18 +410,18 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
           onPressed: () => _scan(o),
         ),
         const SizedBox(height: 12),
-        StockDayBox(
-          label: l.stockMovedOn,
-          day: _on,
-          onChanged: (d) => setState(() => _on = d),
-        ),
-        const SizedBox(height: 12),
-        AtomTextField(
-          label: l.stockNote,
-          labelNote: l.stockOptional,
-          controller: _note,
-          placeholder: l.stockMovePlaceholder,
-          inputFormatters: [LengthLimitingTextInputFormatter(300)],
+        StockTwoUp(
+          first: StockDayBox(
+            label: l.stockMovedOn,
+            day: _on,
+            onChanged: (d) => setState(() => _on = d),
+          ),
+          second: AtomTextField(
+            label: l.stockNote,
+            controller: _note,
+            placeholder: l.stockMovePlaceholder,
+            inputFormatters: [LengthLimitingTextInputFormatter(300)],
+          ),
         ),
         const SizedBox(height: 16),
         if (problem != null) AtomButtonReason(reason: problem),
@@ -442,7 +463,9 @@ class _Place extends StatelessWidget {
       onTap: onTap,
       semanticLabel: '$label: ${name ?? choose}',
       builder: (context, pressed) => Container(
-        padding: const EdgeInsets.all(12),
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 76),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: pressed ? AtomColors.head : AtomColors.paper,
           borderRadius: AtomRadius.brCard,
@@ -452,17 +475,32 @@ class _Place extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              label,
-              style: AtomText.small.copyWith(color: AtomColors.faint),
+              label.toUpperCase(),
+              style: AtomText.small.copyWith(
+                color: AtomColors.faint,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
+            const SizedBox(height: 2),
+            // Up to two lines (the row stretches From and To to the same
+            // height), so "Karachi · Tariq Road store" reads in full.
             Text(
               name ?? choose,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: AtomText.body.copyWith(
+                height: 1.3,
                 fontWeight: FontWeight.w700,
                 color: name == null ? AtomColors.placeholder : AtomColors.ink,
               ),
             ),
-            if (line != null) Text(line!, style: AtomText.small),
+            Text(
+              line ?? ' ',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AtomText.small,
+            ),
           ],
         ),
       ),

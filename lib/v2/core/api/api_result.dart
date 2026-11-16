@@ -138,7 +138,11 @@ final class ApiErr<T> extends ApiResult<T> {
 /// defaults to 200).
 ApiFailure classifyFailure({required int? statusCode, Object? body}) {
   final map = body is Map ? Map<String, dynamic>.from(body) : null;
-  final message = _message(map);
+  // A crash's message is for the server log, not the person ("SQLSTATE
+  // [42S22]: Column not found…" showed on Orders): screens fall back to
+  // their own words. Maintenance (503) explains itself, so it stays.
+  final crashed = (statusCode ?? 0) >= 500 && statusCode != 503;
+  final message = crashed ? null : _message(map);
   ApiFailure f(ApiFailureKind kind) => ApiFailure(
     kind,
     message: message,
@@ -217,8 +221,18 @@ String? serverMessage(Object? body) =>
 
 String? _message(Map<String, dynamic>? map) {
   final m = map?['message'];
-  return m is String && m.trim().isNotEmpty ? m.trim() : null;
+  if (m is! String || m.trim().isEmpty) return null;
+  // Technical text that slipped through on a non-5xx answer (a caught
+  // query error, a PHP notice) is for the server log, never the screen.
+  if (_technical.hasMatch(m)) return null;
+  return m.trim();
 }
+
+final _technical = RegExp(
+  r'SQLSTATE|Exception\b|Stack trace|\.php\b|Call to (undefined|a member)|'
+  r'Undefined (index|variable|array key|property)|syntax error',
+  caseSensitive: false,
+);
 
 /// Laravel validation errors: `data` (or `errors`) as `{field: [messages]}`.
 Map<String, String> _fieldErrors(Map<String, dynamic>? map) {

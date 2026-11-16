@@ -13,17 +13,29 @@ import '../../../widgets/widgets.dart';
 import '../data/auth_repository.dart';
 import 'auth_parts.dart';
 
-/// The commission shares Apply offers (`GET config` → `apply.percentages`).
+/// The five shares 2.3 offers, with 10% picked to start.
+const applyBoardShares = <num>[5, 8, 10, 12, 15];
+const applyDefaultShare = 10;
+
+/// The commission shares Apply offers: the board's five, kept to those the
+/// server accepts (`GET config` → `apply.percentages`, which `POST apply`
+/// validates against). If the server allows none of them, its own list
+/// (at most five) is offered so the application can still be sent.
 final applyPercentagesProvider = FutureProvider.autoDispose<List<num>>((
   ref,
 ) async {
   final result = await ref.read(authRepositoryProvider).config();
   final raw = Json.list(Json.map(result.valueOrNull?['apply'])['percentages']);
-  final list = [
+  final server = [
     for (final p in raw)
       if (p is num) p else ?num.tryParse('$p'),
   ];
-  return list.isEmpty ? const [5, 8, 10, 12, 15] : list;
+  if (server.isEmpty) return applyBoardShares;
+  final allowed = [
+    for (final p in applyBoardShares)
+      if (server.contains(p)) p,
+  ];
+  return allowed.length >= 2 ? allowed : server.take(5).toList();
 });
 
 enum _Stage { form, code, done }
@@ -83,6 +95,19 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
   String? get _mobile => AtomIds.normaliseMobile(_phone.text);
 
+  /// The share picked, or the board's 10% to start (the first one offered
+  /// if the server doesn't allow 10%).
+  num? _shareIn(List<num> shares) {
+    if (shares.isEmpty) return null;
+    if (_share != null && shares.contains(_share)) return _share;
+    return shares.contains(applyDefaultShare)
+        ? applyDefaultShare
+        : shares.first;
+  }
+
+  num? get _chosenShare =>
+      _shareIn(ref.read(applyPercentagesProvider).value ?? const []);
+
   /// Step 1 → 2: check the form, then send the code to the phone.
   Future<void> _sendCode() async {
     final l = AppLocalizations.of(context);
@@ -93,7 +118,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
       if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(_email.text.trim()))
         'email': l.signInEmailInvalid,
       if (_company.text.trim().isEmpty) 'company': l.applyRequired,
-      if (_share == null) 'percentage': l.applyRequired,
+      if (_chosenShare == null) 'percentage': l.applyRequired,
     };
     setState(() {
       _errors = errors;
@@ -139,7 +164,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
             phone: _mobile!,
             company: _company.text.trim(),
             businessType: _type,
-            percentage: _share!,
+            percentage: _chosenShare!,
             otp: _code.text.trim(),
             category: _category.text.trim().isEmpty
                 ? null
@@ -209,6 +234,8 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
     TextEditingController c, {
     String? note,
     String? hint,
+    String? placeholder,
+    IconData? icon,
     TextInputType? keyboard,
     int? minLines,
   }) => Padding(
@@ -219,6 +246,8 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
       labelNote: note,
       labelNoteInline: note != null,
       hint: hint,
+      placeholder: placeholder,
+      prefix: icon == null ? null : Icon(icon),
       error: _errors[key],
       keyboardType: keyboard,
       minLines: minLines,
@@ -235,18 +264,26 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
         Text(l.applyBody, style: AuthText.sub),
         const SizedBox(height: 22),
         AtomSectionLabel(l.applyAboutYou, page: false),
-        _field('name', l.applyName, _name),
-        _field('phone', l.applyMobile, _phone, keyboard: TextInputType.phone),
+        _field('name', l.applyName, _name, icon: LucideIcons.user),
+        _field(
+          'phone',
+          l.applyMobile,
+          _phone,
+          icon: LucideIcons.smartphone,
+          placeholder: '0300 1234567',
+          keyboard: TextInputType.phone,
+        ),
         _field(
           'email',
           l.signInEmail,
           _email,
+          icon: LucideIcons.mail,
           hint: l.applyEmailHint,
           keyboard: TextInputType.emailAddress,
         ),
         const SizedBox(height: 8),
         AtomSectionLabel(l.applyBusiness, page: false),
-        _field('company', l.applyCompany, _company),
+        _field('company', l.applyCompany, _company, icon: LucideIcons.landmark),
         Text(l.applyBusinessType, style: AtomText.fieldLabel),
         const SizedBox(height: 8),
         AtomChips<String>(
@@ -263,12 +300,19 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
           onChanged: (t) => setState(() => _type = t),
         ),
         const SizedBox(height: 14),
-        _field('category', l.applyCategory, _category, note: l.applyOptional),
+        _field(
+          'category',
+          l.applyCategory,
+          _category,
+          note: l.applyOptional,
+          placeholder: l.applyCategoryPlaceholder,
+        ),
         _field(
           'website',
           l.applyWebsite,
           _website,
           note: l.applyOptional,
+          placeholder: 'https://',
           keyboard: TextInputType.url,
         ),
         _field(
@@ -285,11 +329,13 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
         const SizedBox(height: 8),
         if (shares.isEmpty)
           const AtomLoadingRows(count: 1)
+        else if (shares.length < 2)
+          // One share only: nothing to choose, so just say it.
+          Text('${shares.first}%', style: AtomText.listTitle)
         else
-          AtomChoiceGrid<num>(
-            choices: [for (final p in shares) AtomSegment(p, '$p%')],
-            selected: _share,
-            columns: shares.length.clamp(1, 5),
+          AtomChips<num>(
+            chips: [for (final p in shares) AtomChip(p, '$p%')],
+            selected: _shareIn(shares),
             onChanged: (p) => setState(() => _share = p),
           ),
         if (_errors['percentage'] case final e?) AtomFieldError(e),
@@ -304,6 +350,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
         AtomNote(
           kind: AtomNoteKind.info,
           title: l.applyWhoTitle,
+          icon: LucideIcons.shieldCheck,
           message: l.applyWhoBody,
         ),
         const SizedBox(height: 18),

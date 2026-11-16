@@ -161,15 +161,22 @@ class _PayBillScreenState extends ConsumerState<PayBillScreen> {
     return AtomUnsavedGuard(
       dirty: (_shot != null || _reference.text.isNotEmpty) && !_saving,
       child: Scaffold(
-        backgroundColor: AtomColors.paper,
+        // `#F3F5F8` behind the form, as on 12.8.
+        backgroundColor: AtomColors.surface,
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AtomFlowBar(
-              title: l.acctIvePaid,
-              subtitle: bill == null
-                  ? null
-                  : '${bill.number} · ${billTitle(l, bill)} · ${formatRs(bill.due)}',
+            DecoratedBox(
+              decoration: const BoxDecoration(
+                color: AtomColors.paper,
+                border: Border(bottom: BorderSide(color: AtomColors.line)),
+              ),
+              child: AtomFlowBar(
+                title: l.acctIvePaid,
+                subtitle: bill == null
+                    ? null
+                    : '${bill.number} · ${billTitle(l, bill)} · ${formatRs(bill.due)}',
+              ),
             ),
             Expanded(
               child: switch (data) {
@@ -185,12 +192,16 @@ class _PayBillScreenState extends ConsumerState<PayBillScreen> {
               },
             ),
             if (p != null)
-              Padding(
+              Container(
+                decoration: const BoxDecoration(
+                  color: AtomColors.paper,
+                  border: Border(top: BorderSide(color: AtomColors.line)),
+                ),
                 padding: EdgeInsets.fromLTRB(
                   16,
-                  8,
+                  10,
                   16,
-                  16 + MediaQuery.paddingOf(context).bottom,
+                  12 + MediaQuery.paddingOf(context).bottom,
                 ),
                 child: _bottom(online),
               ),

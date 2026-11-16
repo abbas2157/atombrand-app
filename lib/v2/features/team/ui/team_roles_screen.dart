@@ -14,9 +14,8 @@ import 'team_parts.dart';
 
 /// Roles and permissions (11.5): the brand's own roles (Edit; Copy and
 /// Delete on the role) and the ready-made ones, read-only with Copy, each
-/// with what it covers and how many people have it. New role, and Compare
-/// roles side by side. Making and changing roles is the owner's: a team
-/// manager sees the roles only.
+/// with what it covers and how many people have it. New role. Making and
+/// changing roles is the owner's: a team manager sees the roles only.
 class TeamRolesScreen extends ConsumerWidget {
   const TeamRolesScreen({super.key});
 
@@ -39,7 +38,7 @@ class TeamRolesScreen extends ConsumerWidget {
       final n = countOf(r);
       final chips = roleChips(l, r.permissions, grantable: grantable);
       final sub = n == null
-          ? roleSummary(r)
+          ? roleBlurb(l, r)
           : n.$2 == 0
           ? l.teamPeopleCount(n.$1)
           : n.$1 == n.$2
@@ -114,19 +113,14 @@ class TeamRolesScreen extends ConsumerWidget {
               onTap: () => Navigator.of(context).maybePop(),
             ),
             actions: [
-              if (data.value case final all? when all.roles.length > 1)
-                AtomIconButton(
-                  icon: LucideIcons.columns2,
-                  label: l.teamCompare,
-                  onTap: () => showRoleCompare(context, all),
-                ),
               if (canMake)
                 AtomButton.small(
                   label: l.teamNewRole,
                   kind: AtomButtonKind.primary,
                   onPressed: () => context.push(V2Routes.roleEdit()),
                 ),
-              const SizedBox(width: 4),
+              // with the header's 8: the 16px gutter
+              const SizedBox(width: 8),
             ],
           ),
           Expanded(
@@ -279,164 +273,4 @@ class _Chips extends StatelessWidget {
         ),
     ],
   );
-}
-
-// ───────────────────────────────────────────── compare
-
-/// Compare roles: two roles side by side, every permission the brand can
-/// give with a tick under each role that has it.
-Future<void> showRoleCompare(BuildContext context, TeamRoles roles) =>
-    showAtomSheet<void>(
-      context,
-      expand: true,
-      builder: (_) => _CompareSheet(roles: roles),
-    );
-
-class _CompareSheet extends StatefulWidget {
-  const _CompareSheet({required this.roles});
-
-  final TeamRoles roles;
-
-  @override
-  State<_CompareSheet> createState() => _CompareSheetState();
-}
-
-class _CompareSheetState extends State<_CompareSheet> {
-  AppLocalizations get l => AppLocalizations.of(context);
-
-  late TeamRole _a = widget.roles.roles.first;
-  late TeamRole _b = widget.roles.roles[1];
-
-  AtomSelectField<int> _pick(
-    String label,
-    TeamRole value,
-    ValueChanged<TeamRole> set,
-  ) => AtomSelectField<int>(
-    label: label,
-    value: value.id,
-    valueLabel: value.name,
-    sheetTitle: label,
-    options: [
-      for (final r in widget.roles.roles)
-        AtomOption(
-          value: r.id,
-          label: r.name,
-          subtitle: r.readyMade ? l.teamReadyMade : l.teamYours,
-        ),
-    ],
-    onChanged: (id) => setState(() => set(widget.roles.byId(id) ?? value)),
-  );
-
-  Widget _mark(bool on, String role, String perm) => Semantics(
-    label: '$role: ${on ? l.teamSemYes : l.teamSemNo}',
-    excludeSemantics: true,
-    child: SizedBox(
-      width: 56,
-      child: Icon(
-        on ? LucideIcons.check : LucideIcons.minus,
-        size: 18,
-        color: on ? AtomColors.green : AtomColors.chevron,
-      ),
-    ),
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final a = withNeeded(_a.permissions.toSet());
-    final b = withNeeded(_b.permissions.toSet());
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AtomSheetHeader(title: l.teamCompare),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AtomSpace.gutter,
-              0,
-              AtomSpace.gutter,
-              AtomSpace.gutter,
-            ),
-            children: [
-              Text(l.teamCompareHint, style: AtomText.secondary),
-              const SizedBox(height: AtomSpace.s3),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _pick(l.teamFirstRole, _a, (r) => _a = r)),
-                  const SizedBox(width: AtomSpace.s3),
-                  Expanded(child: _pick(l.teamSecondRole, _b, (r) => _b = r)),
-                ],
-              ),
-              const SizedBox(height: AtomSpace.s3),
-              for (final g in widget.roles.groups) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(2, 10, 2, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          g.name.toUpperCase(),
-                          style: AtomText.section.copyWith(letterSpacing: 0.5),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 56,
-                        child: Text(
-                          _a.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: AtomText.small,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 56,
-                        child: Text(
-                          _b.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: AtomText.small,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                AtomListCard(
-                  children: [
-                    for (final (k, label) in g.permissions)
-                      Container(
-                        color: a.contains(k) != b.contains(k)
-                            ? AtomColors.amberSoft
-                            : AtomColors.paper,
-                        constraints: const BoxConstraints(minHeight: 44),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AtomSpace.inset,
-                          vertical: AtomSpace.s2,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                label,
-                                style: AtomText.body.copyWith(
-                                  color: AtomColors.ink,
-                                ),
-                              ),
-                            ),
-                            _mark(a.contains(k), _a.name, label),
-                            _mark(b.contains(k), _b.name, label),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }

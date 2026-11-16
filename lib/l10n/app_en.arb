@@ -1,5 +1,63 @@
 {
   "@@locale": "en",
+  "applyCategoryPlaceholder": "e.g. Mobiles, Smart TVs",
+  "authSplashOffline": "Offline · your data is on this phone",
+  "authSplashWaiting": "{n, plural, =1{1 change waiting to sync} other{{n} changes waiting to sync}}",
+  "@authSplashWaiting": {"placeholders": {"n": {"type": "int"}}},
+  "authSplashLastSynced": "Last synced {when}",
+  "@authSplashLastSynced": {"placeholders": {"when": {"type": "String"}}},
+  "authSplashToday": "today, {time}",
+  "@authSplashToday": {"placeholders": {"time": {"type": "String"}}},
+  "authSplashDaysLeft": "{n, plural, =0{Offline time is up} =1{Offline for 1 more day} other{Offline for {n} more days}}",
+  "@authSplashDaysLeft": {"placeholders": {"n": {"type": "int"}}},
+  "authPinOfflineTitle": "Work offline",
+  "authPinOfflineSub": "Keep 30 days of your brand on this phone",
+  "authPinOfflineOn": "On",
+  "authOutletAllSub": "{count, plural, =1{Combined figures for 1 outlet} other{Combined figures for all {count} outlets}}",
+  "@authOutletAllSub": {"placeholders": {"count": {"type": "int"}}},
+  "authOutletServes": "{city} · serves {cities}",
+  "@authOutletServes": {"placeholders": {"city": {"type": "String"}, "cities": {"type": "String"}}},
+  "authOutletServesOnly": "Serves {cities}",
+  "@authOutletServesOnly": {"placeholders": {"cities": {"type": "String"}}},
+  "authOutletPausedByYou": "Paused by you",
+  "authOutletPausedByOwner": "Paused by your brand owner",
+  "authOutletKeepAll": "Keep all open outlets on this phone for offline work",
+  "authOutletKeepOne": "Keep {name} on this phone for offline work",
+  "@authOutletKeepOne": {"placeholders": {"name": {"type": "String"}}},
+  "authReadyOnlineWifi": "Online · Wi-Fi",
+  "authReadySecondsLeft": "About {n} seconds left",
+  "@authReadySecondsLeft": {"placeholders": {"n": {"type": "int"}}},
+  "authReadyMinutesLeft": "{n, plural, =1{About a minute left} other{About {n} minutes left}}",
+  "@authReadyMinutesLeft": {"placeholders": {"n": {"type": "int"}}},
+  "homeNoticedTitle": "Atom noticed",
+  "homeNoticedMorning": "From your data this morning",
+  "homeNoticedAfternoon": "From your data this afternoon",
+  "homeNoticedEvening": "From your data this evening",
+  "homeNoticedSeeStock": "See stock",
+  "homeNoticedOpenOutlet": "Open outlet",
+  "homeNoticedFollowUp": "Follow up",
+  "statesKeptOnPhone": "{n, plural, =1{1 change is kept on this phone. It is sent as soon as you sign in again.} other{{n} changes are kept on this phone. They are sent as soon as you sign in again.}}",
+  "@statesKeptOnPhone": {"placeholders": {"n": {"type": "int"}}},
+  "statesKeptOnPhoneBold": "{n, plural, =1{1 change is kept on this phone.} other{{n} changes are kept on this phone.}}",
+  "@statesKeptOnPhoneBold": {"placeholders": {"n": {"type": "int"}}},
+  "statesPlaceSearch": "Search",
+  "statesPlaceOrder": "the order",
+  "statesPlaceAtompay": "the AtomPay order",
+  "statesPlaceDeal": "the bulk deal",
+  "statesPlaceBulkRequest": "the bulk request",
+  "statesPlaceProduct": "the product",
+  "statesPlaceBrandPage": "Brand page",
+  "statesPlaceStock": "Stock",
+  "statesPlaceTeam": "Team",
+  "statesPlaceOutlets": "Outlets",
+  "statesPlacePlan": "Plan & billing",
+  "statesPlaceReports": "Reports",
+  "statesPlaceAskAtom": "Ask Atom",
+  "statesPlaceSync": "Sync centre",
+  "statesPlaceHelp": "Help",
+  "statesPlaceSettings": "Settings",
+  "statesPlaceNotifications": "Notifications",
+  "statesPlaceMenu": "Menu",
   "commonBack": "Back",
   "commonClose": "Close",
   "commonCancel": "Cancel",
@@ -114,7 +172,7 @@
   "maintenanceUsing": "Using the app",
   "maintenanceUsingWait": "Wait",
   "removedTitle": "Choose a package to carry on",
-  "removedBody": "Your package on {business} has ended. Everything you saved is kept safe: products, orders, deals and stock.",
+  "removedBody": "Your package on {business} has ended. Everything you saved is kept safe: products, orders, bulk deals and stock.",
   "@removedBody": {
     "placeholders": {
       "business": {
@@ -123,7 +181,7 @@
     }
   },
   "removedOpenNow": "Open now",
-  "removedOpenNowValue": "Plan & billing, bills, your profile",
+  "removedOpenNowValue": "Plan & billing, your profile",
   "removedAfterPaying": "After paying",
   "removedAfterPayingValue": "Everything, as before",
   "removedSeePackages": "See packages & prices",
@@ -131,7 +189,20 @@
   "removedAgentNote": "Only the brand owner can choose a package. Ask them to open Plan & billing.",
   "noPlanTitle": "No active package",
   "noPlanBody": "This account has no package yet. Choose one to start using Brand Partner.",
-  "notInRoleTitle": "This isn't in your role",
+  "notInRoleTitle": "Your role doesn't include this",
+  "statesAskWhyQuestion": "Why doesn't my role include this?",
+  "statesCanEverything": "Everything: you own the brand",
+  "statesCanPayments": "payments",
+  "statesCanAtompay": "AtomPay",
+  "statesCanTeam": "team",
+  "statesCanSee": "see {list}",
+  "@statesCanSee": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
   "notInRoleBody": "The brand owner decides what each person can do. Ask them to change your role if you need it.",
   "notInRoleYourRole": "Your role",
   "notFoundTitle": "Not found",
@@ -141,10 +212,10 @@
   "noInternetBody": "Brand Partner needs a connection to show and save your work. Turn on mobile data or Wi-Fi.",
   "noInternetAuto": "It tries again by itself when the signal comes back.",
   "restrictedTitle": "Atomshop has paused changes on your account",
-  "restrictedPayments": "Recording payments",
+  "restrictedPayments": "Recording payments and deliveries",
   "restrictedWorks": "Works",
-  "restrictedCloseDeals": "Closing deals, Ask Atom",
-  "restrictedNewThings": "New orders, products, stock",
+  "restrictedCloseDeals": "AtomPay hand-overs, Ask Atom",
+  "restrictedNewThings": "Products, quotes, stock",
   "restrictedPaused": "Paused",
   "restrictedWhatsApp": "Message Atomshop on WhatsApp",
   "restrictedCall": "Call {phone}",
@@ -155,11 +226,11 @@
       }
     }
   },
-  "restrictedNote": "This isn't about a bill, so there is nothing to pay. Your buyers are not affected.",
+  "restrictedNote": "This isn't about a bill, so there is nothing to pay. Orders already placed carry on.",
   "bannerPay": "Pay",
   "menuOwner": "Brand owner",
   "menuSignOut": "Sign out",
-  "signOutConfirmTitle": "Log out of Brand Partner?",
+  "signOutConfirmTitle": "Sign out of Brand Partner?",
   "signOutUnsentBody": "{count, plural, =1{1 change you made hasn't reached Atomshop yet.} other{{count} changes you made haven't reached Atomshop yet.}} It stays on this phone and goes up when you sign in here again. Nobody else who signs in can send it.",
   "@signOutUnsentBody": {
     "description": "Sign out, when this person has unsent offline work.",
@@ -303,10 +374,11 @@
   "dataTitle": "Your data",
   "dataSub": "What is kept, where, and for how long",
   "dataKept": "What Brand Partner keeps",
-  "dataShop": "Your brand and orders",
-  "dataShopBody": "Products, orders, deals, payments and stock, on Atomshop's servers.",
+  "dataShop": "Your brand",
+  "dataShopBody": "Products, orders, payments, bulk deals and stock, on Atomshop's servers.",
   "dataPhone": "On this phone",
   "dataPhoneBody": "Only what is on screen; nothing stays after you sign out.",
+  "dataPhoneOfflineBody": "An encrypted copy for offline work, deleted when you sign out or the phone is signed out.",
   "dataCamera": "Camera and photos",
   "dataUsage": "App usage",
   "dataUsageBody": "Crash reports and which screens are used, without buyer details.",
@@ -420,7 +492,11 @@
   "noticeAlwaysOn": "Always on",
   "noticeHow": "How they arrive",
   "noticeOpenFromList": "Open this message from Notifications.",
-  "noticeSettingsFoot": "These are for you on this account.",
+  "noticeSettingsFoot": "These are for you on this phone. The brand portal has its own bell; the morning message is in Settings › Daily summary.",
+  "notifMorningTitle": "Morning summary",
+  "notifMorningSub": "One message with today's work",
+  "notifMorningAt": "8:30 am",
+  "notifActFollowUp": "Follow up",
   "noticeSettingsSub": "What you get, quiet hours",
   "noticeSettingsTitle": "Notification settings",
   "noticesAccount": "Account",
@@ -430,13 +506,22 @@
   "@noticesShowOlder": {
     "description": "Button at the end of Notifications: the next 20, older ones."
   },
-  "noticesEmptyAction": "Go to Home",
-  "noticesEmptyBody": "New orders, bulk requests and messages from Atomshop show here. Older ones are kept for 90 days.",
+  "noticesEmptyAction": "Go to orders",
+  "notifEmptyHome": "Go to Home",
+  "noticesEmptyBody": "New orders, bulk requests, AtomPay hand-overs and product reviews show here. Older ones are kept for 90 days.",
   "noticesEmptyTitle": "You're all caught up",
   "noticesFromAtomshop": "From Atomshop",
   "noticesFromAtomshopNew": "From Atomshop · new",
   "noticesOrders": "Orders",
-  "noticesReadAll": "Mark all read",
+  "noticesReadAll": "Mark all as read",
+  "notifActConfirm": "Confirm",
+  "notifActHandOver": "Hand over",
+  "notifActSendQuote": "Send quote",
+  "notifActReply": "Reply",
+  "notifActAnswer": "Answer",
+  "notifActOpenDeal": "Open deal",
+  "notifActStockIn": "Stock in",
+  "notifActFix": "Fix and resend",
   "noticesStock": "Stock",
   "noticesTeam": "Team",
   "noticesTitle": "Notifications",
@@ -478,7 +563,7 @@
   "permissionsSub": "What the app may use on this phone",
   "permissionsBody": "Brand Partner asks only when you first use a feature.",
   "permissionsNotifications": "Notifications",
-  "permissionsNotificationsSub": "Orders, bulk requests, Atomshop messages",
+  "permissionsNotificationsSub": "New orders, bulk requests, AtomPay, product reviews",
   "permissionsTurnOn": "Turn on",
   "permissionsAllowed": "Allowed",
   "permissionsCamera": "Camera",
@@ -575,7 +660,7 @@
   "syncAttentionEmpty": "Nothing needs you",
   "syncAttentionEmptyBody": "Nothing saved on this phone is waiting for you to sort out.",
   "syncWaitingTitle": "Waiting to send",
-  "syncWaitingSub": "Payments, orders and notes made on this phone",
+  "syncWaitingSub": "Deliveries, payments, stock in, notes made on this phone",
   "syncWaitingNone": "Nothing is waiting",
   "syncWaitingNoneBody": "Everything made on this phone has been sent.",
   "syncWaitingOrder": "No signal. These go in this order as soon as there is.",
@@ -650,13 +735,15 @@
   "syncEndedBody": "Offline working is no longer on this account. Your phone is sending what it saved, then it will work online only.",
   "planTitle": "Plan & billing",
   "ecosystemTitle": "Our ecosystem",
-  "faqsNone": "No answer matches. Ask Atomshop on WhatsApp.",
+  "faqsNone": "No answer matches. Try other words, or ask Atomshop on WhatsApp.",
+  "helpFaqsEmpty": "No answers here yet",
+  "helpFaqsEmptySub": "Atomshop is still writing answers for this topic. Ask Atomshop on WhatsApp meanwhile.",
   "faqsTitle": "FAQs",
   "helpAllFaqs": "All FAQs",
   "helpCall": "Call",
   "helpEmail": "Email",
   "helpPopular": "Popular",
-  "helpSearch": "Search help: \"close a deal\", \"receipt\"…",
+  "helpSearch": "Search help: \"hand over\", \"quote\"…",
   "helpTalk": "Talk to Atomshop",
   "helpTitle": "How can we help?",
   "helpTopics": "Topics",
@@ -798,8 +885,8 @@
   "auth2OfflineTitle": "No internet.",
   "auth2OfflineBody": "The first sign-in on this phone needs internet, so we can check your account. Connect to Wi-Fi or mobile data.",
   "auth2WaitingForInternet": "Waiting for internet…",
-  "auth2PendingTitle": "Your account is being checked.",
-  "auth2PendingBody": "Atomshop verifies every new brand before it can sign in. We will message you on WhatsApp when it is ready, usually within two working days.",
+  "auth2PendingTitle": "Your application is being checked.",
+  "auth2PendingBody": "Atomshop reviews every brand before it can sign in, then creates your login. We will message you on WhatsApp when it is ready, usually within two working days.",
   "auth2AskOnWhatsApp": "Ask Atomshop on WhatsApp",
   "auth2RuleLength": "At least 8 characters",
   "auth2RuleMix": "Letters and numbers",
@@ -846,7 +933,7 @@
   "auth2ForgotPin": "Forgot PIN?",
   "auth2SwitchAccount": "Switch account",
   "auth2TooManyTitle": "Too many wrong PINs",
-  "auth2TooManyBody": "To keep your brand's details safe, the app is paused for a few minutes.",
+  "auth2TooManyBody": "To keep your brand's orders and customer details safe, the app is paused for a few minutes.",
   "auth2TryAgainIn": "Try again in",
   "auth2TenPins": "After {count} you will need your password and internet to open the app.",
   "@auth2TenPins": {
@@ -1043,15 +1130,15 @@
     }
   },
   "dpDdCloseRest": "It can't be undone from the app.",
-  "dpDdDataCameraBody": "Only when you scan or take a photo. Scanning runs on the phone; nothing goes to Google.",
+  "dpDdDataCameraBody": "Only when you scan a serial or take a delivery or product photo. Scanning runs on the phone; nothing goes to Google.",
   "dpDdDataAtom": "Ask Atom",
   "dpDdDataAtomBody": "Questions are kept 90 days with phone numbers removed.",
   "dpDdDownloadAll": "Download everything as Excel",
-  "dpDdDownloadAllSub": "Orders, deals, payments, stock",
-  "dpDdExportNote": "Atomshop makes the file and emails a link valid for 24 hours.",
+  "dpDdDownloadAllSub": "Orders, payments, products, bulk deals, stock",
+  "dpDdExportNote": "Atomshop makes the file and emails a link valid for 24 hours. Delivery photos are not included.",
   "dpDdMore": "More",
   "dpDdOnThisPhone": "On this phone",
-  "dpDdCameraSub": "Scan serials, take photos",
+  "dpDdCameraSub": "Scan serials and IMEIs, delivery and product photos",
   "dpDdSelected": "Selected",
   "dpDdBioSub": "Quick unlock",
   "dpDdNotAsked": "Not asked",
@@ -1204,7 +1291,7 @@
       }
     }
   },
-  "dpDcPrivacyLead": "How Atomshop.pk and Brand Partner keep your brand's information.",
+  "dpDcPrivacyLead": "How Atomshop.pk and Brand Partner keep your brand's information and the details of buyers who order from you.",
   "dpDcPrivacyFoot": "Saved on this phone, so it opens offline. Questions? {email}",
   "@dpDcPrivacyFoot": {
     "placeholders": {
@@ -1214,18 +1301,18 @@
     }
   },
   "dpDcEcoTitle": "One ecosystem, built in Lahore",
-  "dpDcEcoLead": "Buyers find products on Atomshop and pay in steps. Verified sellers run the deals and source stock from brands. Brands like yours list products, supply sellers and fulfil orders. AtomPay gives verified buyers a 0% markup limit.",
-  "dpDcEcoFlowLabel": "Buyers order on Atomshop, sellers deliver, brands supply",
-  "dpDcEcoCustomers": "Buyers",
+  "dpDcEcoLead": "Customers find products on Atomshop. Brands like yours list them and deliver. Verified local sellers handle AtomPay orders and buy in bulk. AtomPay gives verified customers a 0% markup limit.",
+  "dpDcEcoFlowLabel": "Customers order on Atomshop, you deliver, sellers buy in bulk and handle AtomPay",
+  "dpDcEcoCustomers": "Customers",
   "dpDcEcoCustomersSub": "order on Atomshop",
   "dpDcEcoYou": "You",
-  "dpDcEcoYouSub": "supply and fulfil in Brand Partner",
+  "dpDcEcoYouSub": "confirm and deliver in Brand Partner",
   "dpDcEcoBrands": "Sellers",
-  "dpDcEcoBrandsSub": "source from you in Atom Seller",
+  "dpDcEcoBrandsSub": "buy in bulk and take AtomPay units",
   "dpDcYouAreHere": "You are here",
-  "dpDcEcoSeller": "Run your brand: orders, AtomPay, bulk deals, products, stock and your team.",
-  "dpDcShareSeller": "Share with a brand",
-  "dpDcShareSellerText": "List your brand on Atomshop with Brand Partner: {link}",
+  "dpDcEcoSeller": "Run your brand on Atomshop: orders, AtomPay hand-overs, bulk deals, products, stock and your team.",
+  "dpDcShareSeller": "Share with your team",
+  "dpDcShareSellerText": "Get Brand Partner to work on our Atomshop orders with me: {link}",
   "@dpDcShareSellerText": {
     "placeholders": {
       "link": {
@@ -1233,7 +1320,7 @@
       }
     }
   },
-  "dpDcEcoAtomshop": "For buyers: browse, choose a plan and order. Orders for your products come to you.",
+  "dpDcEcoAtomshop": "For customers: browse your brand page, order cash or with AtomPay. Their orders come to you.",
   "dpDcSendCustomer": "Send to a buyer",
   "dpDcSendCustomerText": "Shop on Atomshop and pay in steps: {link}",
   "@dpDcSendCustomerText": {
@@ -1243,10 +1330,10 @@
       }
     }
   },
-  "dpDcEcoPay": "Verified buyers get a 0% markup limit for eligible products: 3 months, no advance.",
-  "dpDcEcoBrand": "For sellers: their shop, orders and stock, and sourcing from brands like yours.",
-  "dpDcEcoSiteShop": "Where buyers find you. Your brand page shows your catalogue to buyers across Pakistan.",
-  "dpDcEcoSite": "Where buyers find products, choose a plan and order.",
+  "dpDcEcoPay": "Verified customers get a 0% markup limit for eligible products: 3 months, no advance.",
+  "dpDcEcoBrand": "For verified local sellers: they take AtomPay units from you and send bulk requests.",
+  "dpDcEcoSiteShop": "Where customers find you. Your brand page shows your story, slides and live products.",
+  "dpDcEcoSite": "Where customers find you and order your products.",
   "dpDcOpenSite": "Open atomshop.pk",
   "dpDcYourShopPage": "Your brand page",
   "dpDcFollow": "Follow Atomshop",
@@ -1299,7 +1386,7 @@
   "secHideAmounts": "Hide amounts on the lock screen",
   "secHideAmountsSub": "Notifications say \"tap to see\"",
   "secBlockShots": "Block screenshots",
-  "secBlockShotsSub": "Of documents and payment proofs",
+  "secBlockShotsSub": "Of orders, buyer phone numbers and invoices",
   "recoTitle": "Recommendations",
   "recoEmptyTitle": "No recommendations yet",
   "recoEmptyBody": "Atomshop sends news and tips for your brand. It shows here.",
@@ -1364,6 +1451,7 @@
   "noticesBulk": "Bulk deals",
   "noticesProducts": "Products",
   "tabBulk": "Bulk deals",
+  "tabAtompay": "AtomPay",
   "tabProducts": "Products",
   "tabQuickActions": "New",
   "applyRequired": "Fill this in.",
@@ -1466,6 +1554,24 @@
   "menuStockHistory": "Stock history",
   "menuCatalogue": "Catalogue",
   "menuReports": "Reports",
+  "menuLogOut": "Log out",
+  "menuRoleOwner": "Owner",
+  "menuTeamRoles": "Team & roles",
+  "menuProfileSettings": "Profile & settings",
+  "menuHelpSupport": "Help and support",
+  "menuGroupHelp": "Help",
+  "menuBadgeNew": "{count} new",
+  "@menuBadgeNew": {"placeholders": {"count": {"type": "int"}}},
+  "menuBadgeOut": "{count} out",
+  "@menuBadgeOut": {"placeholders": {"count": {"type": "int"}}},
+  "menuPaidUntil": "Paid until {date}",
+  "@menuPaidUntil": {"placeholders": {"date": {"type": "String"}}},
+  "menuPeople": "{count, plural, =1{1 person} other{{count} people}}",
+  "@menuPeople": {"placeholders": {"count": {"type": "int"}}},
+  "menuOutletsOpen": "{count} open",
+  "@menuOutletsOpen": {"placeholders": {"count": {"type": "int"}}},
+  "menuSyncedAt": "Synced {time}",
+  "@menuSyncedAt": {"placeholders": {"time": {"type": "String"}}},
   "menuMyPassword": "My password",
   "syncActionOrderDeliver": "Order delivered",
   "syncActionOrderPayment": "Payment recorded",
@@ -2294,7 +2400,27 @@
       }
     }
   },
-  "settingsTalkSub": "Your requests and the partner team",
+  "settingsTalkSub": "WhatsApp the partner team",
+  "settingsPasswordRow": "Password",
+  "settingsPageLive": "Live",
+  "settingsPageNotLive": "Not live",
+  "settingsDeleteRowSub": "Delete your account · password-confirmed",
+  "settingsStatusActivePartner": "Active partner",
+  "settingsBioNoneSub": "Set up a fingerprint or face in the phone's settings first",
+  "settingsBioPinFirst": "Set a PIN first, then switch this on",
+  "settingsOfflineCopy": "Offline copy",
+  "settingsOfflineCopySub": "Orders, products, stock, bulk deals · encrypted",
+  "settingsBlueKey": "Blue: offline copy",
+  "settingsOfflineCopyNote": "The offline copy is removed only when you sign out, so nothing waiting is lost.",
+  "settingsMic": "Microphone",
+  "settingsMicSub": "Only for speaking to Ask Atom",
+  "settingsSignOutOthersDone": "Your other devices are signed out",
+  "settingsSignOutOthersNone": "You weren't signed in anywhere else",
+  "settingsSignOutOthersTitle": "Sign out all other devices?",
+  "settingsSignOutOthersBody": "Every other phone, tablet and the brand portal signs out at once. This phone stays signed in.",
+  "settingsSessionsNote": "A device you sign out is signed out at once. With Offline working, its saved copy is deleted the next time it goes online. Needs internet.",
+  "settingsSessionsNow": "Signed in now",
+  "settingsDailyPreviewNone": "Nothing to report today, so no message would go out.",
   "settingsNoticesSub": "What you get, quiet hours",
   "settingsLanguageSubAtom": "App and Ask Atom",
   "settingsStorageSubOffline": "Offline copy and cache",
@@ -2633,7 +2759,7 @@
   "syncNoInternetBody": "Atombrand needs a connection to show and save your work. Turn on mobile data or Wi-Fi.",
   "syncNoInternetDraft": "What you were typing is kept on this screen. Nothing was saved yet; save it when you are back online.",
   "syncEndedBodyFull": "Offline working has ended on your account. First, everything saved on this phone is sent, so nothing is lost.",
-  "syncEndedSend": "{count, plural, =1{Send 1 change waiting} other{Send {count} changes waiting}}",
+  "syncEndedSend": "{count, plural, =1{Send 1 waiting change} other{Send {count} waiting changes}}",
   "@syncEndedSend": {
     "placeholders": {
       "count": {
@@ -2761,6 +2887,99 @@
       }
     }
   },
+  "stockCategoryFilter": "Category: {name}",
+  "@stockCategoryFilter": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stockCategory": "Category",
+  "stockNoRecentIn": "Nothing received in the last 30 days.",
+  "stockCameraOffTitle": "The camera is off for Brand Partner",
+  "stockCameraOffBody": "To scan serials and IMEIs, allow the camera in your phone's settings. You can also type the number.",
+  "stockCameraFailedTitle": "The camera didn't start",
+  "stockCameraFailedBody": "Close other apps using the camera and try again, or type the number.",
+  "stockOpenSettings": "Open settings",
+  "catVarPickCategory": "Choose a category first. The options follow it: storage for phones, screen size for TVs.",
+  "catVarOneVersion": "Products in this category come in one version.",
+  "catVarNoColours": "Atomshop hasn't added colours yet. Ask support for the ones you need.",
+  "catVarNoSizes": "Atomshop hasn't added screen sizes yet. Ask support for the ones you need.",
+  "catVarNoStorage": "Atomshop hasn't added storage options yet. Ask support for the ones you need.",
+  "syncNoTeamPhone": "No phone signed in yet",
+  "teamKpiOrders": "Orders handled this month",
+  "teamKpiOrdersNote": "Confirmed or delivered",
+  "teamOrdersMonthN": "{n, plural, =1{1 order this month} other{{n} orders this month}}",
+  "@teamOrdersMonthN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "teamKpiHandled": "Orders handled · {month}",
+  "@teamKpiHandled": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "teamKpiHandledNote": "{confirmed} confirmed, {delivered} delivered",
+  "@teamKpiHandledNote": {
+    "placeholders": {
+      "confirmed": {
+        "type": "int"
+      },
+      "delivered": {
+        "type": "int"
+      }
+    }
+  },
+  "teamKpiPaid": "Payments recorded · {month}",
+  "@teamKpiPaid": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "teamKpiPaidNote": "{n, plural, =1{1 payment} other{{n} payments}}",
+  "@teamKpiPaidNote": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "teamPhonesRow": "Sign out their phones",
+  "teamPhonesSub": "They can sign in again",
+  "teamPhonesTitle": "Sign out {name}'s phones?",
+  "@teamPhonesTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamPhonesBody": "Every phone they use is signed out. A phone with an offline copy deletes it the next time it goes online, with anything it never sent. Their login stays.",
+  "teamPhonesButton": "Sign out phones",
+  "teamPhonesDone": "{name}'s phones are signed out.",
+  "@teamPhonesDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamPhonesNone": "No phone was signed in.",
+  "teamBlurbManager": "Everything except outlets, settings and billing",
+  "teamBlurbOrders": "Orders, payments, AtomPay; sees products and stock",
+  "teamBlurbBulk": "Bulk requests, quotes and deals",
+  "teamBlurbStock": "Stock in, adjust, move; warehouses",
+  "teamBlurbMarketing": "Products and the brand page",
+  "teamBlurbAccountant": "Totals, payments, reports and exports",
   "stockProductFilter": "Product: {name}",
   "@stockProductFilter": {
     "placeholders": {
@@ -4713,6 +4932,21 @@
   "acctReportMissing": "This report isn't there for your brand",
   "acctExcel": "Excel",
   "acctExcelOnline": "Excel · online",
+  "accountReportOrders": "{count, plural, =0{No orders} =1{1 order} other{{count} orders}}",
+  "@accountReportOrders": {"placeholders": {"count": {"type": "int"}}},
+  "accountReportStillDue": "{amount} still due",
+  "@accountReportStillDue": {"placeholders": {"amount": {"type": "String"}}},
+  "accountReportUnits": "{count, plural, =0{No units} =1{1 unit} other{{count} units}}",
+  "@accountReportUnits": {"placeholders": {"count": {"type": "int"}}},
+  "accountReportDeals": "{count, plural, =0{No deals} =1{1 deal} other{{count} deals}}",
+  "@accountReportDeals": {"placeholders": {"count": {"type": "int"}}},
+  "accountReportNoneToday": "None today",
+  "accountReportMethodIs": "Method: {method}",
+  "@accountReportMethodIs": {"placeholders": {"method": {"type": "String"}}},
+  "accountReportMethodAny": "Any",
+  "accountReportWhichMethod": "Which method?",
+  "accountNoPaymentsYet": "No payments yet",
+  "accountNoBillsYet": "No bills yet",
   "acctOutletIs": "Outlet: {outlet}",
   "@acctOutletIs": {
     "placeholders": {
@@ -4831,7 +5065,7 @@
   "askAtomNotHelpful": "Not helpful",
   "askAtomThanks": "Thanks for telling us.",
   "askAtomLanguageNote": "Atom answers the way you write: English, Roman Urdu or اردو.",
-  "askAtomHint": "Ask about your orders, deals or stock",
+  "askAtomHint": "Ask, or tap the mic",
   "askAtomHintOffline": "Atom needs internet",
   "askAtomSend": "Send",
   "askAtomWhatsAppUrgent": "Urgent? WhatsApp Atomshop",
@@ -4870,6 +5104,13 @@
   "askAtomQLow": "What is running low?",
   "askAtomQSales": "Sales this month",
   "askAtomQRequests": "Which seller requests are new?",
+  "askAtomQAtompay": "Is mahine kitni AtomPay sales hui?",
+  "askAtomShowThem": "Show them",
+  "askAtomMic": "Speak your question",
+  "askAtomMicStop": "Stop listening",
+  "askAtomListening": "Listening…",
+  "askAtomMicDenied": "Atom can't hear you: the microphone is off for Brand Partner. Allow it in your phone's settings, or type your question.",
+  "askAtomMicUnavailable": "Voice isn't available on this phone. Type your question instead.",
   "applyTypeManufacturer": "Manufacturer",
   "applyTypeDistributor": "Official distributor",
   "applyTypeImporter": "Authorised importer",
@@ -5250,7 +5491,7 @@
   "outletsKpiPayments": "Payments received",
   "outletsKpiOpen": "Open orders",
   "outletsKpiOpenNote": "Not yet delivered",
-  "outletsOrdersThisMonth": "Latest orders",
+  "outletsOrdersThisMonth": "Orders this month",
   "outletsNoOrders": "No orders for this outlet yet.",
   "outletsStaff": "Staff",
   "outletsStock": "Stock",
@@ -6856,6 +7097,43 @@
   },
   "bulkOtherRequests": "Other requests",
   "bulkNewQuoteRevision": "New quote revision",
+  "bulkAll": "All",
+  "bulkReceivedFilter": "Received: {when}",
+  "@bulkReceivedFilter": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "bulkReceivedTitle": "Received",
+  "bulkAnyTime": "Any time",
+  "bulkRangeToday": "Today",
+  "bulkRangeWeek": "Last 7 days",
+  "bulkRangeDays30": "Last 30 days",
+  "bulkRangeThisMonth": "This month",
+  "bulkRangePick": "Pick dates",
+  "bulkRangeDates": "{from} – {to}",
+  "@bulkRangeDates": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "bulkEmptyReceived": "No requests received then",
+  "bulkEmptyReceivedBody": "Try another time, or Any time.",
+  "bulkLoadErrorTitle": "That didn't load",
+  "bulkLoadErrorBody": "Atomshop couldn't load this just now. Nothing was changed.",
+  "bulkNoDelivery": "No delivery yet.",
+  "bulkFromRequest": "From request",
+  "bulkAddress": "Address",
+  "bulkCommissionNoneInfo": "Seller deals carry no commission for your brand today. If Atomshop sets a rate, it is shown here before you send a quote and fixed when the deal opens; it is added to your monthly bill, never taken from the seller's payment.",
+  "bulkReceivedFromAtomshop": "Request received from Atomshop",
+  "bulkAddPhotoTitle": "Add a photo",
   "teamSemYes": "yes",
   "teamSemNo": "no",
   "outletsHeroLabel": "Cash sales, all outlets · {period}",
@@ -7183,5 +7461,32 @@
   "outletsOrderCancelled": "Cancelled",
   "outletsMyBrand": "my brand",
   "teamSemOn": "on",
-  "teamSemOff": "off"
+  "teamSemOff": "off",
+  "ordersClearSearch": "Clear search",
+  "ordersSearchPlaceholder": "Order number, customer, phone or product",
+  "atompaySearchPlaceholder": "Order number or product",
+  "ordersPlacedTitle": "Placed",
+  "ordersPlacedFilter": "Placed: {when}",
+  "@ordersPlacedFilter": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "ordersLoadErrorTitle": "That didn't load",
+  "ordersLoadErrorBody": "Atomshop couldn't load this just now. Nothing was changed.",
+  "ordersErrorRef": "Ref {ref}",
+  "@ordersErrorRef": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "ordersSaveErrorBody": "That didn't save. Nothing was changed; try again.",
+  "ordersDeliveryFree": "Free",
+  "ordersNotVerified": "Not verified",
+  "ordersNotGiven": "Not given",
+  "ordersDeliveredBy": "Delivered by"
 }

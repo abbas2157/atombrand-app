@@ -53,7 +53,12 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
     text: groupDigits(widget.order.order.balance),
   );
   final _reference = TextEditingController();
-  String? _method;
+
+  /// Preselected as on the board (Bank transfer when the brand takes it).
+  late String? _method = () {
+    final m = offeredMethods(widget.order.paymentMethods);
+    return m.contains('bank') ? 'bank' : m.firstOrNull;
+  }();
   late DateTime _day = AtomDates.now();
   File? _receipt;
   bool _saving = false;
@@ -152,29 +157,33 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
 
     Widget quick(String label, int value) {
       final on = amount == value;
-      return Expanded(
-        child: AtomPressable(
-          onTap: () => _setAmount(value),
-          selected: on,
-          semanticLabel: label,
-          builder: (_, pressed) => Container(
-            constraints: const BoxConstraints(minHeight: 40),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: on
-                  ? AtomColors.primarySoft
-                  : pressed
-                  ? AtomColors.surface
-                  : AtomColors.paper,
-              borderRadius: AtomRadius.brPill,
-              border: Border.all(
-                color: on ? AtomColors.primary : AtomColors.line2,
-                width: on ? 2 : 1,
-              ),
+      return AtomPressable(
+        onTap: () => _setAmount(value),
+        selected: on,
+        focusRadius: AtomRadius.brPill,
+        semanticLabel: label,
+        builder: (_, pressed) => Container(
+          constraints: const BoxConstraints(minHeight: 34),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: on
+                ? AtomColors.primarySoft
+                : pressed
+                ? AtomColors.surface
+                : AtomColors.paper,
+            borderRadius: AtomRadius.brPill,
+            border: Border.all(
+              color: on ? AtomColors.primary : AtomColors.line2,
             ),
+          ),
+          child: Align(
+            // As wide as the label: a centred Container would fill the
+            // row, and the pills stacked full-width.
+            widthFactor: 1,
             child: Text(
               label,
+              maxLines: 1,
+              softWrap: false,
               style: AtomText.smallButton.copyWith(
                 color: on ? AtomColors.primary : AtomColors.text,
               ),
@@ -215,58 +224,35 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Semantics(
-            label: l.ordersAmount,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  'Rs',
-                  style: AtomText.heading.copyWith(color: AtomColors.faint),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _amount,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: const [RupeesInputFormatter()],
-                    style: AtomText.amountLg.copyWith(color: AtomColors.ink),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      hintText: '0',
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ],
+          // `.amt`: the big borderless amount, centred, "Rs" beside it.
+          Padding(
+            padding: const EdgeInsets.only(top: 18, bottom: 6),
+            child: BigAmountField(
+              controller: _amount,
+              label: l.ordersAmount,
+              onChanged: (_) => setState(() {}),
             ),
           ),
-          const Divider(height: 1, color: AtomColors.line),
-          if (amount > 0) ...[
-            const SizedBox(height: 6),
-            Text(amountInWords(amount), style: AtomText.small),
-          ],
-          const SizedBox(height: 10),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               quick(l.ordersAllAmount(formatRs(left)), left),
-              if (half > 0 && half < left) ...[
-                const SizedBox(width: 8),
-                quick(l.ordersHalf, half),
-              ],
+              if (half > 0 && half < left) quick(l.ordersHalf, half),
             ],
           ),
           if (amount > left) ...[
             const SizedBox(height: 8),
-            Text(l.ordersPayTooMuch, style: AtomText.fieldError),
+            Text(
+              l.ordersPayTooMuch,
+              textAlign: TextAlign.center,
+              style: AtomText.fieldError,
+            ),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           FieldLabel(l.ordersHowPaid),
-          ChoiceButtons<String>(
-            columns: 3,
+          PillChoices<String>(
             choices: [for (final m in methods) (m, labelOfMethod(m, l))],
             selected: _method,
             onChanged: (v) => setState(() => _method = v),

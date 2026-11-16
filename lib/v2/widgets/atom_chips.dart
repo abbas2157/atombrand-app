@@ -15,7 +15,7 @@ class AtomChip<T> {
   final bool disabled;
 }
 
-/// Two to four fixed choices, picked by tapping.
+/// Two to five fixed choices, picked by tapping (2.3's five share chips).
 ///
 /// For anything longer, or any list that comes from data, use
 /// [AtomSelectField]: every list choice has a search box (owner rule).
@@ -26,8 +26,8 @@ class AtomChips<T> extends StatelessWidget {
     required this.selected,
     required this.onChanged,
   }) : assert(
-         chips.length >= 2 && chips.length <= 4,
-         'Chips are for 2–4 fixed choices; use AtomSelectField for lists.',
+         chips.length >= 2 && chips.length <= 5,
+         'Chips are for 2–5 fixed choices; use AtomSelectField for lists.',
        );
 
   final List<AtomChip<T>> chips;

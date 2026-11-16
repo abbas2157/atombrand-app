@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/routes.dart';
 import '../../../core/access/access.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/access/access_controller.dart';
 import '../../../core/format/dates.dart';
 import '../../../core/format/money.dart';
@@ -131,6 +132,12 @@ class HomeFullSections extends ConsumerWidget {
     final seesOrders = who.can(BrandPermission.ordersView);
     final left = column != HomeColumn.right;
     final right = column != HomeColumn.left;
+    // A team member's Home (5.2) is the hero, the tasks, the latest orders
+    // and the role note; the totals only when the role has `home.totals`.
+    // The pipeline, bulk tiles, top products, Atom noticed and the activity
+    // feed are the owner's (5.1).
+    final owner = who.isOwner;
+    final noticed = home.noticed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -152,7 +159,7 @@ class HomeFullSections extends ConsumerWidget {
                 : null,
             child: SalesChart(months: months, now: AtomDates.now()),
           ),
-        if (pipeline != null && left)
+        if (pipeline != null && left && owner)
           AtomSection(
             title: l.homeOrderPipeline,
             trailing: AtomLink(
@@ -176,10 +183,11 @@ class HomeFullSections extends ConsumerWidget {
               ],
             ),
           ),
-        if (bulk != null && left) _BulkSection(bulk: bulk),
+        if (bulk != null && left && owner) _BulkSection(bulk: bulk),
         if (left && home.outlets.isNotEmpty && who.isOwner)
           _OutletsSection(outlets: home.outlets),
         if (right &&
+            owner &&
             home.topProducts.isNotEmpty &&
             who.can(BrandPermission.catalogueView))
           AtomSection(
@@ -192,7 +200,7 @@ class HomeFullSections extends ConsumerWidget {
               children: [
                 for (var i = 0; i < home.topProducts.length && i < 3; i++)
                   HomeRow(
-                    leading: AtomInitials(name: '${i + 1}', size: 40),
+                    leading: _Rank(i + 1),
                     title: home.topProducts[i].title,
                     subtitle: home.topProducts[i].price == null
                         ? null
@@ -232,7 +240,13 @@ class HomeFullSections extends ConsumerWidget {
                     ],
                   ),
           ),
-        if (right && home.activity.isNotEmpty)
+        // "Atom noticed" (Ask Atom add-on): one insight from the server.
+        if (noticed != null && right && owner && access.has(Addon.askAtom))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+            child: HomeNoticedCard(noticed: noticed),
+          ),
+        if (right && owner && home.activity.isNotEmpty)
           AtomSection(
             title: l.homeRecentActivity,
             trailing: AtomLink(
@@ -243,7 +257,10 @@ class HomeFullSections extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               child: Column(
                 children: [
-                  for (final a in home.activity) _ActivityRow(activity: a),
+                  for (var i = 0; i < home.activity.length; i++) ...[
+                    if (i > 0) const Divider(height: 1, color: AtomColors.line),
+                    _ActivityRow(activity: home.activity[i]),
+                  ],
                 ],
               ),
             ),
@@ -336,19 +353,13 @@ class _SalesSectionState extends State<_SalesSection> {
               AtomKpi(
                 label: l.homeLiveOnAtomshop,
                 value: l.homeLiveOf(s.live, s.catalogueTotal),
-                note: '${(s.liveShare * 100).round()}%',
+                // In the tile, as on the board, not under the whole grid.
+                progress: s.catalogueTotal > 0 ? s.liveShare : null,
+                // `.prog i`: the primary blue.
+                progressColour: AtomColors.primary,
               ),
             ],
           ),
-          if (s.catalogueTotal > 0) ...[
-            const SizedBox(height: 8),
-            AtomProgressBar(
-              value: s.liveShare,
-              colour: AtomColors.green,
-              semanticLabel:
-                  '${l.homeLiveOnAtomshop}: ${l.homeLiveOf(s.live, s.catalogueTotal)}',
-            ),
-          ],
         ],
       ),
     );
@@ -395,9 +406,13 @@ class _SalesChartState extends State<SalesChart> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Expanded(child: Text(_long(picked), style: AtomText.secondary)),
-              Text(
-                formatRs(m.sales),
-                style: AtomText.money.copyWith(fontSize: 16),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  formatRs(m.sales),
+                  textAlign: TextAlign.end,
+                  style: AtomText.money.copyWith(fontSize: 16),
+                ),
               ),
             ],
           ),
@@ -482,7 +497,7 @@ class _SalesChartState extends State<SalesChart> {
         ),
       ),
       const SizedBox(width: 6),
-      Text(label, style: AtomText.small),
+      Flexible(child: Text(label, style: AtomText.small)),
     ],
   );
 }
@@ -791,11 +806,18 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                l.homePlanAndBilling,
-                style: AtomText.secondary.copyWith(
-                  color: AtomColors.primary,
-                  fontWeight: FontWeight.w600,
+              // At most a third of the row, so the plan line keeps the rest
+              // and large text wraps rather than overflowing.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width / 3,
+                ),
+                child: Text(
+                  l.homePlanAndBilling,
+                  style: AtomText.secondary.copyWith(
+                    color: AtomColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -1042,4 +1064,145 @@ List<FirstStep> firstStepsFor(
     teamMembers: known?.team ?? 0,
     l: l,
   );
+}
+
+/// A top product's rank (`.ini`): a blue circle for every place.
+class _Rank extends StatelessWidget {
+  const _Rank(this.n);
+  final int n;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 40,
+    height: 40,
+    alignment: Alignment.center,
+    decoration: const BoxDecoration(
+      color: AtomColors.primarySoft,
+      shape: BoxShape.circle,
+    ),
+    child: Text(
+      '$n',
+      style: AtomText.body.copyWith(
+        color: AtomColors.primary,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
+}
+
+/// "Atom noticed" (5.1 `.atom`): the server's one insight, in bold then
+/// plain, and a button to where it can be acted on.
+class HomeNoticedCard extends ConsumerWidget {
+  const HomeNoticedCard({super.key, required this.noticed});
+  final HomeNoticed noticed;
+
+  /// Where the insight's button goes, and its label; null when the person
+  /// can't open it.
+  (String, bool, String)? _action(AppLocalizations l, Who who) {
+    final p = noticed.params;
+    int? id(String k) => Json.integer(p[k]);
+    switch (noticed.screen) {
+      case 'stock_product' when id('product_id') != null:
+        return (
+          V2Routes.productStockOf(id('product_id')!),
+          false,
+          l.homeNoticedSeeStock,
+        );
+      case 'orders' when who.can(BrandPermission.ordersView):
+        return (
+          V2Routes.ordersWith(status: Json.str(p['status'])),
+          true,
+          l.homeConfirmOrders,
+        );
+      case 'outlets' when id('outlet_id') != null && who.isOwner:
+        return (
+          V2Routes.outletOf(id('outlet_id')!),
+          false,
+          l.homeNoticedOpenOutlet,
+        );
+      case 'bulk_orders' when who.can(BrandPermission.bulkView):
+        return (V2Routes.bulkTab('website'), true, l.homeNoticedFollowUp);
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final who =
+        ref.watch(sessionProvider.notifier).current?.who ?? const Who.owner();
+    final hour = ref.watch(homeClockProvider)().hour;
+    final sub = hour < 12
+        ? l.homeNoticedMorning
+        : hour < 17
+        ? l.homeNoticedAfternoon
+        : l.homeNoticedEvening;
+    final action = _action(l, who);
+    const ink = Color(0xFF1C318C);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AtomColors.primarySoft,
+        borderRadius: AtomRadius.brCard,
+        border: Border.all(color: AtomColors.primaryLine),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const HomeIconTile(
+                icon: LucideIcons.sparkles,
+                tone: AtomTone.blue,
+                background: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        l.homeNoticedTitle,
+                        style: AtomText.listTitle,
+                      ),
+                    ),
+                    Text(
+                      sub,
+                      style: AtomText.small.copyWith(color: AtomColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text.rich(
+            TextSpan(
+              style: AtomText.body.copyWith(color: ink, height: 1.5),
+              children: [
+                if (noticed.title.isNotEmpty) ...[
+                  TextSpan(
+                    text: noticed.title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  if (noticed.text.isNotEmpty) const TextSpan(text: '. '),
+                ],
+                TextSpan(text: noticed.text),
+              ],
+            ),
+          ),
+          if (action case (final path, final tab, final label)) ...[
+            const SizedBox(height: 10),
+            MiniButton(
+              label: label,
+              primary: true,
+              onTap: () => tab ? context.go(path) : context.push(path),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }

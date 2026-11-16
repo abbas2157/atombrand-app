@@ -162,7 +162,7 @@ class BulkCardTitle extends StatelessWidget {
             ),
           ),
         ),
-        ?trailing,
+        if (trailing != null) Flexible(child: trailing!),
       ],
     ),
   );
@@ -241,11 +241,19 @@ class BulkTwoLine extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Text(
-          value,
-          style: AtomText.money.copyWith(
-            fontSize: 14,
-            color: valueColor ?? AtomColors.ink,
+        // At the right edge: a bare Flexible text sat mid-row.
+        Flexible(
+          child: Align(
+            heightFactor: 1,
+            alignment: AlignmentDirectional.topEnd,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: AtomText.money.copyWith(
+                fontSize: 14,
+                color: valueColor ?? AtomColors.ink,
+              ),
+            ),
           ),
         ),
       ],
@@ -387,31 +395,39 @@ class NeedByChip extends StatelessWidget {
       _ => null,
     };
     final colour = tone?.fg ?? AtomColors.muted;
+    // One line, always (`.st` is nowrap): on a narrow phone it shrinks a
+    // little rather than breaking "· 5 days" onto a second line.
     final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(LucideIcons.calendar, size: 13, color: colour),
         const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            text,
-            style: AtomText.small.copyWith(
-              color: colour,
-              fontWeight: tone == null ? FontWeight.w600 : FontWeight.w700,
-            ),
+        Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: AtomText.small.copyWith(
+            color: colour,
+            fontWeight: tone == null ? FontWeight.w600 : FontWeight.w700,
           ),
         ),
       ],
     );
-    if (tone == null) return row;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 24),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: tone.bg,
-        borderRadius: AtomRadius.brPill,
-      ),
-      child: row,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: AlignmentDirectional.centerStart,
+      child: tone == null
+          ? row
+          : Container(
+              constraints: const BoxConstraints(minHeight: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: tone.bg,
+                borderRadius: AtomRadius.brPill,
+              ),
+              child: row,
+            ),
     );
   }
 }
@@ -575,13 +591,30 @@ class BulkDetailHeader extends StatelessWidget {
             leading: BulkBeside.of(context)
                 ? AtomFlowLeading.none
                 : AtomFlowLeading.back,
-            // The eyebrow sits over the title below, small: in the bar
-            // beside the status it was cut short.
+            // `.bar` with `.eyebrow`: beside the status, wrapping to a
+            // second line rather than being cut short.
+            middle: Text(
+              eyebrow.toUpperCase(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AtomText.tag.copyWith(
+                fontSize: 12,
+                letterSpacing: .8,
+                color: AtomColors.primary,
+              ),
+            ),
             trailing: [
               if (status != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: status,
+                  // At large text the pill shrinks rather than push the
+                  // bar past the edge.
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * .45,
+                    ),
+                    child: FittedBox(fit: BoxFit.scaleDown, child: status),
+                  ),
                 ),
             ],
           ),
@@ -590,8 +623,6 @@ class BulkDetailHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(eyebrow, style: AtomText.secondary),
-                const SizedBox(height: 4),
                 Semantics(
                   header: true,
                   child: Text(title, style: AtomText.pageTitle),
@@ -652,12 +683,146 @@ class BulkLoadFrame extends StatelessWidget {
                 title: l.notFoundTitle,
                 body: l.bulkNotFoundBody,
               ),
-              ApiFailure() => AtomErrorState(
-                onRetry: onRetry,
-                message: sayFailure(l, e),
+              ApiFailure(
+                kind: ApiFailureKind.notInRole || ApiFailureKind.ownerOnly,
+              ) =>
+                AtomMessageState(
+                  icon: LucideIcons.lock,
+                  title: l.notInRoleTitle,
+                  body: l.notInRoleBody,
+                ),
+              ApiFailure(
+                kind: ApiFailureKind.offline || ApiFailureKind.timeout,
+              ) =>
+                AtomErrorState(onRetry: onRetry, message: sayFailure(l, e)),
+              // Anything else: the board's copy, never the server's words.
+              ApiFailure() => AtomMessageState(
+                icon: LucideIcons.circleAlert,
+                tone: AtomTone.rose,
+                art: false,
+                title: l.bulkLoadErrorTitle,
+                body: switch (e.body?['ref']) {
+                  final String ref when ref.isNotEmpty =>
+                    '${l.bulkLoadErrorBody}\n'
+                        '${l.dpDbErrorRef(ref, bulkWhen(l, AtomDates.now()))}',
+                  _ => l.bulkLoadErrorBody,
+                },
+                actionLabel: l.commonTryAgain,
+                onAction: onRetry,
               ),
               _ => AtomErrorState(onRetry: onRetry),
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A green / rose note whose sentence carries links (`.note` with `<a>`:
+/// "Quote Q-1042 rev 2 is ready. Open WhatsApp · Download PDF").
+class BulkLinkNote extends StatelessWidget {
+  const BulkLinkNote({
+    super.key,
+    required this.kind,
+    required this.lead,
+    this.text,
+    this.links = const [],
+    this.icon,
+    this.boldLead = true,
+  });
+
+  final AtomNoteKind kind;
+  final bool boldLead;
+
+  /// The bold start.
+  final String lead;
+  final String? text;
+  final List<(String, VoidCallback)> links;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final (Color bg, Color border, Color fg, IconData glyph) = switch (kind) {
+      AtomNoteKind.info => (
+        AtomColors.primarySoft,
+        AtomColors.primaryLine,
+        AtomColors.noteBlueText,
+        LucideIcons.info,
+      ),
+      AtomNoteKind.success => (
+        AtomColors.greenSoft,
+        AtomColors.greenLine,
+        AtomColors.noteGreenText,
+        LucideIcons.check,
+      ),
+      AtomNoteKind.warning => (
+        AtomColors.amberSoft,
+        AtomColors.amberLine,
+        AtomColors.amberInk,
+        LucideIcons.circleAlert,
+      ),
+      AtomNoteKind.problem => (
+        AtomColors.roseSoft,
+        AtomColors.roseLine,
+        AtomColors.noteRoseText,
+        LucideIcons.circleAlert,
+      ),
+    };
+    final style = AtomText.body.copyWith(color: fg);
+    final linkStyle = style.copyWith(
+      color: AtomColors.primary,
+      fontWeight: FontWeight.w600,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: AtomRadius.brControl,
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon ?? glyph, size: 18, color: fg),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: lead,
+                        style: boldLead
+                            ? const TextStyle(fontWeight: FontWeight.w700)
+                            : null,
+                      ),
+                      if (text != null) TextSpan(text: ' $text'),
+                      if (links.isNotEmpty) const TextSpan(text: ' '),
+                    ],
+                  ),
+                  style: style,
+                ),
+                for (final (i, (label, onTap)) in links.indexed) ...[
+                  if (i > 0) Text(' · ', style: style),
+                  Semantics(
+                    button: true,
+                    child: InkWell(
+                      onTap: onTap,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 24),
+                        child: Text(label, style: linkStyle),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),

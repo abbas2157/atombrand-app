@@ -42,26 +42,30 @@ class _ProductStockScreenState extends ConsumerState<ProductStockScreen> {
       backgroundColor: AtomColors.surface,
       body: Column(
         children: [
-          AtomFlowBar(
-            title: p?.title,
-            trailing: [
-              AtomIconButton(
-                icon: LucideIcons.clock,
-                label: l.stockHistoryTitle,
-                onTap: () => context.push(
-                  V2Routes.stockHistoryOf(productId: widget.productId),
-                ),
-              ),
-              if (p?.catalogueProductId != null &&
-                  (who?.can(BrandPermission.catalogueEdit) ?? false))
+          // No title in the bar: the name is the big heading below it. The
+          // bar and the heading share the white head (`#fff`, line under).
+          ColoredBox(
+            color: AtomColors.paper,
+            child: AtomFlowBar(
+              trailing: [
                 AtomIconButton(
-                  icon: LucideIcons.pencil,
-                  label: l.stockEditProduct,
+                  icon: LucideIcons.history,
+                  label: l.stockHistoryTitle,
                   onTap: () => context.push(
-                    V2Routes.productEditOf(p!.catalogueProductId!),
+                    V2Routes.stockHistoryOf(productId: widget.productId),
                   ),
                 ),
-            ],
+                if (p?.catalogueProductId != null &&
+                    (who?.can(BrandPermission.catalogueEdit) ?? false))
+                  AtomIconButton(
+                    icon: LucideIcons.pencil,
+                    label: l.stockEditProduct,
+                    onTap: () => context.push(
+                      V2Routes.productEditOf(p!.catalogueProductId!),
+                    ),
+                  ),
+              ],
+            ),
           ),
           const OfflineBar(),
           Expanded(
@@ -108,11 +112,15 @@ class _ProductStockScreenState extends ConsumerState<ProductStockScreen> {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      padding: const EdgeInsets.only(bottom: 32),
       children: [
-        // the title block under the bar
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+        // the title block under the bar, on the white head
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          decoration: const BoxDecoration(
+            color: AtomColors.paper,
+            border: Border(bottom: BorderSide(color: AtomColors.line)),
+          ),
           child: Row(
             children: [
               const AtomIconTile(
@@ -129,6 +137,7 @@ class _ProductStockScreenState extends ConsumerState<ProductStockScreen> {
                     Text(
                       [
                         ?p.prNumber,
+                        ?p.category,
                         l.stockNumberedBy(p.tracking.label(l)),
                       ].join(' · '),
                       style: AtomText.small,
@@ -138,223 +147,246 @@ class _ProductStockScreenState extends ConsumerState<ProductStockScreen> {
               ),
               if (p.websiteStatus != null)
                 AtomPill(
-                  label: live ? l.stockLive : p.websiteStatus!,
+                  label: live
+                      ? l.stockLive
+                      : p.websiteStatus == 'Out of Stock'
+                      ? l.stockStateOut
+                      : p.websiteStatus!,
                   tone: live ? AtomTone.green : AtomTone.grey,
                 ),
             ],
           ),
         ),
-        AtomKpiGrid(
-          kpis: [
-            AtomKpi(
-              label: l.stockStateIn,
-              value: '$onHand',
-              note: l.stockWarehousesN(stocked),
-            ),
-            AtomKpi(
-              label: l.stockHeldForOrders,
-              value: '$held',
-              note: l.stockOrdersAndDeals,
-            ),
-            AtomKpi(
-              label: l.stockAvailable,
-              value: '$available',
-              note: l.stockCanSellNow,
-            ),
-            AtomKpi(label: l.stockDelivered90, value: '${p.delivered90}'),
-          ],
-        ),
-        if (canChange) ...[
-          const SizedBox(height: 12),
-          Row(
-            spacing: 8,
-            children: [
-              Expanded(
-                child: AtomButton(
-                  label: l.stockIn,
-                  compact: true,
-                  onPressed: () =>
-                      context.push(V2Routes.stockIn(productId: p.id)),
-                ),
-              ),
-              Expanded(
-                child: AtomButton(
-                  label: l.stockMove,
-                  kind: AtomButtonKind.outline,
-                  compact: true,
-                  onPressed: () =>
-                      context.push(V2Routes.moveStock(productId: p.id)),
-                ),
-              ),
-              Expanded(
-                child: AtomButton(
-                  label: l.stockAdjust,
-                  kind: AtomButtonKind.outline,
-                  compact: true,
-                  onPressed: () =>
-                      context.push(V2Routes.adjustStock(productId: p.id)),
-                ),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 12),
-        StockBlock(
-          title: l.stockVariants,
-          child: _Table(
-            heads: [
-              l.stockColVariant,
-              l.stockStateIn,
-              l.stockHeld,
-              l.stockColAvail,
-            ],
-            rows: [
-              for (final v in p.variants)
-                (
-                  title: v.name.isEmpty ? l.stockStandard : v.name,
-                  sub: v.price > 0 ? formatRs(v.price) : null,
-                  cells: ['${v.onHand}', '${v.held}', '${v.available}'],
-                  warn: v.state == 'in' ? null : stateInk(v.state),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        StockBlock(
-          title: l.stockByWarehouse,
-          child: _Table(
-            heads: [
-              l.stockWarehouse,
-              l.stockTitle,
-              l.stockHeld,
-              l.stockColAvail,
-            ],
-            rows: [
-              for (final w in p.warehouses)
-                (
-                  title: w.name,
-                  sub: [
-                    ?w.outlet,
-                    w.sellsOnline ? l.stockSellsOnline : l.stockNotOnline,
-                  ].join(' · '),
-                  cells: ['${w.onHand}', '${w.held}', '${w.available}'],
-                  warn: null,
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        StockCard(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-                child: AtomSegmented<bool>(
-                  segments: [
-                    AtomSegment(false, l.stockSegInStock(inStock.length)),
-                    AtomSegment(true, l.stockSegDelivered(delivered.length)),
+              AtomKpiGrid(
+                kpis: [
+                  AtomKpi(
+                    label: l.stockStateIn,
+                    value: '$onHand',
+                    note: l.stockWarehousesN(stocked),
+                  ),
+                  AtomKpi(
+                    label: l.stockHeldForOrders,
+                    value: '$held',
+                    note: l.stockOrdersAndDeals,
+                  ),
+                  AtomKpi(
+                    label: l.stockAvailable,
+                    value: '$available',
+                    note: l.stockCanSellNow,
+                  ),
+                  AtomKpi(label: l.stockDelivered90, value: '${p.delivered90}'),
+                ],
+              ),
+              if (canChange) ...[
+                const SizedBox(height: 12),
+                Row(
+                  spacing: 8,
+                  children: [
+                    Expanded(
+                      child: AtomButton(
+                        label: l.stockIn,
+                        compact: true,
+                        onPressed: () =>
+                            context.push(V2Routes.stockIn(productId: p.id)),
+                      ),
+                    ),
+                    Expanded(
+                      child: AtomButton(
+                        label: l.stockMove,
+                        kind: AtomButtonKind.outline,
+                        compact: true,
+                        onPressed: () =>
+                            context.push(V2Routes.moveStock(productId: p.id)),
+                      ),
+                    ),
+                    Expanded(
+                      child: AtomButton(
+                        label: l.stockAdjust,
+                        kind: AtomButtonKind.outline,
+                        compact: true,
+                        onPressed: () =>
+                            context.push(V2Routes.adjustStock(productId: p.id)),
+                      ),
+                    ),
                   ],
-                  selected: _delivered,
-                  onChanged: (v) => setState(() => _delivered = v),
+                ),
+              ],
+              const SizedBox(height: 12),
+              StockBlock(
+                title: l.stockVariants,
+                child: _Table(
+                  heads: [
+                    l.stockColVariant,
+                    l.stockStateIn,
+                    l.stockHeld,
+                    l.stockColAvail,
+                  ],
+                  rows: [
+                    for (final v in p.variants)
+                      (
+                        title: v.name.isEmpty ? l.stockStandard : v.name,
+                        sub: v.price > 0 ? formatRs(v.price) : null,
+                        cells: ['${v.onHand}', '${v.held}', '${v.available}'],
+                        warn: v.state == 'in' ? null : stateInk(v.state),
+                      ),
+                  ],
                 ),
               ),
-              if ((_delivered ? delivered : inStock).isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _delivered ? l.stockNothingDelivered : l.stockNoUnits,
-                    style: AtomText.secondary,
+              const SizedBox(height: 12),
+              StockBlock(
+                title: l.stockByWarehouse,
+                child: _Table(
+                  heads: [
+                    l.stockWarehouse,
+                    l.stockTitle,
+                    l.stockHeld,
+                    l.stockColAvail,
+                  ],
+                  rows: [
+                    for (final w in p.warehouses)
+                      (
+                        title: w.name,
+                        sub: [
+                          ?w.outlet,
+                          w.sellsOnline ? l.stockSellsOnline : l.stockNotOnline,
+                        ].join(' · '),
+                        cells: ['${w.onHand}', '${w.held}', '${w.available}'],
+                        warn: null,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              StockCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                      child: AtomSegmented<bool>(
+                        segments: [
+                          AtomSegment(false, l.stockSegInStock(inStock.length)),
+                          AtomSegment(
+                            true,
+                            l.stockSegDelivered(delivered.length),
+                          ),
+                        ],
+                        selected: _delivered,
+                        onChanged: (v) => setState(() => _delivered = v),
+                      ),
+                    ),
+                    if ((_delivered ? delivered : inStock).isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          _delivered ? l.stockNothingDelivered : l.stockNoUnits,
+                          style: AtomText.secondary,
+                        ),
+                      ),
+                    for (final u in (_delivered ? delivered : inStock).take(
+                      100,
+                    ))
+                      _UnitRow(unit: u),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              StockBlock(
+                title: l.stockRecentChanges,
+                trailing: AtomTextLink(
+                  label: l.stockAll,
+                  onTap: () =>
+                      context.push(V2Routes.stockHistoryOf(productId: p.id)),
+                ),
+                child: p.recent.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                        child: Text(
+                          l.stockNoChanges,
+                          style: AtomText.secondary,
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          for (final m in p.recent)
+                            MoveRow(move: m, showProduct: false),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 12),
+              StockBlock(
+                title: l.stockOnAtomshop,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                  child: StockLines(
+                    children: [
+                      StockLine(
+                        label: l.stockShowsAs,
+                        value: AtomPill(
+                          label: live && online > 0
+                              ? l.stockStateIn
+                              : (live
+                                    ? l.stockStateOut
+                                    : (p.websiteStatus ?? l.stockNotListed)),
+                          tone: live && online > 0
+                              ? AtomTone.green
+                              : AtomTone.grey,
+                        ),
+                      ),
+                      StockLine(
+                        label: l.stockCountsFrom,
+                        value: stockValue(l.stockOnlineWarehouses),
+                      ),
+                      StockLine(
+                        label: l.stockAvailableOnline,
+                        value: stockValue('$online'),
+                      ),
+                    ],
                   ),
                 ),
-              for (final u in (_delivered ? delivered : inStock).take(100))
-                _UnitRow(unit: u),
+              ),
+              const SizedBox(height: 12),
+              StockBlock(
+                title: l.stockDetails,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                  child: StockLines(
+                    children: [
+                      if (p.prNumber != null)
+                        StockLine(
+                          label: l.stockPrNumber,
+                          value: stockValue(p.prNumber!),
+                        ),
+                      StockLine(
+                        label: l.stockUnitsNumberedBy,
+                        value: stockValue(p.tracking.label(l)),
+                      ),
+                      if (p.tracking == Tracking.auto && p.autoPrefix != null)
+                        StockLine(
+                          label: l.stockPrefix,
+                          value: stockValue(p.autoPrefix!),
+                        ),
+                      if (p.websiteStatus != null)
+                        StockLine(
+                          label: l.stockOnWebsite,
+                          value: stockValue(p.websiteStatus!),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              if (canChange && p.canChangeTracking) ...[
+                const SizedBox(height: 12),
+                _Numbering(product: p),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        StockBlock(
-          title: l.stockRecentChanges,
-          trailing: AtomTextLink(
-            label: l.stockAll,
-            onTap: () => context.push(V2Routes.stockHistoryOf(productId: p.id)),
-          ),
-          child: p.recent.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                  child: Text(l.stockNoChanges, style: AtomText.secondary),
-                )
-              : Column(
-                  children: [
-                    for (final m in p.recent)
-                      MoveRow(move: m, showProduct: false),
-                  ],
-                ),
-        ),
-        const SizedBox(height: 12),
-        StockBlock(
-          title: l.stockOnAtomshop,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-            child: Column(
-              children: [
-                StockLine(
-                  label: l.stockShowsAs,
-                  value: AtomPill(
-                    label: live && online > 0
-                        ? l.stockStateIn
-                        : (live
-                              ? l.stockStateOut
-                              : (p.websiteStatus ?? l.stockNotListed)),
-                    tone: live && online > 0 ? AtomTone.green : AtomTone.grey,
-                  ),
-                ),
-                StockLine(
-                  label: l.stockCountsFrom,
-                  value: stockValue(l.stockOnlineWarehouses),
-                ),
-                StockLine(
-                  label: l.stockAvailableOnline,
-                  value: stockValue('$online'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        StockBlock(
-          title: l.stockDetails,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-            child: Column(
-              children: [
-                if (p.prNumber != null)
-                  StockLine(
-                    label: l.stockPrNumber,
-                    value: stockValue(p.prNumber!),
-                  ),
-                StockLine(
-                  label: l.stockUnitsNumberedBy,
-                  value: stockValue(p.tracking.label(l)),
-                ),
-                if (p.tracking == Tracking.auto && p.autoPrefix != null)
-                  StockLine(
-                    label: l.stockPrefix,
-                    value: stockValue(p.autoPrefix!),
-                  ),
-                if (p.websiteStatus != null)
-                  StockLine(
-                    label: l.stockOnWebsite,
-                    value: stockValue(p.websiteStatus!),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        if (canChange && p.canChangeTracking) ...[
-          const SizedBox(height: 12),
-          _Numbering(product: p),
-        ],
       ],
     );
   }
@@ -371,76 +403,113 @@ class _Table extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget cell(String t, {TextStyle? style, bool first = false}) => Expanded(
+    // `.tbl`: 13px cells, the first 14px from the edge, the others 8px
+    // apart; an uppercase 11px head on the table-head fill.
+    Widget cell(
+      String t, {
+      TextStyle? style,
+      bool first = false,
+      bool last = false,
+    }) => Expanded(
       flex: first ? 3 : 1,
-      child: Text(
-        t,
-        textAlign: first ? TextAlign.start : TextAlign.end,
-        style: style,
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(
+          start: first ? 14 : 8,
+          end: last ? 14 : 0,
+        ),
+        child: Text(
+          t,
+          textAlign: first ? TextAlign.start : TextAlign.end,
+          style: style,
+        ),
       ),
     );
-    final head = AtomText.tag.copyWith(color: AtomColors.faint);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                for (var i = 0; i < heads.length; i++)
-                  cell(heads[i], style: head, first: i == 0),
-              ],
+    final head = AtomText.tag.copyWith(
+      color: AtomColors.faint,
+      letterSpacing: 0.4,
+    );
+    final n = heads.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: const BoxDecoration(
+            color: AtomColors.head,
+            border: Border.symmetric(
+              horizontal: BorderSide(color: AtomColors.line),
             ),
           ),
-          if (rows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                AppLocalizations.of(context).stockNothingYet,
-                style: AtomText.secondary,
-              ),
+          child: Row(
+            children: [
+              for (var i = 0; i < n; i++)
+                cell(
+                  heads[i].toUpperCase(),
+                  style: head,
+                  first: i == 0,
+                  last: i == n - 1,
+                ),
+            ],
+          ),
+        ),
+        if (rows.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Text(
+              AppLocalizations.of(context).stockNothingYet,
+              style: AtomText.secondary,
             ),
-          for (final r in rows)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AtomColors.line)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
+          ),
+        for (var j = 0; j < rows.length; j++)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: j == 0
+                ? null
+                : const BoxDecoration(
+                    border: Border(top: BorderSide(color: AtomColors.line)),
+                  ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          r.title,
-                          style: AtomText.body.copyWith(color: AtomColors.ink),
+                          rows[j].title,
+                          style: AtomText.body.copyWith(
+                            fontSize: 13,
+                            color: AtomColors.ink,
+                          ),
                         ),
-                        if (r.sub != null && r.sub!.isNotEmpty)
-                          Text(r.sub!, style: AtomText.small),
+                        if (rows[j].sub case final sub? when sub.isNotEmpty)
+                          Text(sub, style: AtomText.small),
                       ],
                     ),
                   ),
-                  for (var i = 0; i < r.cells.length; i++)
-                    cell(
-                      r.cells[i],
-                      style: AtomText.money.copyWith(
-                        fontSize: 14,
-                        color: i == r.cells.length - 1 && r.warn != null
-                            ? r.warn
-                            : AtomColors.ink,
-                        fontWeight: i == r.cells.length - 1 && r.warn != null
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    ),
-                ],
-              ),
+                ),
+                for (var i = 0; i < rows[j].cells.length; i++)
+                  cell(
+                    rows[j].cells[i],
+                    last: i == rows[j].cells.length - 1,
+                    style: _figure(rows[j], i),
+                  ),
+              ],
             ),
-        ],
-      ),
+          ),
+      ],
+    );
+  }
+
+  static TextStyle _figure(_Row r, int i) {
+    final warn = i == r.cells.length - 1 && r.warn != null;
+    return AtomText.money.copyWith(
+      fontSize: 13,
+      color: warn ? r.warn : AtomColors.ink,
+      fontWeight: warn ? FontWeight.w700 : FontWeight.w400,
     );
   }
 }
@@ -583,6 +652,7 @@ class MoveRow extends StatelessWidget {
           Text(
             moveChange(m),
             style: AtomText.money.copyWith(
+              fontSize: 16,
               color: ink,
               fontWeight: FontWeight.w700,
             ),

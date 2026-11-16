@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/access/access.dart';
+import '../../../core/access/access_controller.dart';
 import '../../../core/lock/app_lock.dart';
 import '../../../core/lock/quick_sign_in.dart';
 import '../../../core/session/session_controller.dart';
@@ -17,10 +19,6 @@ import 'auth_parts.dart';
 /// Continue ends the step and the guards move on (Choose shop, terms, the
 /// tour, Home).
 ///
-/// Skip leaves the phone without a PIN: the step ends the same way, and
-/// Home's first steps and Settings › Security keep offering it. Without a
-/// PIN nothing locks the app, so the next sign-in asks again.
-///
 /// With "Open with fingerprint" on, Continue also saves the login and the
 /// password typed at sign-in behind the fingerprint (one system prompt), so
 /// the next sign-in after signing out can be the fingerprint.
@@ -32,7 +30,7 @@ class WayInSetPinScreen extends ConsumerStatefulWidget {
 }
 
 class _WayInSetPinScreenState extends ConsumerState<WayInSetPinScreen> {
-  /// Finishing or skipping is under way: the second tap waits for it.
+  /// Finishing is under way: the second tap waits for it.
   bool _finishing = false;
 
   /// Ends the way-in step. If the phone could not save it (the secure
@@ -85,16 +83,6 @@ class _WayInSetPinScreenState extends ConsumerState<WayInSetPinScreen> {
     await _end();
   }
 
-  /// Skip: no PIN on this phone. The password typed at sign-in is dropped
-  /// unsaved (it is only kept behind the fingerprint alongside a PIN), and
-  /// the way-in step ends so the guards move on.
-  Future<void> _skip() async {
-    if (_finishing) return;
-    _finishing = true;
-    ref.read(pendingSignInProvider.notifier).forget();
-    await _end();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -103,7 +91,7 @@ class _WayInSetPinScreenState extends ConsumerState<WayInSetPinScreen> {
       child: PinSetupScreen(
         stepLabel: l.pinStepOf(2),
         onFinished: _finish,
-        onSkip: _skip,
+        wayIn: true,
       ),
     );
   }
@@ -140,7 +128,7 @@ class PinSetupScreen extends ConsumerStatefulWidget {
     required this.onFinished,
     this.stepLabel,
     this.onClose,
-    this.onSkip,
+    this.wayIn = false,
     this.askCurrent = false,
   });
 
@@ -151,9 +139,9 @@ class PinSetupScreen extends ConsumerStatefulWidget {
   final VoidCallback onFinished;
   final VoidCallback? onClose;
 
-  /// Leaves without a PIN, under the pad. Only the way-in step offers it:
-  /// Change PIN in Settings has Back instead.
-  final VoidCallback? onSkip;
+  /// The way-in step (2.5): its done card also shows "Work offline" when
+  /// the Offline add-on is on. The board has no Skip: a PIN is needed.
+  final bool wayIn;
 
   /// Ask for the PIN in use before a new one is set.
   final bool askCurrent;
@@ -315,7 +303,12 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
                 if (!_done)
                   Expanded(child: _entry())
                 else
-                  Expanded(child: _DoneBody(onContinue: widget.onFinished)),
+                  Expanded(
+                    child: _DoneBody(
+                      onContinue: widget.onFinished,
+                      wayIn: widget.wayIn,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -325,10 +318,7 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
   }
 
   Widget _entry() {
-    final l = AppLocalizations.of(context);
     final error = _error;
-    // The PIN in use is asked for first: Skip belongs to the new one.
-    final skip = _checkingCurrent ? null : widget.onSkip;
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 28, 0, 30),
       child: Column(
@@ -353,10 +343,6 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
           const Spacer(),
           const SizedBox(height: 16),
           AtomPinPad(onDigit: _digit, onDelete: _delete),
-          if (skip != null) ...[
-            const SizedBox(height: 8),
-            AuthLink(label: l.pinSkip, onTap: skip),
-          ],
         ],
       ),
     );
@@ -401,14 +387,18 @@ class _Header extends StatelessWidget {
 }
 
 class _DoneBody extends ConsumerWidget {
-  const _DoneBody({required this.onContinue});
+  const _DoneBody({required this.onContinue, required this.wayIn});
   final VoidCallback onContinue;
+  final bool wayIn;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final canCheck = ref.watch(biometricsCanCheckProvider).value ?? false;
     final bio = ref.watch(appLockProvider.select((s) => s.prefs.biometric));
+    // On the way in only: the Offline add-on keeps 30 days on the phone.
+    final offline =
+        wayIn && ref.watch(accessProvider.select((a) => a.has(Addon.offline)));
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 26, 20, 28),
       child: Column(
@@ -420,47 +410,55 @@ class _DoneBody extends ConsumerWidget {
             lead: l.auth2PinSavedBold,
             text: l.auth2PinSavedRest,
           ),
-          if (canCheck) ...[
+          if (canCheck || offline) ...[
             const SizedBox(height: 14),
             Container(
-              constraints: const BoxConstraints(minHeight: 64),
-              padding: const EdgeInsets.all(AtomSpace.inset),
               decoration: AtomDecor.card,
-              child: Row(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
                 children: [
-                  const AtomIconTile(icon: LucideIcons.fingerprint),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l.auth2BioRowTitle, style: AtomText.listTitle),
-                        const SizedBox(height: 2),
-                        Text(l.auth2BioRowSub, style: AuthText.small),
-                      ],
+                  if (canCheck)
+                    _DoneRow(
+                      icon: LucideIcons.fingerprint,
+                      title: l.auth2BioRowTitle,
+                      sub: l.auth2BioRowSub,
+                      trailing: AtomSwitch(
+                        value: bio,
+                        semanticLabel: l.auth2BioRowTitle,
+                        onChanged: (on) async {
+                          final lock = ref.read(appLockProvider.notifier);
+                          if (!on) return lock.setBiometric(false);
+                          // One prompt, now: the finger is asked for when
+                          // the seller turns it on, and a cancel leaves it
+                          // off.
+                          if (!await lock.turnOnFingerprint(
+                                copyPrompt(l, keep: true),
+                              ) &&
+                              context.mounted) {
+                            showAtomToast(
+                              context,
+                              kind: AtomToastKind.wait,
+                              message: l.auth3NotSaved,
+                            );
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  AtomSwitch(
-                    value: bio,
-                    semanticLabel: l.auth2BioRowTitle,
-                    onChanged: (on) async {
-                      final lock = ref.read(appLockProvider.notifier);
-                      if (!on) return lock.setBiometric(false);
-                      // One prompt, now: the finger is asked for when the
-                      // seller turns it on, and a cancel leaves it off.
-                      if (!await lock.turnOnFingerprint(
-                            copyPrompt(l, keep: true),
-                          ) &&
-                          context.mounted) {
-                        showAtomToast(
-                          context,
-                          kind: AtomToastKind.wait,
-                          message: l.auth3NotSaved,
-                        );
-                      }
-                    },
-                  ),
+                  if (canCheck && offline)
+                    const Divider(height: 1, color: AtomColors.line),
+                  // The Offline add-on keeps a copy on the phone; Getting
+                  // ready (2.7) fills it next.
+                  if (offline)
+                    _DoneRow(
+                      icon: LucideIcons.wifiOff,
+                      tone: AtomTone.amber,
+                      title: l.authPinOfflineTitle,
+                      sub: l.authPinOfflineSub,
+                      trailing: AtomPill(
+                        label: l.authPinOfflineOn,
+                        tone: AtomTone.green,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -470,6 +468,50 @@ class _DoneBody extends ConsumerWidget {
           const Spacer(),
           const SizedBox(height: 14),
           AtomButton(label: l.auth2Continue, onPressed: onContinue),
+        ],
+      ),
+    );
+  }
+}
+
+/// One `.row` of the done card: icon tile, title and line, then a switch or
+/// a pill.
+class _DoneRow extends StatelessWidget {
+  const _DoneRow({
+    required this.icon,
+    required this.title,
+    required this.sub,
+    required this.trailing,
+    this.tone = AtomTone.blue,
+  });
+
+  final IconData icon;
+  final AtomTone tone;
+  final String title;
+  final String sub;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 64),
+      padding: const EdgeInsets.all(AtomSpace.inset),
+      child: Row(
+        children: [
+          AtomIconTile(icon: icon, tone: tone),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AtomText.listTitle),
+                const SizedBox(height: 2),
+                Text(sub, style: AuthText.small),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          trailing,
         ],
       ),
     );

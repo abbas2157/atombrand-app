@@ -45,6 +45,10 @@ class _TeamMemberFormState extends ConsumerState<TeamMemberForm> {
   late String? _scope = widget.member?.scope;
   late Set<int> _outletIds = {...?widget.member?.outlets.map((o) => o.$1)};
 
+  /// A new member starts as the board shows: Order handler, working in the
+  /// main outlet (set once the roles and outlets are known).
+  bool _preset = false;
+  int? _presetRoleId;
   bool _saving = false;
   Map<String, String> _errors = const {};
   String? _error;
@@ -65,7 +69,7 @@ class _TeamMemberFormState extends ConsumerState<TeamMemberForm> {
       return _name.text.trim().isNotEmpty ||
           _phone.text.trim().isNotEmpty ||
           _email.text.trim().isNotEmpty ||
-          _roleId != null;
+          _roleId != _presetRoleId;
     }
     final before = {...m.outlets.map((o) => o.$1)};
     return _name.text.trim() != m.name ||
@@ -207,14 +211,28 @@ class _TeamMemberFormState extends ConsumerState<TeamMemberForm> {
     ];
     final scopes = scopesFor(teamData.value?.scopes ?? const ['all'], who);
     final multi = scopes.contains('outlets');
-    final scope = scopes.contains(_scope)
-        ? _scope
-        : (scopes.length == 1 ? scopes.first : null);
     final outlets = [
       for (final o in session?.outlets ?? const <Outlet>[])
         if (who.worksIn(o.id)) o,
     ];
+    if (_isNew && !_preset && roleList.isNotEmpty && teamData.value != null) {
+      _preset = true;
+      _roleId ??=
+          (roleList.where((r) => r.key == 'orders').firstOrNull ??
+                  roleList.first)
+              .id;
+      _presetRoleId = _roleId;
+      if (multi && scopes.contains('outlets') && outlets.isNotEmpty) {
+        _scope ??= 'outlets';
+        _outletIds = {
+          (outlets.where((o) => o.isMain).firstOrNull ?? outlets.first).id,
+        };
+      }
+    }
 
+    final scope = scopes.contains(_scope)
+        ? _scope
+        : (scopes.length == 1 ? scopes.first : null);
     final blocker = memberFormBlocker(
       l,
       name: _name.text,
@@ -283,8 +301,10 @@ class _TeamMemberFormState extends ConsumerState<TeamMemberForm> {
       error: _errors['email'] ?? emailProblem(l, _email.text),
       onChanged: (_) => _changed('email'),
     );
+    // `.two`: mobile and email side by side from the board's 390 (a phone
+    // of 360 and up), stacked when narrower or the text is large.
     final wide =
-        MediaQuery.sizeOf(context).width >= 420 &&
+        MediaQuery.sizeOf(context).width >= 360 &&
         MediaQuery.textScalerOf(context).scale(10) < 13;
 
     return TeamFormFrame(
@@ -302,7 +322,7 @@ class _TeamMemberFormState extends ConsumerState<TeamMemberForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: phone),
-              const SizedBox(width: AtomSpace.s3),
+              const SizedBox(width: 10),
               Expanded(child: email),
             ],
           )
@@ -330,11 +350,31 @@ class _TeamMemberFormState extends ConsumerState<TeamMemberForm> {
           const SizedBox(height: 6),
         ],
         ?_fieldError('brand_role_id'),
+        // The board's 13px link, at the start under the roles.
         Align(
           alignment: AlignmentDirectional.centerStart,
-          child: AtomTextLink(
-            label: l.teamRolesAndPermissions,
+          child: AtomPressable(
             onTap: () => context.push(V2Routes.teamRoles),
+            scaleOnPress: false,
+            semanticLabel: l.teamRolesAndPermissions,
+            builder: (_, pressed) => ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: AtomSize.tapTarget),
+              child: Align(
+                widthFactor: 1,
+                alignment: AlignmentDirectional.centerStart,
+                child: ExcludeSemantics(
+                  child: Text(
+                    l.teamRolesAndPermissions,
+                    style: AtomText.smallButton.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: pressed
+                          ? AtomColors.primaryPressed
+                          : AtomColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
         if (multi) ...[
@@ -411,7 +451,7 @@ class _RoleOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sum = roleSummary(role);
+    final sum = roleBlurb(AppLocalizations.of(context), role);
     return AtomPressable(
       onTap: onTap,
       selected: selected,

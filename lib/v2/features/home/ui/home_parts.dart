@@ -225,11 +225,16 @@ class HomeHeroCard extends StatelessWidget {
                 style: AtomText.small.copyWith(color: AtomColors.navText),
               ),
             ),
-            if (labelEnd != null)
-              Text(
-                labelEnd!,
-                style: AtomText.small.copyWith(color: AtomColors.navMuted),
+            if (labelEnd != null) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  labelEnd!,
+                  textAlign: TextAlign.end,
+                  style: AtomText.small.copyWith(color: AtomColors.navMuted),
+                ),
               ),
+            ],
           ],
         ),
         child,
@@ -639,9 +644,13 @@ class MiniButton extends StatelessWidget {
       semanticLabel: label,
       builder: (_, pressed) => ExcludeSemantics(
         child: Container(
-          constraints: const BoxConstraints(minHeight: AtomSize.small),
+          // At most a third of the screen: at 200% text on a 320dp phone
+          // the label scales down rather than push the row off the edge.
+          constraints: BoxConstraints(
+            minHeight: AtomSize.small,
+            maxWidth: MediaQuery.sizeOf(context).width / 3,
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: pressed
                 ? (primary ? AtomColors.primaryPressed : AtomColors.surface)
@@ -649,11 +658,18 @@ class MiniButton extends StatelessWidget {
             borderRadius: AtomRadius.brControl,
             border: Border.all(color: line),
           ),
-          child: Text(
-            label,
-            maxLines: 1,
-            style: AtomText.smallButton.copyWith(
-              color: pressed && onDark ? AtomColors.ink : fg,
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: AtomText.smallButton.copyWith(
+                  color: pressed && onDark ? AtomColors.ink : fg,
+                ),
+              ),
             ),
           ),
         ),
@@ -843,7 +859,7 @@ class ActivityLine extends StatelessWidget {
   );
 }
 
-/// A filter chip on Search (`.chip`): white, or blue when chosen.
+/// A filter chip on Search (`.chip`): white, or ink when chosen.
 class HomeChip extends StatelessWidget {
   const HomeChip({
     super.key,
@@ -867,25 +883,25 @@ class HomeChip extends StatelessWidget {
       child: SizedBox(
         height: AtomSize.tapTarget,
         child: Center(
+          // No `alignment` on the Container: it would fill the 48-tall
+          // tap target instead of staying the 34 of `.chip`.
           child: Container(
             constraints: const BoxConstraints(minHeight: 34),
-            padding: EdgeInsets.symmetric(
-              horizontal: on ? 11 : 12,
-              vertical: 6,
-            ),
-            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: on ? AtomColors.primarySoft : AtomColors.paper,
+              // `.chip.on`: ink fill, white text.
+              color: on ? AtomColors.ink : AtomColors.paper,
               borderRadius: AtomRadius.brPill,
-              border: Border.all(
-                color: on ? AtomColors.primary : AtomColors.line2,
-                width: on ? 2 : 1,
-              ),
+              border: Border.all(color: on ? AtomColors.ink : AtomColors.line2),
             ),
-            child: Text(
-              label,
-              style: AtomText.smallButton.copyWith(
-                color: on ? AtomColors.primary : AtomColors.text,
+            child: Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: Text(
+                label,
+                style: AtomText.smallButton.copyWith(
+                  color: on ? Colors.white : AtomColors.text,
+                ),
               ),
             ),
           ),

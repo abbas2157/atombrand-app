@@ -84,7 +84,6 @@ class _DealView extends ConsumerWidget {
     final d = deal;
     final canDeal = _canDeal(ref) && !d.status.finished;
     final advancePaid = d.advance <= 0 || d.paid >= d.advance;
-    final pct = (d.paidShare * 100).round();
     final steps = dealStepsReached(d);
     final where = d.outletName == null ? null : l.bulkFromOutlet(d.outletName!);
     final itemsLine = d.items.length == 1
@@ -141,11 +140,15 @@ class _DealView extends ConsumerWidget {
                 ),
                 Row(
                   children: [
+                    // `.hb .btn`: three equal buttons, 44 tall, 14px, 6px
+                    // side padding; a long label shrinks, never wraps.
                     Expanded(
                       child: AtomPdfButton(
                         label: l.bulkInvoice,
                         icon: LucideIcons.fileText,
                         compact: true,
+                        padding: 6,
+                        fontSize: 14,
                         onPressed: () => handOverServerPdf(
                           ref.read(apiClientProvider),
                           ref.read(bulkRepositoryProvider).invoice(d),
@@ -155,11 +158,13 @@ class _DealView extends ConsumerWidget {
                     if (canDeal && d.balance > 0) ...[
                       const SizedBox(width: 8),
                       Expanded(
-                        flex: 13,
                         child: AtomButton(
                           label: l.bulkRecordPayment,
                           kind: AtomButtonKind.outline,
-                          small: true,
+                          compact: true,
+                          padding: 6,
+                          fontSize: 14,
+                          oneLine: true,
                           onPressed: () =>
                               context.push(V2Routes.dealPaymentOf(d.id)),
                         ),
@@ -168,10 +173,12 @@ class _DealView extends ConsumerWidget {
                     if (canDeal && d.leftUnits > 0) ...[
                       const SizedBox(width: 8),
                       Expanded(
-                        flex: 13,
                         child: AtomButton(
                           label: l.bulkDeliverUnits,
-                          small: true,
+                          compact: true,
+                          padding: 6,
+                          fontSize: 14,
+                          oneLine: true,
                           onPressed: () =>
                               context.push(V2Routes.dealDeliverOf(d.id)),
                         ),
@@ -203,7 +210,8 @@ class _DealView extends ConsumerWidget {
                       AtomKpi(
                         label: l.bulkDealPaid,
                         value: formatRs(d.paid),
-                        note: l.bulkPctOfDeal(pct),
+                        progress: d.paidShare,
+                        progressColour: AtomColors.green,
                       ),
                       AtomKpi(
                         label: l.bulkBalanceDue,
@@ -223,10 +231,8 @@ class _DealView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   _ItemsCard(deal: d),
-                  if (d.deliveries.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _DeliveriesCard(deal: d),
-                  ],
+                  const SizedBox(height: 12),
+                  _DeliveriesCard(deal: d),
                   const SizedBox(height: 12),
                   _PaymentsCard(deal: d),
                   const SizedBox(height: 12),
@@ -256,11 +262,6 @@ class _DealView extends ConsumerWidget {
                             ? l.bulkInParts
                             : deliveryText(l, d.deliveryCharge),
                       ),
-                      if (d.quoteLabel != null)
-                        AtomInfoLine(
-                          label: l.bulkFromQuote,
-                          value: d.quoteLabel!,
-                        ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -283,67 +284,90 @@ class _ItemsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final head = AtomText.small.copyWith(fontWeight: FontWeight.w600);
-    Widget row(List<Widget> cells) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(flex: 10, child: cells[0]),
-          SizedBox(
-            width: 56,
-            child: Align(alignment: Alignment.centerRight, child: cells[1]),
-          ),
-          SizedBox(
-            width: 44,
-            child: Align(alignment: Alignment.centerRight, child: cells[2]),
-          ),
-          Expanded(
-            flex: 7,
-            child: Align(alignment: Alignment.centerRight, child: cells[3]),
-          ),
-        ],
+    final head = AtomText.small.copyWith(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: .4,
+    );
+    final num = AtomText.money.copyWith(fontSize: 13);
+    const line = BoxDecoration(
+      border: Border(top: BorderSide(color: AtomColors.line)),
+    );
+    Widget cell(Widget child, {bool right = true, double top = 10}) => Padding(
+      padding: EdgeInsets.fromLTRB(right ? 6 : 0, top, 0, top),
+      child: Align(
+        alignment: right
+            ? AlignmentDirectional.topEnd
+            : AlignmentDirectional.topStart,
+        child: child,
       ),
     );
+    // `.it`: the product takes what the figures leave, so its name wraps
+    // at word breaks in a wide column, not one word to a line.
     return BulkCard(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           BulkCardTitle(l.bulkItems),
-          row([
-            Text(l.bulkProduct, style: head),
-            Text(l.bulkOrdered, style: head),
-            Text(l.bulkLeft, style: head),
-            Text(l.bulkAmount, style: head),
-          ]),
-          for (final i in deal.items) ...[
-            const Divider(height: 1, color: AtomColors.line),
-            row([
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          Table(
+            columnWidths: const {
+              0: FlexColumnWidth(),
+              1: IntrinsicColumnWidth(),
+              2: IntrinsicColumnWidth(),
+              3: IntrinsicColumnWidth(),
+            },
+            children: [
+              TableRow(
                 children: [
-                  Text(
-                    i.title,
-                    style: AtomText.body.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AtomColors.ink,
-                    ),
+                  cell(
+                    Text(l.bulkProduct.toUpperCase(), style: head),
+                    right: false,
+                    top: 6,
                   ),
-                  Text(l.bulkNDelivered(i.deliveredQty), style: AtomText.small),
+                  cell(Text(l.bulkOrdered.toUpperCase(), style: head), top: 6),
+                  cell(Text(l.bulkLeft.toUpperCase(), style: head), top: 6),
+                  cell(Text(l.bulkAmount.toUpperCase(), style: head), top: 6),
                 ],
               ),
-              Text('${i.qty}', style: AtomText.money.copyWith(fontSize: 14)),
-              Text(
-                '${i.remaining}',
-                style: AtomText.money.copyWith(fontSize: 14),
-              ),
-              Text(
-                formatRs(i.lineTotal),
-                style: AtomText.money.copyWith(fontSize: 14),
-              ),
-            ]),
-          ],
+              for (final i in deal.items)
+                TableRow(
+                  decoration: line,
+                  children: [
+                    cell(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            i.title,
+                            style: AtomText.secondary.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AtomColors.ink,
+                            ),
+                          ),
+                          Text(
+                            [
+                              ?i.colour,
+                              l.bulkNDelivered(i.deliveredQty),
+                            ].join(' · '),
+                            style: AtomText.small,
+                          ),
+                        ],
+                      ),
+                      right: false,
+                    ),
+                    cell(Text('${i.qty}', style: num)),
+                    cell(Text('${i.remaining}', style: num)),
+                    cell(
+                      Text(
+                        formatRs(i.lineTotal),
+                        style: num.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
           const Divider(height: 1, color: AtomColors.line),
           AtomInfoLine(
             label: l.bulkDelivery,
@@ -378,6 +402,11 @@ class _DeliveriesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           BulkCardTitle(l.bulkDeliveries),
+          if (deal.deliveries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 8),
+              child: Text(l.bulkNoDelivery, style: AtomText.secondary),
+            ),
           for (var i = 0; i < deal.deliveries.length; i++) ...[
             if (i > 0) const Divider(height: 1, color: AtomColors.line),
             Builder(
@@ -509,6 +538,20 @@ class _WhoCard extends StatelessWidget {
     final d = deal;
     final s = d.seller;
     final request = d.bulkOrderId;
+    final fromRequest = request == null
+        ? null
+        : _LinkLine(
+            label: l.bulkFromRequest,
+            link: [
+              d.fromSeller ? l.bulkSellerRequest : l.bulkBulkRequest,
+              ?d.quoteLabel,
+            ].join(' · '),
+            onTap: () => context.push(
+              d.fromSeller
+                  ? V2Routes.sellerRequestOf(request)
+                  : V2Routes.bulkRequestOf(request),
+            ),
+          );
     return BulkLinesCard(
       title: d.fromSeller ? l.bulkAtomshopSeller : l.bulkBusiness,
       lines: [
@@ -531,6 +574,9 @@ class _WhoCard extends StatelessWidget {
           ),
         if (d.buyerPhone != null)
           AtomInfoLine(label: l.bulkPhone, value: d.buyerPhone!),
+        if (!d.fromSeller && d.deliverTo != null)
+          AtomInfoLine(label: l.bulkAddress, value: d.deliverTo!),
+        ?fromRequest,
         if (d.fromSeller)
           AtomInfoLine(
             label: l.bulkCommission,
@@ -542,34 +588,67 @@ class _WhoCard extends StatelessWidget {
                   ].join(' · '),
           ),
       ],
-      footer: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (request != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AtomTextLink(
-                  label: d.fromSeller
-                      ? '${l.bulkFromSellerRequest}${d.quoteLabel == null ? '' : ' · ${d.quoteLabel}'}'
-                      : '${l.bulkFromBulkRequest}${d.quoteLabel == null ? '' : ' · ${d.quoteLabel}'}',
-                  onTap: () => context.push(
-                    d.fromSeller
-                        ? V2Routes.sellerRequestOf(request)
-                        : V2Routes.bulkRequestOf(request),
-                  ),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 8, 0, 10),
-            child: ContactButtons(phone: d.buyerPhone),
-          ),
-        ],
+      footer: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 10),
+        child: ContactButtons(phone: d.buyerPhone),
       ),
     );
   }
+}
+
+/// A `.line` whose value is a link ("From request · Seller request ·
+/// Q-1037").
+class _LinkLine extends StatelessWidget {
+  const _LinkLine({
+    required this.label,
+    required this.link,
+    required this.onTap,
+  });
+
+  final String label;
+  final String link;
+  final VoidCallback onTap;
+
+  @override
+  // The whole line is the tap target, so the link sits on the label's
+  // line at the right edge like the other values (a 48-tall pressable
+  // around the link alone dropped it below the label).
+  Widget build(BuildContext context) => AtomPressable(
+    onTap: onTap,
+    semanticLabel: '$label, $link',
+    scaleOnPress: false,
+    builder: (_, _) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: AtomSpace.s3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Flexible(
+            flex: 2,
+            child: Text(
+              label,
+              style: AtomText.body.copyWith(
+                color: AtomColors.muted,
+                height: AtomText.normalHeight,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              link,
+              textAlign: TextAlign.end,
+              style: AtomText.body.copyWith(
+                color: AtomColors.primary,
+                fontWeight: FontWeight.w600,
+                height: AtomText.normalHeight,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _DealHistory extends StatelessWidget {
@@ -581,30 +660,49 @@ class _DealHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final d = deal;
-    final events = <(DateTime?, String)>[
+    String by(String text, String? who) => who == null ? text : '$text · $who';
+    // When it was saved (to the minute) when the server says, else its day.
+    String when(DateTime? at, {bool day = false}) => at == null
+        ? ''
+        : day
+        ? AtomDates.short(at.toLocal())
+        : bulkWhen(l, at);
+    final events = <(DateTime?, String, String)>[
       for (final n in d.deliveries)
-        (n.deliveredOn, l.bulkHistDelivered(n.units, n.number)),
+        (
+          n.createdAt ?? n.deliveredOn,
+          when(n.createdAt ?? n.deliveredOn, day: n.createdAt == null),
+          by(l.bulkHistDelivered(n.units, n.number), n.recordedBy),
+        ),
       for (final (i, p) in d.payments.indexed)
         (
-          p.paidOn,
-          l.bulkHistPayment(
-                i == 0 && d.advance > 0 ? l.bulkPayAdvance : l.bulkPayment,
-                formatRs(p.amount),
-              ) +
-              (p.methodLabel == null
-                  ? ''
-                  : ' ${l.bulkHistBy(p.methodLabel!.toLowerCase())}') +
-              (p.recordedBy == null ? '' : ' · ${p.recordedBy}'),
+          p.createdAt ?? p.paidOn,
+          when(p.createdAt ?? p.paidOn, day: p.createdAt == null),
+          by(
+            l.bulkHistPayment(
+                  i == 0 && d.advance > 0 ? l.bulkPayAdvance : l.bulkPayment,
+                  formatRs(p.amount),
+                ) +
+                (p.methodLabel == null
+                    ? ''
+                    : ' ${l.bulkHistBy(p.methodLabel!.toLowerCase())}'),
+            p.recordedBy,
+          ),
         ),
       (
         d.createdAt,
-        d.quoteLabel == null
-            ? l.bulkDealMadeEvent
-            : l.bulkWonFromQuote(d.quoteLabel!),
+        when(d.createdAt),
+        by(
+          d.quoteLabel == null
+              ? l.bulkDealMadeEvent
+              : l.bulkWonFromQuote(d.quoteLabel!),
+          d.createdBy,
+        ),
       ),
       if (d.closedAt != null)
         (
           d.closedAt,
+          when(d.closedAt),
           d.status == DealStatus.lost ? l.bulkStatusLost : l.bulkDealClosed,
         ),
     ]..sort((a, b) => (b.$1 ?? DateTime(0)).compareTo(a.$1 ?? DateTime(0)));
@@ -614,9 +712,9 @@ class _DealHistory extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           BulkCardTitle(l.bulkHistory),
-          for (final (at, what) in events)
+          for (final (_, at, what) in events)
             BulkHistoryRow(
-              when: at == null ? '' : AtomDates.short(at.toLocal()),
+              when: at,
               what: TextSpan(text: what),
             ),
         ],
@@ -634,8 +732,11 @@ class _PhotoField extends StatelessWidget {
     required this.prompt,
     required this.file,
     required this.onChanged,
+    this.height = 96,
   });
 
+  /// The dashed box's height (`.photo`: 96 on 7.8, 84 on 7.9).
+  final double height;
   final String label;
   final String prompt;
   final File? file;
@@ -650,13 +751,28 @@ class _PhotoField extends StatelessWidget {
     if (f != null) onChanged(File(f.path));
   }
 
+  /// Take a photo or pick one from the gallery.
+  Future<void> _choose(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final v = await showAtomSelect<ImageSource>(
+      context,
+      title: l.bulkAddPhotoTitle,
+      selected: null,
+      options: [
+        AtomOption(value: ImageSource.camera, label: l.bulkTakePhoto),
+        AtomOption(value: ImageSource.gallery, label: l.bulkGallery),
+      ],
+    );
+    if (v != null) await _pick(v);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final f = file;
+    // The boards' photo fields carry no "optional" note.
     return AtomField(
       label: label,
-      labelNote: l.bulkOptional,
       child: f != null
           ? Row(
               children: [
@@ -678,30 +794,72 @@ class _PhotoField extends StatelessWidget {
                 ),
               ],
             )
-          : Row(
-              children: [
-                Expanded(
-                  child: AtomButton(
-                    label: prompt,
-                    icon: LucideIcons.camera,
-                    kind: AtomButtonKind.outline,
-                    small: true,
-                    onPressed: () => _pick(ImageSource.camera),
+          // `.photo`: one dashed box; it asks camera or gallery.
+          : AtomPressable(
+              onTap: () => _choose(context),
+              semanticLabel: prompt,
+              focusRadius: AtomRadius.brCard,
+              builder: (_, pressed) => CustomPaint(
+                foregroundPainter: _DashedBorder(),
+                child: Container(
+                  constraints: BoxConstraints(minHeight: height),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: pressed ? AtomColors.surface : AtomColors.paper,
+                    borderRadius: AtomRadius.brCard,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        LucideIcons.camera,
+                        size: 20,
+                        color: AtomColors.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          prompt,
+                          style: AtomText.body.copyWith(
+                            color: AtomColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                AtomButton(
-                  label: l.bulkGallery,
-                  icon: LucideIcons.image,
-                  kind: AtomButtonKind.outline,
-                  small: true,
-                  expand: false,
-                  onPressed: () => _pick(ImageSource.gallery),
-                ),
-              ],
+              ),
             ),
     );
   }
+}
+
+/// The dashed 1.5px border of `.photo`.
+class _DashedBorder extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AtomColors.line2
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          const Radius.circular(AtomRadius.card),
+        ).deflate(0.75),
+      );
+    for (final m in path.computeMetrics()) {
+      for (var d = 0.0; d < m.length; d += 9) {
+        canvas.drawPath(m.extractPath(d, (d + 5).clamp(0, m.length)), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorder old) => false;
 }
 
 // ───────────────────────────────────────────────────────── 7.8 deliver
@@ -903,6 +1061,7 @@ class _DeliverFormState extends ConsumerState<_DeliverForm> {
       TooMany(:final title, :final left) => l.bulkBlockTooMany(title, left),
       _ => null,
     };
+    void pay() => context.pushReplacement(V2Routes.dealPaymentOf(d.id));
     final reason = switch (block) {
       NothingPicked() => l.bulkReasonPick,
       AdvanceFirst() => l.bulkReasonAdvance,
@@ -927,31 +1086,29 @@ class _DeliverFormState extends ConsumerState<_DeliverForm> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
-                  AtomNote(kind: ruleKind, compact: true, message: rule),
-                  if (blockText != null || advanceDue) ...[
+                  // The rule, and what blocks this delivery with "Record a
+                  // payment" inside the amber note (7.8's `.note.amber`).
+                  if (advanceDue)
+                    BulkLinkNote(
+                      kind: AtomNoteKind.warning,
+                      lead: rule,
+                      boldLead: false,
+                      links: [if (canDeal) (l.bulkRecordAPayment, pay)],
+                    )
+                  else
+                    AtomNote(kind: ruleKind, compact: true, message: rule),
+                  if (blockText != null) ...[
                     const SizedBox(height: 8),
-                    if (blockText != null)
-                      AtomNote(
-                        kind: AtomNoteKind.warning,
-                        compact: true,
-                        message: blockText,
-                      ),
-                    if (canDeal &&
-                        (advanceDue ||
-                            block is PayForUnits ||
-                            block is BalanceFirst))
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: AtomTextLink(
-                            label: l.bulkRecordAPayment,
-                            onTap: () => context.pushReplacement(
-                              V2Routes.dealPaymentOf(d.id),
-                            ),
-                          ),
-                        ),
-                      ),
+                    BulkLinkNote(
+                      kind: AtomNoteKind.warning,
+                      lead: blockText,
+                      boldLead: false,
+                      links: [
+                        if (canDeal &&
+                            (block is PayForUnits || block is BalanceFirst))
+                          (l.bulkRecordAPayment, pay),
+                      ],
+                    ),
                   ],
                   const SizedBox(height: 14),
                   Row(
@@ -1015,6 +1172,7 @@ class _DeliverFormState extends ConsumerState<_DeliverForm> {
                         AtomTextField(
                           label: l.bulkNote,
                           labelNote: l.bulkOptional,
+                          labelNoteInline: true,
                           controller: _note,
                           placeholder: l.bulkDeliverNoteHint,
                           inputFormatters: [
@@ -1115,6 +1273,7 @@ class _DeliverFormState extends ConsumerState<_DeliverForm> {
           AtomTextField(
             label: l.bulkSerials,
             labelNote: l.bulkOnePerLine,
+            labelNoteInline: true,
             controller: _serials[i.id],
             placeholder: q == 0 ? l.bulkOptionalCap : l.bulkSerialsHint,
             minLines: 2,
@@ -1209,6 +1368,15 @@ class _PaymentForm extends ConsumerStatefulWidget {
   @override
   ConsumerState<_PaymentForm> createState() => _PaymentFormState();
 }
+
+/// `.amtbox .cur`: 44px, 800, tight tracking, tabular.
+final _bigAmount = AtomText.amountLg.copyWith(
+  fontSize: 44,
+  fontWeight: FontWeight.w800,
+  letterSpacing: -1,
+  height: 1.1,
+  fontFeatures: const [FontFeature.tabularFigures()],
+);
 
 class _PaymentFormState extends ConsumerState<_PaymentForm> {
   late final _amount = TextEditingController(
@@ -1334,18 +1502,10 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
                       message: l.bulkDealPaidFull,
                     )
                   else ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AtomColors.head,
-                        borderRadius: AtomRadius.brCard,
-                        border: Border.all(
-                          color: tooMuch ? AtomColors.rose : AtomColors.line,
-                        ),
-                      ),
+                    // `.amtbox`: the balance line, then the amount itself,
+                    // big (44/800), centred and borderless.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 18, 0, 6),
                       child: Column(
                         children: [
                           Text(
@@ -1353,45 +1513,66 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
                             style: AtomText.secondary,
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: _amount,
-                            textAlign: TextAlign.center,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: const [
-                              RupeesInputFormatter(maxDigits: 10),
-                            ],
-                            style: AtomText.amountLg,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              isCollapsed: true,
-                              prefixText: 'Rs ',
-                              prefixStyle: AtomText.amountLg.copyWith(
-                                color: AtomColors.muted,
-                              ),
-                              hintText: '0',
-                            ),
-                            onChanged: (_) => _changed(() {}),
-                          ),
                           const SizedBox(height: 4),
-                          if (tooMuch)
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: IntrinsicWidth(
+                              child: TextField(
+                                controller: _amount,
+                                textAlign: TextAlign.center,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: const [
+                                  RupeesInputFormatter(maxDigits: 10),
+                                ],
+                                style: _bigAmount.copyWith(
+                                  color: tooMuch
+                                      ? AtomColors.rose
+                                      : AtomColors.ink,
+                                ),
+                                cursorColor: AtomColors.primary,
+                                // Every border state off: the app theme draws
+                                // enabled/focused borders over `border`.
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
+                                  filled: false,
+                                  contentPadding: EdgeInsets.zero,
+                                  isCollapsed: true,
+                                  prefixText: 'Rs ',
+                                  prefixStyle: _bigAmount.copyWith(
+                                    color: tooMuch
+                                        ? AtomColors.rose
+                                        : AtomColors.ink,
+                                  ),
+                                  hintText: '0',
+                                  hintStyle: _bigAmount.copyWith(
+                                    color: AtomColors.faint,
+                                  ),
+                                ),
+                                onChanged: (_) => _changed(() {}),
+                              ),
+                            ),
+                          ),
+                          if (tooMuch) ...[
+                            const SizedBox(height: 4),
                             Text(
                               l.bulkPayOverBalance(formatRs(d.balance)),
                               style: AtomText.fieldError,
                               textAlign: TextAlign.center,
-                            )
-                          else if (amount > 0)
-                            Text(
-                              amountInWords(amount),
-                              style: AtomText.small,
-                              textAlign: TextAlign.center,
                             ),
+                          ],
                         ],
                       ),
                     ),
                     if (quick.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+                      // `.quick .mini`: small pills, centred.
                       Wrap(
+                        alignment: WrapAlignment.center,
                         spacing: 8,
                         runSpacing: 8,
                         children: [
@@ -1453,6 +1634,7 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
                     _PhotoField(
                       label: l.bulkReceipt,
                       prompt: l.bulkSlipPhoto,
+                      height: 84,
                       file: _receipt,
                       onChanged: (f) => _changed(() => _receipt = f),
                     ),

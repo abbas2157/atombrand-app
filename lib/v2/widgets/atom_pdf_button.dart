@@ -34,6 +34,7 @@ class AtomPdfButton extends StatefulWidget {
     this.icon,
     this.compact = false,
     this.padding,
+    this.fontSize,
   });
 
   final String label;
@@ -42,6 +43,9 @@ class AtomPdfButton extends StatefulWidget {
   final IconData? icon;
   final bool compact;
   final double? padding;
+
+  /// See [AtomButton.fontSize].
+  final double? fontSize;
 
   @override
   State<AtomPdfButton> createState() => _AtomPdfButtonState();
@@ -76,6 +80,7 @@ class _AtomPdfButtonState extends State<AtomPdfButton> {
       icon: widget.icon,
       compact: widget.compact,
       padding: widget.padding,
+      fontSize: widget.fontSize,
       saving: _getting,
       savingLabel: l.liveBPdfGetting,
       onPressed: widget.onPressed == null || _getting ? null : _go,

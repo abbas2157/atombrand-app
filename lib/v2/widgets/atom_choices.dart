@@ -288,73 +288,77 @@ class AtomChoiceGrid<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, box) {
-        // At large text the four columns become two.
-        final scaled = MediaQuery.textScalerOf(context).scale(10) >= 15;
-        final cols = scaled ? (columns / 2).ceil() : columns;
-        final width = (box.maxWidth - (cols - 1) * AtomSpace.s2) / cols;
-        TextStyle style(bool on) => AtomText.smallButton.copyWith(
-          color: on ? AtomColors.primary : AtomColors.text,
-        );
-        return Wrap(
-          spacing: AtomSpace.s2,
-          runSpacing: AtomSpace.s2,
-          children: [
-            for (final c in choices)
-              SizedBox(
-                width: width,
-                child: AtomPressable(
-                  onTap: onChanged == null ? null : () => onChanged!(c.value),
-                  selected: c.value == selected,
-                  semanticLabel: c.label,
-                  builder: (context, pressed) {
-                    final on = c.value == selected;
-                    return Container(
-                      constraints: const BoxConstraints(
-                        minHeight: AtomSize.tapTarget,
-                      ),
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: on
-                            ? AtomColors.primarySoft
-                            : pressed
-                            ? AtomColors.surface
-                            : AtomColors.paper,
-                        borderRadius: AtomRadius.brControl,
-                        border: Border.all(
-                          color: on ? AtomColors.primary : AtomColors.line2,
-                          width: on ? 2 : 1,
-                        ),
-                      ),
-                      // One word ("EasyPaisa") never breaks mid-word on a
-                      // narrow phone: it shrinks a little instead.
-                      child: c.label.contains(' ')
-                          ? Text(
-                              c.label,
-                              textAlign: TextAlign.center,
-                              style: style(on),
-                            )
-                          : FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                c.label,
-                                maxLines: 1,
-                                softWrap: false,
-                                style: style(on),
-                              ),
-                            ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        );
-      },
+    // Rows of Expanded cells, not a LayoutBuilder: a form that fills the
+    // screen (SliverFillRemaining) asks for its intrinsic height, which a
+    // LayoutBuilder can't give, and Apply rendered blank.
+    // At large text the four columns become two.
+    final scaled = MediaQuery.textScalerOf(context).scale(10) >= 15;
+    final cols = scaled ? (columns / 2).ceil() : columns;
+    TextStyle style(bool on) => AtomText.smallButton.copyWith(
+      color: on ? AtomColors.primary : AtomColors.text,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var r = 0; r < choices.length; r += cols) ...[
+          if (r > 0) const SizedBox(height: AtomSpace.s2),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = r; i < r + cols; i++) ...[
+                  if (i > r) const SizedBox(width: AtomSpace.s2),
+                  Expanded(
+                    child: i < choices.length
+                        ? _cell(choices[i], style)
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
+
+  Widget _cell(AtomSegment<T> c, TextStyle Function(bool on) style) =>
+      AtomPressable(
+        onTap: onChanged == null ? null : () => onChanged!(c.value),
+        selected: c.value == selected,
+        semanticLabel: c.label,
+        builder: (context, pressed) {
+          final on = c.value == selected;
+          return Container(
+            constraints: const BoxConstraints(minHeight: AtomSize.tapTarget),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            decoration: BoxDecoration(
+              color: on
+                  ? AtomColors.primarySoft
+                  : pressed
+                  ? AtomColors.surface
+                  : AtomColors.paper,
+              borderRadius: AtomRadius.brControl,
+              border: Border.all(
+                color: on ? AtomColors.primary : AtomColors.line2,
+                width: on ? 2 : 1,
+              ),
+            ),
+            // One word ("EasyPaisa") never breaks mid-word on a
+            // narrow phone: it shrinks a little instead.
+            child: c.label.contains(' ')
+                ? Text(c.label, textAlign: TextAlign.center, style: style(on))
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      c.label,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: style(on),
+                    ),
+                  ),
+          );
+        },
+      );
 }

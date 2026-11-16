@@ -300,7 +300,13 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
                     _group(g.name, [
                       for (final (k, label) in g.permissions)
                         if (has.contains(k) || role.readyMade)
-                          _readRow(label, has.contains(k)),
+                          _readRow(
+                            label,
+                            has.contains(k),
+                            sub: k == BrandPermission.homeTotals
+                                ? l.teamHomeTotalsSub
+                                : null,
+                          ),
                     ]),
                   if (owner && role.readyMade && watchOnline(ref)) ...[
                     const SizedBox(height: AtomSpace.s2),
@@ -322,8 +328,8 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
     );
   }
 
-  Widget _readRow(String label, bool on) => Semantics(
-    label: '$label, ${on ? l.teamSemOn : l.teamSemOff}',
+  Widget _readRow(String label, bool on, {String? sub}) => Semantics(
+    label: [label, ?sub, on ? l.teamSemOn : l.teamSemOff].join(', '),
     excludeSemantics: true,
     child: Padding(
       padding: const EdgeInsets.symmetric(
@@ -333,13 +339,20 @@ class _RoleEditScreenState extends ConsumerState<RoleEditScreen> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: AtomText.body.copyWith(
-                color: on ? AtomColors.ink : AtomColors.faint,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AtomText.body.copyWith(
+                    color: on ? AtomColors.ink : AtomColors.faint,
+                  ),
+                ),
+                if (sub != null) Text(sub, style: AtomText.small),
+              ],
             ),
           ),
+          const SizedBox(width: AtomSpace.s3),
           Icon(
             on ? LucideIcons.check : LucideIcons.minus,
             size: 18,

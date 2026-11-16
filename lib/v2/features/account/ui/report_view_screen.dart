@@ -12,13 +12,15 @@ import '../../../core/net/network_status.dart';
 import '../../../core/pdf/phone_pdf.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_controller.dart';
+import '../../sync/ui/offline_bar.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
 import '../data/reports_repository.dart';
 import 'account_parts.dart';
 
-/// One report (12.5): the period tabs, the summary strip, its chart, its
-/// table, and Excel / PDF for people with `money.export`.
+/// One report (12.5): the period tabs, the summary strip, the Outlet and
+/// Method pills, its chart, its table, and Excel / PDF for people with
+/// `money.export`.
 class ReportViewScreen extends ConsumerStatefulWidget {
   const ReportViewScreen({
     super.key,
@@ -118,14 +120,46 @@ class _ReportViewScreenState extends ConsumerState<ReportViewScreen> {
     }
   }
 
+  Future<void> _pickOutlet(List<Outlet> outlets) async {
+    final l = AppLocalizations.of(context);
+    final id = await showAtomSelect<int>(
+      context,
+      title: l.acctWhichOutlet,
+      selected: _filter.outletId ?? 0,
+      options: [
+        AtomOption(value: 0, label: l.outletAll),
+        for (final o in outlets) AtomOption(value: o.id, label: o.name),
+      ],
+    );
+    if (id == null || !mounted) return;
+    setState(
+      () => _filter = _filter.copyWith(outletId: () => id == 0 ? null : id),
+    );
+  }
+
+  Future<void> _pickMethod(Map<String, String> methods) async {
+    final l = AppLocalizations.of(context);
+    final key = await showAtomSelect<String>(
+      context,
+      title: l.accountReportWhichMethod,
+      selected: _filter.method ?? '',
+      options: [
+        AtomOption(value: '', label: l.accountReportMethodAny),
+        for (final e in methods.entries)
+          AtomOption(value: e.key, label: e.value),
+      ],
+    );
+    if (key == null || !mounted) return;
+    setState(
+      () => _filter = _filter.copyWith(method: () => key.isEmpty ? null : key),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final key = widget.reportKey;
     final data = ref.watch(reportProvider((key, _filter)));
-    final online = ref.watch(onlineProvider).value ?? true;
-    final who = ref.watch(sessionProvider.notifier).current?.who;
-    final canExport = who?.can(BrandPermission.moneyExport) ?? false;
     final report = data.value;
     final dated = !reportIgnoresDates(key);
     return Scaffold(
@@ -150,6 +184,7 @@ class _ReportViewScreenState extends ConsumerState<ReportViewScreen> {
                   )
                 : null,
           ),
+          const OfflineBar(),
           if (report != null && report.summary.isNotEmpty)
             AtomSummaryBar(
               items: [
@@ -167,7 +202,7 @@ class _ReportViewScreenState extends ConsumerState<ReportViewScreen> {
                     if (error is ApiFailure &&
                         error.kind == ApiFailureKind.notFound)
                       AtomMessageState(
-                        icon: LucideIcons.fileChartColumn,
+                        icon: LucideIcons.chartColumn,
                         title: l.acctReportMissing,
                       )
                     else
@@ -185,43 +220,6 @@ class _ReportViewScreenState extends ConsumerState<ReportViewScreen> {
               },
             ),
           ),
-          if (report != null && canExport)
-            Container(
-              decoration: const BoxDecoration(
-                color: AtomColors.paper,
-                border: Border(top: BorderSide(color: AtomColors.line)),
-              ),
-              padding: EdgeInsets.fromLTRB(
-                16,
-                10,
-                16,
-                10 + MediaQuery.paddingOf(context).bottom,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AtomButton(
-                      label: online ? l.acctExcel : l.acctExcelOnline,
-                      kind: AtomButtonKind.outline,
-                      saving: _busy == ReportFormat.excel,
-                      onPressed: online && _busy == null
-                          ? () => _download(ReportFormat.excel, report.title)
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: AtomButton(
-                      label: l.acctPdf,
-                      icon: AtomBrandIcons.whatsapp,
-                      kind: AtomButtonKind.whatsapp,
-                      saving: _busy == ReportFormat.pdf,
-                      onPressed: _busy == null ? () => _sharePdf(report) : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -229,48 +227,109 @@ class _ReportViewScreenState extends ConsumerState<ReportViewScreen> {
 
   Widget _body(ReportData r) {
     final l = AppLocalizations.of(context);
+    final session = ref.watch(sessionProvider.notifier).current;
+    final online = ref.watch(onlineProvider).value ?? true;
+    final canExport = session?.who.can(BrandPermission.moneyExport) ?? false;
+    final outlets = (session?.multiOutlet ?? false)
+        ? session!.outlets
+        : const <Outlet>[];
+    final table = r.phoneTableData;
+    final empty = table == null || table.rows.isEmpty;
+    final chart = r.charts.firstOrNull;
+    final methodName = r.methods[_filter.method];
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        24 + MediaQuery.paddingOf(context).bottom,
+      ),
       children: [
         Wrap(
-          spacing: 6,
-          runSpacing: 6,
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            if (r.periodLabel != null && !reportIgnoresDates(r.key))
-              AtomPill(label: r.periodLabel!),
-            AtomPill(label: l.acctOutletIs(r.outletName ?? l.outletAll)),
+            _FilterPill(
+              label: l.acctOutletIs(r.outletName ?? l.outletAll),
+              onTap: outlets.length > 1 ? () => _pickOutlet(outlets) : null,
+            ),
+            if (r.methods.isNotEmpty)
+              _FilterPill(
+                label: l.accountReportMethodIs(
+                  methodName ?? l.accountReportMethodAny,
+                ),
+                onTap: () => _pickMethod(r.methods),
+              ),
           ],
         ),
-        for (final c in r.charts.take(1)) ...[
-          const SizedBox(height: 12),
-          _Chart(chart: c),
+        if (chart != null && !empty) ...[
+          const SizedBox(height: 10),
+          _Chart(chart: chart),
         ],
-        for (final t in r.tables) ...[
-          const SizedBox(height: 4),
-          if (r.tables.length > 1 && t.title.isNotEmpty) AccountLabel(t.title),
-          if (r.tables.length == 1) const SizedBox(height: 8),
-          _Table(table: t, atompay: r.key == 'atompay'),
-        ],
-        if (r.tables.every((t) => t.rows.isEmpty) && r.charts.isEmpty)
+        const SizedBox(height: 10),
+        if (empty)
           AtomMessageState(
-            icon: LucideIcons.fileChartColumn,
+            icon: LucideIcons.chartColumn,
             title: l.acctNothingThisPeriod,
             body: l.acctTryAnotherPeriod,
+          )
+        else
+          _Table(table: table, atompay: r.key == 'atompay'),
+        if (r.note != null) ...[
+          const SizedBox(height: 10),
+          AtomNote(kind: AtomNoteKind.info, message: r.note!),
+        ],
+        if (canExport) ...[
+          const SizedBox(height: 10),
+          // `.share`: Excel 1.3fr, PDF 1fr, 44 high.
+          Row(
+            children: [
+              Expanded(
+                flex: 13,
+                child: AtomButton(
+                  label: online ? l.acctExcel : l.acctExcelOnline,
+                  kind: AtomButtonKind.outline,
+                  compact: true,
+                  saving: _busy == ReportFormat.excel,
+                  onPressed: online && _busy == null
+                      ? () => _download(ReportFormat.excel, r.title)
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 10,
+                child: AtomButton(
+                  label: l.acctPdf,
+                  icon: AtomBrandIcons.whatsapp,
+                  kind: AtomButtonKind.whatsapp,
+                  compact: true,
+                  saving: _busy == ReportFormat.pdf,
+                  onPressed: _busy == null ? () => _sharePdf(r) : null,
+                ),
+              ),
+            ],
           ),
-        if (r.note != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: AtomNote(kind: AtomNoteKind.info, message: r.note!),
-          ),
-        if (r.madeAt != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(2, 10, 2, 0),
-            child: Text(
-              l.acctMadeAt(r.madeAt!),
-              style: AtomText.small.copyWith(color: AtomColors.faint),
-            ),
-          ),
+        ],
       ],
+    );
+  }
+}
+
+/// `.pill.grey`: a filter as a pill; tapping it opens the choices.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({required this.label, this.onTap});
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final pill = AtomPill(label: label);
+    if (onTap == null) return pill;
+    return AtomPressable(
+      onTap: onTap,
+      semanticLabel: label,
+      builder: (_, _) => pill,
     );
   }
 }
@@ -300,8 +359,6 @@ class _Chart extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(c.label, style: AtomText.secondary),
-              const SizedBox(height: 10),
               if (c.horizontal)
                 for (var i = 0; i < n; i++)
                   Padding(
@@ -338,7 +395,7 @@ class _Chart extends StatelessWidget {
                   )
               else ...[
                 SizedBox(
-                  height: 110,
+                  height: 96,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -349,7 +406,7 @@ class _Chart extends StatelessWidget {
                               width: 14,
                               height: c.values[i] <= 0
                                   ? 0
-                                  : (110 * c.values[i] * scale).clamp(4, 110),
+                                  : (96 * c.values[i] * scale).clamp(6, 96),
                               decoration: const BoxDecoration(
                                 color: AtomColors.primary,
                                 borderRadius: BorderRadius.vertical(
@@ -385,8 +442,10 @@ class _Chart extends StatelessWidget {
   }
 }
 
-/// A report's table: the first column as the label, the rest beside it,
-/// the totals at the foot. A row with a `uuid` opens its order.
+/// The report's table as `.tr` rows: three columns (1.1fr 1fr 1fr), the
+/// first to the left, the second centred, the amount bold on the right.
+/// Wider tables stay in the PDF and Excel. A row with a `uuid` opens its
+/// order.
 class _Table extends StatelessWidget {
   const _Table({required this.table, required this.atompay});
   final ReportTable table;
@@ -394,55 +453,55 @@ class _Table extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = table;
-    if (t.columns.isEmpty) return const SizedBox.shrink();
-    // Wide tables scroll sideways; narrow ones fill the card.
-    final wide = t.columns.length > 3;
-    Widget cell(
-      String text,
-      ReportColumn c, {
-      bool head = false,
-      bool bold = false,
-    }) {
-      final numeric = c.type != ColumnType.text && c.type != ColumnType.date;
-      return Container(
-        width: wide ? 120 : null,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-        alignment: numeric ? Alignment.centerRight : Alignment.centerLeft,
-        child: Text(
-          text,
-          style: (head ? AtomText.small : AtomText.body).copyWith(
-            fontWeight: head || bold ? FontWeight.w700 : null,
-            color: head ? AtomColors.muted : AtomColors.ink,
-          ),
-          textAlign: numeric ? TextAlign.right : TextAlign.left,
+    final cols = table.phoneColumns;
+    if (cols.isEmpty) return const SizedBox.shrink();
+    const flex = [11, 10, 10];
+    final last = cols.length - 1;
+    Widget line(List<String> cells, {bool head = false, VoidCallback? onTap}) {
+      final row = Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < cells.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                flex: flex[i.clamp(0, 2)],
+                child: Text(
+                  head ? cells[i].toUpperCase() : cells[i],
+                  textAlign: i == 0
+                      ? TextAlign.left
+                      : i == last
+                      ? TextAlign.right
+                      : TextAlign.center,
+                  style: head
+                      ? AtomText.section.copyWith(fontSize: 11)
+                      : AtomText.secondary.copyWith(
+                          color: i == last && i > 0
+                              ? AtomColors.ink
+                              : AtomColors.text,
+                          fontWeight: i == last && i > 0
+                              ? FontWeight.w700
+                              : null,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                ),
+              ),
+            ],
+          ],
         ),
-      );
-    }
-
-    Widget line(List<Widget> cells, {VoidCallback? onTap, Color? fill}) {
-      final row = Row(
-        children: [for (final c in cells) wide ? c : Expanded(child: c)],
       );
       return Material(
-        color: fill ?? AtomColors.paper,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: row,
-          ),
-        ),
+        color: head ? AtomColors.head : AtomColors.paper,
+        child: onTap == null ? row : InkWell(onTap: onTap, child: row),
       );
     }
 
     final rows = <Widget>[
-      line([
-        for (final c in t.columns) cell(c.label, c, head: true),
-      ], fill: AtomColors.head),
-      for (final r in t.rows)
+      line([for (final c in cols) c.label], head: true),
+      for (final r in table.rows)
         line(
-          [for (final c in t.columns) cell(formatCell(r[c.key], c.type), c)],
+          [for (final c in cols) formatCell(r[c.key], c.type)],
           onTap: switch (r['uuid']) {
             final String uuid when uuid.isNotEmpty => () => context.push(
               atompay ? V2Routes.atompayOf(uuid) : V2Routes.orderOf(uuid),
@@ -450,31 +509,20 @@ class _Table extends StatelessWidget {
             _ => null,
           },
         ),
-      if (t.totals != null)
-        line([
-          for (final c in t.columns)
-            cell(formatCell(t.totals![c.key], c.type), c, bold: true),
-        ], fill: AtomColors.head),
     ];
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final (i, r) in rows.indexed) ...[
-          if (i > 0) const Divider(height: 1, color: AtomColors.line),
-          r,
-        ],
-      ],
-    );
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: AtomDecor.card,
       foregroundDecoration: AtomDecor.cardOutline,
-      child: wide
-          ? SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(width: t.columns.length * 120 + 16, child: body),
-            )
-          : body,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, r) in rows.indexed) ...[
+            if (i > 0) const Divider(height: 1, color: AtomColors.line),
+            r,
+          ],
+        ],
+      ),
     );
   }
 }

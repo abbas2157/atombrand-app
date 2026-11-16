@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/format/ids.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
+import '../../settings/ui/device_screens.dart' show openPhoneSettings;
 
 /// Scans serials with the camera: one code, or many in a row (stock in,
 /// move). With [imeiOnly] only valid IMEIs are kept (15 digits passing the
@@ -181,6 +182,11 @@ class _StockScannerScreenState extends State<StockScannerScreen> {
                       children: [
                         MobileScanner(
                           controller: _controller,
+                          errorBuilder: (context, error) => CameraProblem(
+                            error: error,
+                            controller: _controller,
+                            onType: () => setState(() => _typing = true),
+                          ),
                           onDetect: (capture) {
                             for (final b in capture.barcodes) {
                               final raw = b.rawValue;
@@ -188,7 +194,13 @@ class _StockScannerScreenState extends State<StockScannerScreen> {
                             }
                           },
                         ),
-                        const Center(child: ScanFrame()),
+                        // No frame over the camera-problem panel.
+                        ValueListenableBuilder<MobileScannerState>(
+                          valueListenable: _controller,
+                          builder: (context, state, _) => state.error == null
+                              ? const Center(child: ScanFrame())
+                              : const SizedBox.shrink(),
+                        ),
                       ],
                     ),
             ),
@@ -257,4 +269,107 @@ class ScanFrame extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// What shows in place of the camera when it can't start: the camera is
+/// off for the app (with Open settings), or it failed. Never the scanner
+/// package's own words. "Type it instead" is always there. Coming back
+/// from the phone's settings starts the camera again.
+class CameraProblem extends StatefulWidget {
+  const CameraProblem({
+    super.key,
+    required this.error,
+    required this.controller,
+    required this.onType,
+  });
+
+  final MobileScannerException error;
+  final MobileScannerController controller;
+  final VoidCallback onType;
+
+  @override
+  State<CameraProblem> createState() => _CameraProblemState();
+}
+
+class _CameraProblemState extends State<CameraProblem> {
+  late final AppLifecycleListener _life;
+
+  @override
+  void initState() {
+    super.initState();
+    _life = AppLifecycleListener(onResume: _retry);
+  }
+
+  @override
+  void dispose() {
+    _life.dispose();
+    super.dispose();
+  }
+
+  Future<void> _retry() async {
+    try {
+      await widget.controller.stop();
+      await widget.controller.start();
+    } on Object {
+      // still refused or busy: this panel stays
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final denied =
+        widget.error.errorCode == MobileScannerErrorCode.permissionDenied;
+    return ColoredBox(
+      color: AtomColors.nav,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: AtomRadius.brCard,
+                ),
+                child: const Icon(
+                  LucideIcons.cameraOff,
+                  size: 30,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                denied ? l.stockCameraOffTitle : l.stockCameraFailedTitle,
+                textAlign: TextAlign.center,
+                style: AtomText.heading.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                denied ? l.stockCameraOffBody : l.stockCameraFailedBody,
+                textAlign: TextAlign.center,
+                style: AtomText.secondary.copyWith(color: AtomColors.navText),
+              ),
+              const SizedBox(height: 18),
+              AtomButton(
+                label: denied ? l.stockOpenSettings : l.commonTryAgain,
+                icon: denied ? LucideIcons.settings : LucideIcons.refreshCw,
+                onPressed: denied ? openPhoneSettings : _retry,
+              ),
+              const SizedBox(height: 10),
+              AtomButton(
+                label: l.stockTypeInstead,
+                icon: LucideIcons.keyboard,
+                kind: AtomButtonKind.outline,
+                onPressed: widget.onType,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

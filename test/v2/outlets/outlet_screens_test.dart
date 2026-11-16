@@ -143,8 +143,13 @@ class _Repo implements OutletsRepository {
       throw UnimplementedError();
 }
 
-Future<void> _pump(WidgetTester tester, Widget screen) async {
-  tester.view.physicalSize = const Size(390 * 3, 2400 * 3);
+Future<void> _pump(
+  WidgetTester tester,
+  Widget screen, {
+  double width = 390,
+  double textScale = 1,
+}) async {
+  tester.view.physicalSize = Size(width * 3, 2400 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
@@ -159,6 +164,11 @@ Future<void> _pump(WidgetTester tester, Widget screen) async {
         theme: AtomTheme.light,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: screen,
       ),
     ),
@@ -183,6 +193,15 @@ void main() {
       );
     },
   );
+
+  testWidgets('Outlets and an outlet stay inside 320dp at 200% text', (
+    tester,
+  ) async {
+    await _pump(tester, const OutletsScreen(), width: 320, textScale: 2);
+    expect(tester.takeException(), isNull);
+    await _pump(tester, const OutletScreen(id: 9), width: 320, textScale: 2);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'An outlet: figures, latest orders, and closing waits for open orders',

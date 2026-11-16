@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/api/api_result.dart';
 import '../../../core/format/dates.dart';
 import '../../../core/format/ids.dart';
+import '../../../core/format/money.dart';
 import '../../../core/session/session.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
@@ -15,7 +17,7 @@ import '../data/team_rules.dart';
 import 'team_member_form.dart';
 import 'team_parts.dart';
 
-enum _Act { reset, off, on }
+enum _Act { reset, phones, off, on }
 
 /// A team member (11.4): who they are and when they were last active,
 /// their login and where they work, and Edit, Reset password, Switch off
@@ -48,6 +50,12 @@ class _TeamMemberScreenState extends ConsumerState<TeamMemberScreen> {
         body: l.teamResetBody,
         confirmLabel: l.teamResetButton,
       ),
+      _Act.phones => showAtomConfirm(
+        context,
+        title: l.teamPhonesTitle(m.firstName),
+        body: l.teamPhonesBody,
+        confirmLabel: l.teamPhonesButton,
+      ),
       _Act.off => showAtomConfirm(
         context,
         title: l.teamOffTitle(m.firstName),
@@ -67,6 +75,7 @@ class _TeamMemberScreenState extends ConsumerState<TeamMemberScreen> {
     final repo = ref.read(teamRepositoryProvider);
     final ApiResult<Object> r = switch (act) {
       _Act.reset => await repo.reset(m),
+      _Act.phones => await repo.signOutPhones(m.id),
       _Act.off => await repo.switchOff(m.id),
       _Act.on => await repo.switchOn(m.id),
     };
@@ -77,6 +86,14 @@ class _TeamMemberScreenState extends ConsumerState<TeamMemberScreen> {
         refreshTeam(ref);
         if (value is MemberWithLogin) {
           await showTeamLoginSheet(context, value);
+        } else if (act == _Act.phones) {
+          showAtomToast(
+            context,
+            kind: AtomToastKind.ok,
+            message: value == 0
+                ? l.teamPhonesNone
+                : l.teamPhonesDone(m.firstName),
+          );
         } else {
           showAtomToast(
             context,
@@ -189,6 +206,7 @@ class _TeamMemberScreenState extends ConsumerState<TeamMemberScreen> {
         roles: roles,
       );
       final last = m.lastActiveAt?.toLocal();
+      final now = AtomDates.now();
       body = RefreshIndicator(
         onRefresh: () => ref.refresh(teamMemberProvider(widget.id).future),
         child: ListView(
@@ -207,6 +225,29 @@ class _TeamMemberScreenState extends ConsumerState<TeamMemberScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // This month's work (the board's two tiles).
+                    if (!m.isOff) ...[
+                      AtomKpiGrid(
+                        kpis: [
+                          AtomKpi(
+                            label: l.teamKpiHandled(
+                              DateFormat.MMM().format(now),
+                            ),
+                            value: '${m.ordersMonth}',
+                            note: l.teamKpiHandledNote(
+                              m.confirmedMonth,
+                              m.deliveredMonth,
+                            ),
+                          ),
+                          AtomKpi(
+                            label: l.teamKpiPaid(DateFormat.MMM().format(now)),
+                            value: formatRs(m.paidMonth),
+                            note: l.teamKpiPaidNote(m.paymentsMonth),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AtomSpace.s3),
+                    ],
                     AtomSectionLabel(l.teamLoginAndAccess, page: false),
                     AtomInfoCard(
                       lines: [
@@ -258,6 +299,15 @@ class _TeamMemberScreenState extends ConsumerState<TeamMemberScreen> {
                               onTap: _busy != null || !online
                                   ? null
                                   : () => _run(m, _Act.reset),
+                            ),
+                            TeamActionRow(
+                              icon: LucideIcons.logOut,
+                              title: l.teamPhonesRow,
+                              subtitle: l.teamPhonesSub,
+                              loading: _busy == _Act.phones,
+                              onTap: _busy != null || !online
+                                  ? null
+                                  : () => _run(m, _Act.phones),
                             ),
                             TeamActionRow(
                               icon: LucideIcons.power,

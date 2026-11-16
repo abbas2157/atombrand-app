@@ -95,15 +95,25 @@ class OutletSwitcherSheet extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AtomSheetHeader(title: l.homeSwitchOutlet),
+          // 5.7 has no close X: the grab handle and the backdrop close it.
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AtomSpace.gutter),
-            child: Text(
-              l.homeOutletsSub(brand, outlets.length),
-              style: AtomText.secondary,
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text(l.homeSwitchOutlet, style: AtomText.heading),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l.homeOutletsSub(brand, outlets.length),
+                  style: AtomText.secondary,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AtomSpace.s3),
+          const SizedBox(height: 14),
           if (list.hasError && data == null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -116,7 +126,7 @@ class OutletSwitcherSheet extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: AtomOptionCard(
-              leading: tile(LucideIcons.store, AtomTone.grey),
+              leading: tile(LucideIcons.layoutGrid, AtomTone.grey),
               title: l.homeAllOutlets,
               selected: current == null,
               onTap: () => pick(null, null),
@@ -138,27 +148,61 @@ class OutletSwitcherSheet extends ConsumerWidget {
                 titleTag: o.main
                     ? AtomPill(label: l.homeMain, tone: AtomTone.blue)
                     : o.paused
-                    ? AtomPill(label: l.homePausedPill)
+                    ? AtomPill(label: l.homePausedPill, tone: AtomTone.amber)
                     : null,
                 selected: current == o.id,
                 onTap: () => pick(o.id, o.name),
                 subtitleWidget: figures(o.sales, o.toConfirm),
               ),
             ),
-          if (data?.canAdd ?? false)
+          // `.btn-outline`, 46 tall: "+ Add an outlet … 3 of 5 used".
+          if (data != null && data.canAdd)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: AtomButton(
-                label: data?.limit != null && data?.used != null
-                    ? '${l.homeAddOutlet}  ·  ${l.homeUsed(data!.used!, data.limit!)}'
-                    : l.homeAddOutlet,
-                kind: AtomButtonKind.outline,
-                icon: LucideIcons.plus,
-                onPressed: () {
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+              child: AtomPressable(
+                semanticLabel: l.homeAddOutlet,
+                onTap: () {
                   final router = GoRouter.of(context);
                   Navigator.of(context).pop();
                   router.push(V2Routes.outletAdd);
                 },
+                builder: (_, pressed) => Container(
+                  constraints: const BoxConstraints(minHeight: 46),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: pressed ? AtomColors.surface : AtomColors.paper,
+                    borderRadius: AtomRadius.brControl,
+                    border: Border.all(color: AtomColors.line2),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.plus,
+                        size: 18,
+                        color: AtomColors.ink,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l.homeAddOutlet,
+                          style: AtomText.button.copyWith(fontSize: 15),
+                        ),
+                      ),
+                      if (data.limit != null && data.used != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          l.homeUsed(data.used!, data.limit!),
+                          style: AtomText.secondary.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           Center(

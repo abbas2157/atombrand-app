@@ -17,12 +17,12 @@ import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
 import '../../atompay/data/atompay_repository.dart';
 import '../../atompay/ui/atompay_list.dart';
-import '../../states/ui/state_screens.dart' show NoInternetBody;
 import '../../sync/ui/offline_bar.dart';
 import '../data/order_rules.dart';
 import '../data/orders_models.dart';
 import '../data/orders_providers.dart';
 import '../data/orders_repository.dart';
+import 'order_dates.dart';
 import 'order_detail_screen.dart';
 import 'order_parts.dart';
 
@@ -52,12 +52,16 @@ class OrdersTabScreen extends ConsumerWidget {
     final who = ref.watch(sessionProvider.notifier).current?.who;
     final canCash = who?.can(BrandPermission.ordersView) ?? false;
     final canAtompay = who?.can(BrandPermission.atompayView) ?? false;
+    // A role without Bulk deals has AtomPay as its own third tab (5.2),
+    // so Orders is Cash orders only, with no toggle.
+    final ownTab = !(who?.can(BrandPermission.bulkView) ?? true);
+    final toggle = canCash && canAtompay && !ownTab;
     final showAtompay = canAtompay && (atompay || !canCash);
     final askAtom = ref.watch(accessProvider).has(Addon.askAtom);
 
     int? cashCount;
     int? atompayCount;
-    if (canCash && canAtompay) {
+    if (toggle) {
       const q = (
         status: null,
         q: '',
@@ -86,6 +90,7 @@ class OrdersTabScreen extends ConsumerWidget {
         children: [
           AtomPageHeader(
             title: l.ordersTitle,
+            divider: !toggle,
             actions: [
               if (askAtom)
                 AtomIconButton(
@@ -101,7 +106,7 @@ class OrdersTabScreen extends ConsumerWidget {
               ),
             ],
           ),
-          if (canCash && canAtompay)
+          if (toggle)
             Container(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               decoration: const BoxDecoration(
@@ -178,6 +183,9 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
   /// Payment filter: null is any.
   late PaymentState? _pay = _payFrom(widget.initialPayment);
 
+  /// The Placed filter: any time, a preset or picked days.
+  PlacedRange _placed = const PlacedRange();
+
   /// The order beside the list on a wide tablet.
   String? _picked;
 
@@ -221,9 +229,15 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
     q: _searched,
     outletId: _outletId,
     payment: _pay?.name,
-    from: null,
-    to: null,
+    from: _placed.from,
+    to: _placed.to,
   );
+
+  Future<void> _pickPlaced() async {
+    final v = await pickPlacedRange(context, _placed);
+    if (v == null || !mounted) return;
+    setState(() => _placed = v);
+  }
 
   Future<void> _loadMore(OrdersQuery q, int lastPage) async {
     if (_loadingMore) return;
@@ -333,6 +347,13 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
             active: _pay != null,
             onTap: _pickPay,
           ),
+          const SizedBox(width: 8),
+          AtomFilterChip(
+            minHeight: 36,
+            label: l.ordersPlacedFilter(_placed.label(l)),
+            active: !_placed.any,
+            onTap: _pickPlaced,
+          ),
           if (multi) ...[
             const SizedBox(width: 8),
             AtomFilterChip(
@@ -348,7 +369,7 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
 
     final search = OrdersSearchBox(
       controller: _search,
-      placeholder: l.ordersProductName,
+      placeholder: l.ordersSearchPlaceholder,
       onChanged: (_) {
         _searchTimer?.cancel();
         _searchTimer = Timer(const Duration(milliseconds: 400), () {
@@ -363,6 +384,7 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
       final filtered =
           _status != null ||
           _pay != null ||
+          !_placed.any ||
           _outletId != null ||
           _searched.isNotEmpty;
       return RefreshIndicator(
@@ -395,6 +417,7 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
                             onAction: () => setState(() {
                               _status = null;
                               _pay = null;
+                              _placed = const PlacedRange();
                               _outletId = null;
                               _outletName = null;
                               _search.clear();
@@ -406,6 +429,16 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
                             title: l.ordersEmptyTitle,
                             body: l.ordersEmptyBody,
                           ),
+                  ),
+                )
+              else if (split)
+                // 14.2: the tablet's compact rows beside the order.
+                SliverList.builder(
+                  itemCount: rows.length,
+                  itemBuilder: (context, i) => CashOrderRow(
+                    order: rows[i],
+                    selected: rows[i].uuid == selected,
+                    onTap: () => setState(() => _picked = rows[i].uuid),
                   ),
                 )
               else
@@ -452,17 +485,10 @@ class _CashOrdersBodyState extends ConsumerState<CashOrdersBody> {
               padding: EdgeInsets.only(top: 16),
               child: AtomLoadingRows(),
             ),
-            error: (e, _) =>
-                e is ApiFailure &&
-                    (e.kind == ApiFailureKind.offline ||
-                        e.kind == ApiFailureKind.timeout)
-                ? NoInternetBody(
-                    onRetry: () => ref.invalidate(ordersPageProvider(query)),
-                  )
-                : AtomErrorState(
-                    message: e is ApiFailure ? e.message : null,
-                    onRetry: () => ref.invalidate(ordersPageProvider(query)),
-                  ),
+            error: (e, _) => OrdersLoadError(
+              error: e,
+              onRetry: () => ref.invalidate(ordersPageProvider(query)),
+            ),
             data: (page) => list(page.lastPage, page.items),
           ),
         ),
@@ -603,17 +629,7 @@ class CashOrderCard extends ConsumerWidget {
                     if (multiOutlet && o.outlet != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              LucideIcons.store,
-                              size: 14,
-                              color: AtomColors.faint,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(o.outlet!.name, style: AtomText.small),
-                          ],
-                        ),
+                        child: Text(o.outlet!.name, style: AtomText.small),
                       ),
                   ],
                 ),
@@ -625,24 +641,124 @@ class CashOrderCard extends ConsumerWidget {
             decoration: const BoxDecoration(
               border: Border(top: BorderSide(color: AtomColors.line)),
             ),
+            // The value and payment wrap under each other and the button
+            // narrows (its label wraps) before anything overflows.
             child: Row(
               children: [
-                Text(formatRs(o.total), style: AtomText.money),
-                const SizedBox(width: 8),
-                StageTag(label: o.payState.label(l), tone: payTone(o.payState)),
-                const Spacer(),
-                if (button != null)
-                  AtomButton.small(
-                    label: button.$1,
-                    kind: button.$2
-                        ? AtomButtonKind.primary
-                        : AtomButtonKind.outline,
-                    onPressed: button.$3,
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(formatRs(o.total), style: AtomText.money),
+                      StageTag(
+                        label: o.payState.label(l),
+                        tone: payTone(o.payState),
+                      ),
+                    ],
                   ),
+                ),
+                if (button != null) ...[
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: AtomButton.small(
+                      label: button.$1,
+                      kind: button.$2
+                          ? AtomButtonKind.primary
+                          : AtomButtonKind.outline,
+                      onPressed: button.$3,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A tablet row of the Cash orders list (14.2 `.orow`): the customer, the
+/// number and product, then the value over the step. The chosen one is
+/// blue-soft with a blue bar on its left.
+class CashOrderRow extends StatelessWidget {
+  const CashOrderRow({
+    super.key,
+    required this.order,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CashOrder order;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final o = order;
+    final name = o.customerName ?? o.productTitle;
+    final line = '${o.number} · ${o.productLine(l)}';
+    return AtomPressable(
+      onTap: onTap,
+      selected: selected,
+      scaleOnPress: false,
+      focusRadius: BorderRadius.zero,
+      semanticLabel: [name, line, formatRs(o.total), o.stageName(l)].join(', '),
+      builder: (_, pressed) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AtomColors.primarySoft
+              : pressed
+              ? AtomColors.head
+              : AtomColors.paper,
+          border: Border(
+            top: const BorderSide(color: AtomColors.line),
+            left: BorderSide(
+              color: selected ? AtomColors.primary : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: ExcludeSemantics(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, style: AtomText.listTitle),
+                    Text(
+                      line,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AtomText.secondary,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatRs(o.total),
+                    style: AtomText.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AtomColors.ink,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  StageTag(label: o.stageName(l), tone: stageTone(o.stage)),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

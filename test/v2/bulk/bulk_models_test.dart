@@ -37,14 +37,28 @@ void main() {
           'paid_on_time': 2,
           'other_open_requests': 1,
           'other_requests': [
-            {'id': 91, 'product_title': 'OXY 32in LED', 'quantity': 20, 'status': 'Quoted'},
+            {
+              'id': 91,
+              'product_title': 'OXY 32in LED',
+              'quantity': 20,
+              'status': 'Quoted',
+            },
           ],
         },
-        'item': {'typed': true, 'product_id': null, 'title': 'OXY 55in, new model', 'quantity': 12},
+        'item': {
+          'typed': true,
+          'product_id': null,
+          'title': 'OXY 55in, new model',
+          'quantity': 12,
+        },
         'target_price': 41000,
         'needed_by': '2026-11-20',
         'note': 'Black only.',
-        'deliver_to': {'address': 'Shop 4, Hall Road', 'city': 'Lahore', 'area': 'Hall Road'},
+        'deliver_to': {
+          'address': 'Shop 4, Hall Road',
+          'city': 'Lahore',
+          'area': 'Hall Road',
+        },
         'live_quote': {
           'id': 55,
           'number': 'QT-0007',
@@ -56,7 +70,13 @@ void main() {
           'valid_until': '2026-11-21',
           'expired': false,
           'items': [
-            {'title': 'OXY 55in', 'qty': 12, 'unit_price': 41500, 'discount_pct': '0.00', 'line_total': 498000},
+            {
+              'title': 'OXY 55in',
+              'qty': 12,
+              'unit_price': 41500,
+              'discount_pct': '0.00',
+              'line_total': 498000,
+            },
           ],
         },
         'answer': {
@@ -67,10 +87,24 @@ void main() {
           'at': '2026-11-14T09:12:00+05:00',
         },
         'history': [
-          {'kind': 'event', 'action': 'quoted', 'label': 'Quote sent', 'actor': 'brand', 'details': 'QT-0007', 'by': 'Ali Raza', 'at': '2026-11-13T10:00:00+05:00'},
+          {
+            'kind': 'event',
+            'action': 'quoted',
+            'label': 'Quote sent',
+            'actor': 'brand',
+            'details': 'QT-0007',
+            'by': 'Ali Raza',
+            'at': '2026-11-13T10:00:00+05:00',
+          },
         ],
         'deal': null,
-        'commission': {'amount': 0, 'type': 'percent', 'value': 0, 'label': 'No Atomshop fee', 'on_total': 498000},
+        'commission': {
+          'amount': 0,
+          'type': 'percent',
+          'value': 0,
+          'label': 'No Atomshop fee',
+          'on_total': 498000,
+        },
       },
     });
     expect(d.isSeller, isTrue);
@@ -109,15 +143,39 @@ void main() {
       'balance_terms': 'before_each',
       'quote': {'id': 3, 'label': 'QT-0003 rev 1'},
       'items': [
-        {'id': 11, 'title': 'Washer · White', 'qty': 20, 'unit_price': 55000, 'line_total': 1100000, 'delivered_qty': 18, 'remaining': 2},
+        {
+          'id': 11,
+          'title': 'Washer · White',
+          'qty': 20,
+          'unit_price': 55000,
+          'line_total': 1100000,
+          'delivered_qty': 18,
+          'remaining': 2,
+        },
       ],
       'deliveries': [
-        {'id': 1, 'number': 'DN-0001', 'delivered_on': '2026-11-07', 'received_by': 'Kamran', 'items': [
-          {'deal_item_id': 11, 'qty': 2, 'serials': ['A', 'B']},
-        ]},
+        {
+          'id': 1,
+          'number': 'DN-0001',
+          'delivered_on': '2026-11-07',
+          'received_by': 'Kamran',
+          'items': [
+            {
+              'deal_item_id': 11,
+              'qty': 2,
+              'serials': ['A', 'B'],
+            },
+          ],
+        },
       ],
       'payments': [
-        {'id': 1, 'amount': 495000, 'method': 'bank', 'method_label': 'Bank transfer', 'paid_on': '2026-11-06'},
+        {
+          'id': 1,
+          'amount': 495000,
+          'method': 'bank',
+          'method_label': 'Bank transfer',
+          'paid_on': '2026-11-06',
+        },
       ],
     });
     expect(d.status, DealStatus.delivering);
@@ -140,7 +198,14 @@ void main() {
       'advance_pct': 25,
       'seller_id': 31,
       'items': [
-        {'id': 1, 'title': 'AC', 'qty': 4, 'unit_price': 25000, 'line_total': 100000, 'delivered_qty': 1},
+        {
+          'id': 1,
+          'title': 'AC',
+          'qty': 4,
+          'unit_price': 25000,
+          'line_total': 100000,
+          'delivered_qty': 1,
+        },
       ],
     });
     expect(d.units, 4);

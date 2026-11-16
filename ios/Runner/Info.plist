@@ -9,9 +9,13 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>Open Brand Partner with Face ID instead of your PIN.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Atombrand uses the camera to take product photos for your catalogue and proof-of-delivery photos for your orders.</string>
+	<string>Brand Partner uses the camera to scan serial numbers, take product photos and proof-of-delivery photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Atombrand uses your photos so you can choose product pictures, your brand logo and banner, and proof-of-delivery photos.</string>
+	<string>Brand Partner uses your photos so you can choose product pictures, your brand logo and banner, and proof-of-delivery photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Brand Partner uses the microphone only while you ask Ask Atom a question by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Brand Partner turns your spoken question for Ask Atom into text.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Brand Partner</string>
 	<key>CFBundleExecutable</key>

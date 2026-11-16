@@ -110,6 +110,8 @@ class StockFailed extends StatelessWidget {
       );
     }
     return AtomErrorState(
+      // A 403 shows "Your role doesn't include this" (13.3).
+      error: e,
       message: e is ApiFailure ? e.message : null,
       onRetry: onRetry,
     );
@@ -123,8 +125,11 @@ class StockCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
 
-  /// A tinted card (the out-of-stock alert).
+  /// A tinted card (the out-of-stock alert). Rose uses the canvas's
+  /// paler `#FFF8F8` so a rose icon tile still shows on it.
   final AtomTone? tone;
+
+  static const _roseCard = Color(0xFFFFF8F8);
 
   @override
   Widget build(BuildContext context) => Container(
@@ -134,7 +139,7 @@ class StockCard extends StatelessWidget {
     decoration: tone == null
         ? AtomDecor.card
         : BoxDecoration(
-            color: tone!.bg,
+            color: tone == AtomTone.rose ? _roseCard : tone!.bg,
             borderRadius: AtomRadius.brCard,
             border: Border.all(color: tone!.border),
           ),
@@ -167,7 +172,12 @@ class StockBlock extends StatelessWidget {
               Expanded(
                 child: Semantics(
                   header: true,
-                  child: Text(title, style: AtomText.listTitle),
+                  child: Text(
+                    title,
+                    style: AtomText.listTitle.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
               ?trailing,
@@ -271,6 +281,71 @@ class StockLevelBar extends StatelessWidget {
   );
 }
 
+/// `.line` rows with the line between them (`.line + .line`).
+class StockLines extends StatelessWidget {
+  const StockLines({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (var i = 0; i < children.length; i++) ...[
+        if (i > 0)
+          const Divider(height: 1, thickness: 1, color: AtomColors.line),
+        children[i],
+      ],
+    ],
+  );
+}
+
+/// The white flow bar with the line under it, as the stock forms draw it.
+class StockFormBar extends StatelessWidget {
+  const StockFormBar({super.key, required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: const BoxDecoration(
+      color: AtomColors.paper,
+      border: Border(bottom: BorderSide(color: AtomColors.line)),
+    ),
+    child: AtomFlowBar(leading: AtomFlowLeading.close, title: title),
+  );
+}
+
+/// The board's borderless Cancel (`.btn-outline` with a transparent
+/// border and fill): 50 high, ink text.
+class StockCancelButton extends StatelessWidget {
+  const StockCancelButton({super.key, required this.label, this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => AtomPressable(
+    onTap: onTap ?? () => Navigator.of(context).maybePop(),
+    semanticLabel: label,
+    scaleOnPress: false,
+    builder: (context, pressed) => Container(
+      constraints: const BoxConstraints(minHeight: 50),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(
+        color: pressed ? AtomColors.head : null,
+        borderRadius: AtomRadius.brControl,
+      ),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: AtomText.button.copyWith(color: AtomColors.ink),
+      ),
+    ),
+  );
+}
+
 /// A label and a value on one line (`.line`).
 class StockLine extends StatelessWidget {
   const StockLine({super.key, required this.label, required this.value});
@@ -280,7 +355,7 @@ class StockLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
+    padding: const EdgeInsets.symmetric(vertical: 12),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -417,6 +492,8 @@ class StockActionTile extends StatelessWidget {
       onTap: onTap,
       semanticLabel: label,
       builder: (context, pressed) => Container(
+        // Fills its grid cell (`.acts4`: four equal columns).
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
           color: pressed ? AtomColors.surface : AtomColors.paper,
@@ -424,6 +501,7 @@ class StockActionTile extends StatelessWidget {
           border: Border.all(color: AtomColors.line),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AtomIconTile(icon: icon, tone: tone, size: 36),
             const SizedBox(height: 6),
@@ -515,15 +593,15 @@ class StockFilterChip extends StatelessWidget {
     onTap: onTap,
     semanticLabel: label,
     scaleOnPress: false,
-    focusRadius: AtomRadius.brPill,
+    focusRadius: AtomRadius.brControl,
     builder: (context, pressed) => Container(
-      constraints: const BoxConstraints(minHeight: 34),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      constraints: const BoxConstraints(minHeight: 36),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: active
             ? AtomColors.primarySoft
             : (pressed ? AtomColors.surface : AtomColors.paper),
-        borderRadius: AtomRadius.brPill,
+        borderRadius: AtomRadius.brControl,
         border: Border.all(
           color: active ? AtomColors.primaryLine : AtomColors.line2,
         ),
@@ -567,5 +645,81 @@ class StockLoading extends StatelessWidget {
     physics: const NeverScrollableScrollPhysics(),
     padding: const EdgeInsets.all(16),
     child: AtomLoadingCard(count: count),
+  );
+}
+
+/// Two fields side by side, or one under the other when there's no room.
+class StockTwoUp extends StatelessWidget {
+  const StockTwoUp({super.key, required this.first, required this.second});
+
+  final Widget first;
+  final Widget second;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
+      if (box.maxWidth < 280 || scale > 1.3) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 14,
+          children: [first, second],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 10,
+        children: [
+          Expanded(child: first),
+          Expanded(child: second),
+        ],
+      );
+    },
+  );
+}
+
+/// A route shown as a v2 bottom sheet (the grab, the dim, back closes it),
+/// e.g. Adjust stock (9.7).
+class StockSheetPage<T> extends Page<T> {
+  const StockSheetPage({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Route<T> createRoute(BuildContext context) => ModalBottomSheetRoute<T>(
+    settings: this,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: AtomColors.paper,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+      return SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: keyboard),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  width: 40,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    color: AtomColors.line2,
+                    borderRadius: AtomRadius.brPill,
+                  ),
+                ),
+              ),
+              Flexible(child: SingleChildScrollView(child: child)),
+            ],
+          ),
+        ),
+      );
+    },
   );
 }

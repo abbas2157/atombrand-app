@@ -47,6 +47,14 @@ class MainActivity : FlutterFragmentActivity() {
                     )
                     return@setMethodCallHandler
                 }
+                // Permissions (18.7): the microphone, for speaking to Ask Atom.
+                if (call.method == "micAllowed") {
+                    result.success(
+                        checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                            PackageManager.PERMISSION_GRANTED,
+                    )
+                    return@setMethodCallHandler
+                }
                 val intent = when (call.method) {
                     "openAppSettings" -> Intent(
                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,

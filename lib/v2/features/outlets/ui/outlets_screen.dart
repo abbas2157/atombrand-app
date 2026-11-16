@@ -139,6 +139,8 @@ class _Hero extends StatelessWidget {
       label: l.outletsHeroLabel(period.label(l)),
       labelEnd: list.multi ? l.outletsUsedOf(list.used, list.limit) : null,
       amount: formatRs(t.sales),
+      amountSize: 24,
+      labelFlex: 2,
       meta: TextSpan(
         text: l.outletsHeroMeta(
           t.delivered,
@@ -183,13 +185,37 @@ class _Body extends StatelessWidget {
           AtomNote(kind: AtomNoteKind.info, message: l.outletsAskMulti),
           const SizedBox(height: 6),
         ],
+        // `.tiny` link, at the start (12px, 2 in)
         Align(
           alignment: AlignmentDirectional.centerStart,
-          child: AtomTextLink(
-            label: list.multi
+          child: AtomPressable(
+            onTap: onAskMore,
+            scaleOnPress: false,
+            semanticLabel: list.multi
                 ? l.outletsAskMore(list.limit)
                 : l.outletsAskWhatsApp,
-            onTap: onAskMore,
+            builder: (_, pressed) => ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: AtomSize.tapTarget),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Align(
+                  widthFactor: 1,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: ExcludeSemantics(
+                    child: Text(
+                      list.multi
+                          ? l.outletsAskMore(list.limit)
+                          : l.outletsAskWhatsApp,
+                      style: AtomText.small.copyWith(
+                        color: pressed
+                            ? AtomColors.primaryPressed
+                            : AtomColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -216,7 +242,8 @@ class _OutletCard extends StatelessWidget {
       (l.outletsCashSales, formatRs(f.sales)),
       (l.outletsOrders, '${f.orders}'),
       (l.outletsPayments, formatRs(f.payments)),
-      if (f.bulkWon != null) (l.outletsBulkWon, formatRs(f.bulkWon!)),
+      // the board's Bulk won is how many deals were won ("1"), not money
+      if (f.bulkDeals != null) (l.outletsBulkWon, '${f.bulkDeals}'),
       if (f.units != null) (l.outletsInStock, l.outletsUnits(f.units!)),
       (l.outletsAvgOrder, formatRs(f.avgOrder)),
     ];
@@ -285,21 +312,32 @@ class _OutletCard extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: AtomProgressBar(
-                      value: share / 100,
-                      colour: AtomColors.primary,
-                      semanticLabel: l.outletsOfSales(share),
-                    ),
-                  ),
-                  const SizedBox(width: AtomSpace.s2),
-                  Text(
+              Builder(
+                builder: (context) {
+                  final bar = AtomProgressBar(
+                    value: share / 100,
+                    colour: AtomColors.primary,
+                    semanticLabel: l.outletsOfSales(share),
+                  );
+                  final text = Text(
                     l.outletsOfSales(share),
                     style: AtomText.small.copyWith(color: AtomColors.faint),
-                  ),
-                ],
+                  );
+                  // Large text: the share goes under the bar.
+                  if (MediaQuery.textScalerOf(context).scale(10) >= 15) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [bar, const SizedBox(height: 4), text],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: bar),
+                      const SizedBox(width: AtomSpace.s2),
+                      Flexible(child: text),
+                    ],
+                  );
+                },
               ),
               if (line.isNotEmpty) ...[
                 const SizedBox(height: 6),

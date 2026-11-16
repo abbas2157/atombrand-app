@@ -1,6 +1,8 @@
 import 'package:atombrand_app/l10n/app_localizations.dart';
 import 'package:atombrand_app/v2/core/access/access.dart';
 import 'package:atombrand_app/v2/core/access/access_controller.dart';
+import 'package:atombrand_app/v2/core/api/api_result.dart';
+import 'package:atombrand_app/v2/core/api/api_retry.dart';
 import 'package:atombrand_app/v2/core/session/session.dart';
 import 'package:atombrand_app/v2/core/session/session_controller.dart';
 import 'package:atombrand_app/v2/core/session/session_store.dart';
@@ -45,7 +47,12 @@ final _seller = BulkDossier.fromJson({
       'paid_on_time': 2,
       'other_open_requests': 0,
     },
-    'item': {'typed': false, 'product_id': 5, 'title': 'OXY 55in LED', 'quantity': 12},
+    'item': {
+      'typed': false,
+      'product_id': 5,
+      'title': 'OXY 55in LED',
+      'quantity': 12,
+    },
     'target_price': 41000,
     'needed_by': '2026-11-20',
     'note': 'Black only.',
@@ -66,7 +73,14 @@ final _seller = BulkDossier.fromJson({
       'at': '2026-11-14T09:12:00+05:00',
     },
     'history': [
-      {'kind': 'event', 'action': 'change_asked', 'label': 'Change asked', 'actor': 'seller', 'details': 'Can you do 39,500?', 'at': '2026-11-14T09:12:00+05:00'},
+      {
+        'kind': 'event',
+        'action': 'change_asked',
+        'label': 'Change asked',
+        'actor': 'seller',
+        'details': 'Can you do 39,500?',
+        'at': '2026-11-14T09:12:00+05:00',
+      },
     ],
     'commission': {'amount': 0, 'label': 'No Atomshop fee'},
   },
@@ -84,7 +98,12 @@ final _website = BulkDossier.fromJson({
     'from': 'buyer',
     'city': 'Islamabad',
     'comments': [
-      {'comments': 'Called, wants delivery soon', 'status': 'Contacted', 'by': {'name': 'Usman'}, 'created_at': '2026-11-12 11:02:00'},
+      {
+        'comments': 'Called, wants delivery soon',
+        'status': 'Contacted',
+        'by': {'name': 'Usman'},
+        'created_at': '2026-11-12 11:02:00',
+      },
     ],
   },
   'requester': {'name': 'Faraz', 'phone': '03215530190', 'verified': true},
@@ -106,7 +125,14 @@ final _quotes = RequestQuotes.fromJson({
       'valid_until': '2099-11-21',
       'delivery_charge': 0,
       'items': [
-        {'product_id': 5, 'title': 'OXY 55in LED', 'qty': 12, 'unit_price': 41500, 'discount_pct': 0, 'line_total': 498000},
+        {
+          'product_id': 5,
+          'title': 'OXY 55in LED',
+          'qty': 12,
+          'unit_price': 41500,
+          'discount_pct': 0,
+          'line_total': 498000,
+        },
       ],
     },
   ],
@@ -115,7 +141,15 @@ final _quotes = RequestQuotes.fromJson({
 
 final _options = QuoteOptions.fromJson({
   'products': [
-    {'id': 5, 'title': 'OXY 55in LED', 'price': 45000, 'memories': [], 'colors': [{'id': 1, 'title': 'Black'}]},
+    {
+      'id': 5,
+      'title': 'OXY 55in LED',
+      'price': 45000,
+      'memories': [],
+      'colors': [
+        {'id': 1, 'title': 'Black'},
+      ],
+    },
   ],
   'payment_methods': [
     {'key': 'bank', 'label': 'Bank transfer'},
@@ -137,17 +171,51 @@ final _deal = Deal.fromJson({
   'bulk_order_id': 90,
   'created_at': '2026-11-06T10:00:00+05:00',
   'items': [
-    {'id': 11, 'title': 'Washer · White', 'qty': 20, 'unit_price': 55000, 'line_total': 1100000, 'delivered_qty': 18},
-    {'id': 12, 'title': 'Washer · Grey', 'qty': 10, 'unit_price': 55000, 'line_total': 550000, 'delivered_qty': 0},
+    {
+      'id': 11,
+      'title': 'Washer · White',
+      'qty': 20,
+      'unit_price': 55000,
+      'line_total': 1100000,
+      'delivered_qty': 18,
+    },
+    {
+      'id': 12,
+      'title': 'Washer · Grey',
+      'qty': 10,
+      'unit_price': 55000,
+      'line_total': 550000,
+      'delivered_qty': 0,
+    },
   ],
   'deliveries': [
-    {'id': 1, 'number': 'DN-0001', 'delivered_on': '2026-11-07', 'received_by': 'Kamran', 'items': [
-      {'deal_item_id': 11, 'qty': 18, 'serials': ['A1', 'A2']},
-    ]},
+    {
+      'id': 1,
+      'number': 'DN-0001',
+      'delivered_on': '2026-11-07',
+      'received_by': 'Kamran',
+      'items': [
+        {
+          'deal_item_id': 11,
+          'qty': 18,
+          'serials': ['A1', 'A2'],
+        },
+      ],
+    },
   ],
   'payments': [
-    {'id': 1, 'amount': 495000, 'method_label': 'Bank transfer', 'paid_on': '2026-11-06'},
-    {'id': 2, 'amount': 495000, 'method_label': 'Bank transfer', 'paid_on': '2026-11-10'},
+    {
+      'id': 1,
+      'amount': 495000,
+      'method_label': 'Bank transfer',
+      'paid_on': '2026-11-06',
+    },
+    {
+      'id': 2,
+      'amount': 495000,
+      'method_label': 'Bank transfer',
+      'paid_on': '2026-11-10',
+    },
   ],
 });
 
@@ -155,6 +223,8 @@ Future<void> _pump(
   WidgetTester tester,
   Widget screen, {
   Size size = const Size(390, 1600),
+  ApiFailure? requestsFail,
+  double textScale = 1,
 }) async {
   tester.view.physicalSize = size * 3;
   tester.view.devicePixelRatio = 3;
@@ -167,35 +237,49 @@ Future<void> _pump(
   );
   await tester.pumpWidget(
     ProviderScope(
+      retry: apiRetry,
       overrides: [
         sessionStoreProvider.overrideWithValue(MemorySessionStore(session)),
         accessProvider.overrideWith(_Access.new),
         bulkCountsProvider.overrideWith(
           (ref) async => BulkCounts.fromJson({
             'count': 4,
+            'website': 3,
+            'deals': 6,
             'seller_requests': 2,
-            'seller_counts': {'waiting': 1, 'change_asked': 1, 'open': 3, 'total': 9},
+            'seller_counts': {
+              'waiting': 1,
+              'change_asked': 1,
+              'open': 3,
+              'total': 9,
+            },
           }),
         ),
         bulkRequestsProvider.overrideWith(
-          (ref, q) async => BulkRequestsPage.fromJson({
-            'items': [
-              {
-                'id': 88,
-                'status': 'New Lead',
-                'full_name': 'Hall Road Electronics',
-                'quantity': 12,
-                'product_title': 'OXY 55in LED',
-                'from': q.from == 'sellers' ? 'seller' : 'buyer',
-                'target_price': 41000,
-                'needed_by': '2026-11-16',
-                'phone': '03001234567',
-                if (q.from == 'sellers')
-                  'seller': {'id': 31, 'name': 'Hall Road Electronics', 'verified': true},
-              },
-            ],
-            'pagination': {'current_page': 1, 'last_page': 1, 'total': 1},
-          }),
+          (ref, q) async => requestsFail != null
+              ? throw requestsFail
+              : BulkRequestsPage.fromJson({
+                  'items': [
+                    {
+                      'id': 88,
+                      'status': 'New Lead',
+                      'full_name': 'Hall Road Electronics',
+                      'quantity': 12,
+                      'product_title': 'OXY 55in LED',
+                      'from': q.from == 'sellers' ? 'seller' : 'buyer',
+                      'target_price': 41000,
+                      'needed_by': '2026-11-16',
+                      'phone': '03001234567',
+                      if (q.from == 'sellers')
+                        'seller': {
+                          'id': 31,
+                          'name': 'Hall Road Electronics',
+                          'verified': true,
+                        },
+                    },
+                  ],
+                  'pagination': {'current_page': 1, 'last_page': 1, 'total': 1},
+                }),
         ),
         bulkDossierProvider.overrideWith(
           (ref, id) async => id == 88 ? _seller : _website,
@@ -225,6 +309,11 @@ Future<void> _pump(
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: screen,
       ),
     ),
@@ -233,6 +322,76 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('7.1 counts every chip and tab, and filters by received day', (
+    tester,
+  ) async {
+    await _pump(tester, const BulkListScreen());
+    expect(find.text('Website 3'), findsNothing); // counts sit apart
+    expect(find.bySemanticsLabel('Website 3'), findsOneWidget);
+    expect(find.bySemanticsLabel('Deals 6'), findsOneWidget);
+    await tester.tap(find.text('Website'));
+    await tester.pumpAndSettle();
+    expect(find.text('Received: Any time'), findsOneWidget);
+    await tester.tap(find.text('Received: Any time'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Last 7 days'));
+    await tester.pumpAndSettle();
+    expect(find.text('Received: Last 7 days'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a list the role may not see shows the not-in-role state', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const BulkListScreen(),
+      requestsFail: const ApiFailure(ApiFailureKind.notInRole, statusCode: 403),
+    );
+    expect(find.text("Your role doesn't include this"), findsOneWidget);
+    expect(find.text('Something went wrong'), findsNothing);
+  });
+
+  testWidgets('a server error never shows its own words', (tester) async {
+    await _pump(
+      tester,
+      const BulkListScreen(),
+      requestsFail: const ApiFailure(
+        ApiFailureKind.server,
+        message: 'SQLSTATE[42S22]: Column not found',
+        statusCode: 500,
+        body: {'ref': '7F2K-91'},
+      ),
+    );
+    expect(find.text("That didn't load"), findsOneWidget);
+    expect(find.textContaining('SQLSTATE'), findsNothing);
+    expect(find.textContaining('Ref 7F2K-91'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+  });
+
+  testWidgets('bulk screens fit 320dp at 200% text', (tester) async {
+    const narrow = Size(320, 1400);
+    for (final screen in const <Widget>[
+      BulkListScreen(),
+      BulkListScreen(tab: 'deals'),
+      BulkRequestScreen(id: 88, seller: true),
+      BulkRequestScreen(id: 90),
+      DealScreen(id: 7),
+      DealDeliverScreen(id: 7),
+      DealPaymentScreen(id: 7),
+      QuoteScreen(id: 90),
+    ]) {
+      final old = FlutterError.onError;
+      final errors = <String>[];
+      FlutterError.onError = (d) => errors.add(d.toString());
+      for (final scale in const [1.0, 2.0]) {
+        await _pump(tester, screen, size: narrow, textScale: scale);
+      }
+      FlutterError.onError = old;
+      expect(errors, isEmpty, reason: '$screen');
+    }
+  });
+
   testWidgets('7.1 lists seller requests, website requests and deals', (
     tester,
   ) async {

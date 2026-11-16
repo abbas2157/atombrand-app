@@ -184,6 +184,41 @@ class _FitOrScroll extends StatelessWidget {
 
 /// Signed out (19.15). Any 401 lands here with the stack cleared, and the
 /// screen the person was on is reopened after they sign in.
+/// The name of the screen at [path], for 18.15's "After you sign in you go
+/// back to …"; null when it has no name worth saying.
+String? signedOutPlace(AppLocalizations l, String? path) {
+  if (path == null) return null;
+  bool under(String root) => path == root || path.startsWith('$root/');
+  return switch (path) {
+    V2Routes.home => l.tabHome,
+    V2Routes.orders => l.tabOrders,
+    V2Routes.bulk => l.tabBulk,
+    V2Routes.products => l.tabProducts,
+    V2Routes.search => l.statesPlaceSearch,
+    _ when path.startsWith('/order/') => l.statesPlaceOrder,
+    _ when path.startsWith('/atompay/') => l.statesPlaceAtompay,
+    _ when path.startsWith('/deal/') => l.statesPlaceDeal,
+    _
+        when path.startsWith('/bulk-request/') ||
+            path.startsWith('/seller-request/') =>
+      l.statesPlaceBulkRequest,
+    _ when path.startsWith('/product/') => l.statesPlaceProduct,
+    _ when under(V2Routes.brandPage) => l.statesPlaceBrandPage,
+    _ when under(V2Routes.stock) => l.statesPlaceStock,
+    _ when under(V2Routes.team) => l.statesPlaceTeam,
+    _ when under(V2Routes.outlets) => l.statesPlaceOutlets,
+    _ when under(V2Routes.plan) => l.statesPlacePlan,
+    _ when under(V2Routes.reports) => l.statesPlaceReports,
+    _ when under(V2Routes.askAtom) => l.statesPlaceAskAtom,
+    _ when under(V2Routes.sync) => l.statesPlaceSync,
+    _ when under(V2Routes.help) => l.statesPlaceHelp,
+    _ when under(V2Routes.settings) => l.statesPlaceSettings,
+    _ when under(V2Routes.notifications) => l.statesPlaceNotifications,
+    _ when under(V2Routes.menu) => l.statesPlaceMenu,
+    _ => null,
+  };
+}
+
 class SignedOutScreen extends ConsumerWidget {
   const SignedOutScreen({super.key, this.from});
 
@@ -202,15 +237,10 @@ class SignedOutScreen extends ConsumerWidget {
           ).toString();
 
     final path = from == null ? null : Uri.tryParse(from!)?.path;
-    // The screen to come back to, by its tab's name when it is one.
-    final place = switch (path) {
-      null => null,
-      V2Routes.home => l.tabHome,
-      V2Routes.orders => l.tabOrders,
-      V2Routes.bulk => l.tabBulk,
-      V2Routes.products => l.tabProducts,
-      _ => null,
-    };
+    // The screen to come back to, named (18.15 "…go back to **Orders**").
+    final place = signedOutPlace(l, path);
+    // Changes saved offline wait in the outbox and go after sign-in.
+    final waiting = ref.watch(syncStatusProvider.select((s) => s.waiting));
 
     return Scaffold(
       // `.scr.home`: the grey app background.
@@ -236,6 +266,15 @@ class SignedOutScreen extends ConsumerWidget {
               title: expired ? l.signedOutTitle : l.signedOutChosenTitle,
               body: expired ? l.signedOutBody : l.signedOutChosenBody,
               extra: [
+                if (waiting > 0) ...[
+                  AtomNote(
+                    kind: AtomNoteKind.warning,
+                    iconless: true,
+                    message: l.statesKeptOnPhone(waiting),
+                    bold: [l.statesKeptOnPhoneBold(waiting)],
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (from != null)
                   _BackTo(
                     text: place == null
@@ -651,45 +690,115 @@ enum NotInRoleTried {
   }
 }
 
-/// "You can": the areas a role's rights cover, in words ("Orders and
-/// bulk requests").
+/// "You can": what a role's rights cover, in words, the way 13.3 reads
+/// ("Orders, payments, AtomPay; see products and stock"): what it may
+/// change first, then what it may only see.
 String roleCanSummary(AppLocalizations l, Set<String> permissions) {
+  if (permissions.contains('*')) return l.statesCanEverything;
+  bool has(String p) => permissions.contains(p);
   bool any(String prefix) => permissions.any((p) => p.startsWith(prefix));
-  final parts = [
-    if (any('orders.') || any('atompay.')) l.dpDbCanOrders,
+  final edit = <String>[
+    if (any('orders.')) l.dpDbCanOrders,
+    if (has('orders.payment')) l.statesCanPayments,
+    if (any('atompay.')) l.statesCanAtompay,
     if (any('bulk.')) l.dpDbCanLeads,
-    if (any('catalogue.') || any('page.')) l.dpDbCanCustomers,
-    if (any('stock.')) l.dpDbCanStock,
+    if (has('catalogue.edit') || has('page.edit')) l.dpDbCanCustomers,
+    if (has('stock.change') || has('stock.manage')) l.dpDbCanStock,
     if (any('money.')) l.dpDbCanReports,
+    if (has('team.manage')) l.statesCanTeam,
   ];
-  if (parts.isEmpty) return '';
-  final text = parts.length == 1
+  final see = <String>[
+    if (has('catalogue.view') && !edit.contains(l.dpDbCanCustomers))
+      l.dpDbCanCustomers,
+    if (has('stock.view') && !edit.contains(l.dpDbCanStock)) l.dpDbCanStock,
+  ];
+  String and(List<String> parts) => parts.length == 1
       ? parts.first
       : l.dpDbCanList(
           parts.sublist(0, parts.length - 1).join(', '),
           parts.last,
         );
+  final text = [
+    if (edit.isNotEmpty) edit.join(', '),
+    if (see.isNotEmpty) l.statesCanSee(and(see)),
+  ].join('; ');
+  if (text.isEmpty) return '';
   return text[0].toUpperCase() + text.substring(1);
 }
 
-/// Shows "Not in your role" (14.3) as a sheet over the current screen.
-Future<void> showNotInRoleSheet(BuildContext context, {NotInRoleTried? tried}) {
+/// Shows "Not in your role" (13.3) as a sheet over the current screen:
+/// what any 403 on an action shows. [failure] is the refusal, sent to Ask
+/// Atom with "Ask Atom why".
+Future<void> showNotInRoleSheet(
+  BuildContext context, {
+  NotInRoleTried? tried,
+  ApiFailure? failure,
+}) {
   return showAtomSheet<void>(
     context,
-    builder: (_) => _NotInRoleSheet(
+    builder: (sheet) => _NotInRoleSheet(
       tried: tried,
-      onClose: () => Navigator.of(context).pop(),
+      failure: failure,
+      onClose: () => Navigator.of(sheet).pop(),
     ),
+  );
+}
+
+/// 13.3 in place of a screen's content, when loading it was refused with a
+/// 403 (a role changed meanwhile, or a shared link): the same words, role
+/// and "You can" as the sheet, and Ask Atom why. `AtomErrorState(error:)`
+/// shows it for any 403 ([registerRoleRefusal]).
+class NotInRoleBody extends StatelessWidget {
+  const NotInRoleBody({super.key, this.failure});
+
+  final ApiFailure? failure;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: _NotInRoleSheet(tried: null, failure: failure, onClose: null),
+      ),
+    ),
+  );
+}
+
+/// Makes every `AtomErrorState(error: failure)` show [NotInRoleBody] for a
+/// 403. Called once, when the router reads [stateRoutes].
+void registerRoleRefusal() {
+  AtomErrorState.roleRefusal = (_, failure) => NotInRoleBody(failure: failure);
+}
+
+/// "Ask Atom why": Ask Atom with the refusal, so it explains it.
+void _askAtomWhy(BuildContext context, ApiFailure? failure) {
+  final l = AppLocalizations.of(context);
+  final error = failure?.message;
+  GoRouter.of(context).push(
+    Uri(
+      path: V2Routes.askAtom,
+      queryParameters: {
+        'q': l.statesAskWhyQuestion,
+        if (error != null && error.isNotEmpty) 'error': error,
+      },
+    ).toString(),
   );
 }
 
 /// 14.3's sheet: the grey person tile, what isn't in the role, the role and
 /// what it can do, then OK and Ask Atom why.
 class _NotInRoleSheet extends ConsumerWidget {
-  const _NotInRoleSheet({required this.tried, required this.onClose});
+  const _NotInRoleSheet({
+    required this.tried,
+    required this.onClose,
+    this.failure,
+  });
 
   final NotInRoleTried? tried;
-  final VoidCallback onClose;
+
+  /// OK; null in place of a screen's content (no OK, nothing to close).
+  final VoidCallback? onClose;
+  final ApiFailure? failure;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -749,25 +858,44 @@ class _NotInRoleSheet extends ConsumerWidget {
               ],
             ),
           ],
-          const SizedBox(height: 14),
-          AtomButtonPair(
-            first: AtomButton(
-              label: l.commonOk,
-              kind: AtomButtonKind.outline,
-              onPressed: onClose,
+          if (onClose != null) ...[
+            const SizedBox(height: 14),
+            AtomButtonPair(
+              first: AtomButton(
+                label: l.commonOk,
+                kind: AtomButtonKind.outline,
+                onPressed: onClose,
+              ),
+              second: atom
+                  ? AtomButton(
+                      label: l.dpDbRoleAskAtom,
+                      onPressed: () {
+                        final router = GoRouter.of(context);
+                        final why = Uri(
+                          path: V2Routes.askAtom,
+                          queryParameters: {
+                            'q': l.statesAskWhyQuestion,
+                            if (failure?.message case final m?
+                                when m.isNotEmpty)
+                              'error': m,
+                          },
+                        ).toString();
+                        onClose!();
+                        router.push(why);
+                      },
+                    )
+                  : null,
+              secondFlex: 13,
+              firstFlex: 10,
             ),
-            second: atom
-                ? AtomButton(
-                    label: l.dpDbRoleAskAtom,
-                    onPressed: () {
-                      onClose();
-                      GoRouter.of(context).push(V2Routes.askAtom);
-                    },
-                  )
-                : null,
-            secondFlex: 13,
-            firstFlex: 10,
-          ),
+          ] else if (atom) ...[
+            const SizedBox(height: 14),
+            AtomButton(
+              label: l.dpDbRoleAskAtom,
+              kind: AtomButtonKind.outline,
+              onPressed: () => _askAtomWhy(context, failure),
+            ),
+          ],
         ],
       ),
     );
@@ -1203,6 +1331,12 @@ Future<void> showSaveError(
   required VoidCallback onRetry,
   ApiFailure? failure,
 }) {
+  // A 403 isn't an error to try again: it is 13.3's sheet.
+  if (failure != null &&
+      (failure.kind == ApiFailureKind.notInRole ||
+          failure.kind == ApiFailureKind.ownerOnly)) {
+    return showNotInRoleSheet(context, failure: failure);
+  }
   return Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) =>

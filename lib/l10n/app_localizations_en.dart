@@ -10,6 +10,207 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get applyCategoryPlaceholder => 'e.g. Mobiles, Smart TVs';
+
+  @override
+  String get authSplashOffline => 'Offline · your data is on this phone';
+
+  @override
+  String authSplashWaiting(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n changes waiting to sync',
+      one: '1 change waiting to sync',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String authSplashLastSynced(String when) {
+    return 'Last synced $when';
+  }
+
+  @override
+  String authSplashToday(String time) {
+    return 'today, $time';
+  }
+
+  @override
+  String authSplashDaysLeft(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Offline for $n more days',
+      one: 'Offline for 1 more day',
+      zero: 'Offline time is up',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authPinOfflineTitle => 'Work offline';
+
+  @override
+  String get authPinOfflineSub => 'Keep 30 days of your brand on this phone';
+
+  @override
+  String get authPinOfflineOn => 'On';
+
+  @override
+  String authOutletAllSub(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Combined figures for all $count outlets',
+      one: 'Combined figures for 1 outlet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String authOutletServes(String city, String cities) {
+    return '$city · serves $cities';
+  }
+
+  @override
+  String authOutletServesOnly(String cities) {
+    return 'Serves $cities';
+  }
+
+  @override
+  String get authOutletPausedByYou => 'Paused by you';
+
+  @override
+  String get authOutletPausedByOwner => 'Paused by your brand owner';
+
+  @override
+  String get authOutletKeepAll =>
+      'Keep all open outlets on this phone for offline work';
+
+  @override
+  String authOutletKeepOne(String name) {
+    return 'Keep $name on this phone for offline work';
+  }
+
+  @override
+  String get authReadyOnlineWifi => 'Online · Wi-Fi';
+
+  @override
+  String authReadySecondsLeft(int n) {
+    return 'About $n seconds left';
+  }
+
+  @override
+  String authReadyMinutesLeft(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'About $n minutes left',
+      one: 'About a minute left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeNoticedTitle => 'Atom noticed';
+
+  @override
+  String get homeNoticedMorning => 'From your data this morning';
+
+  @override
+  String get homeNoticedAfternoon => 'From your data this afternoon';
+
+  @override
+  String get homeNoticedEvening => 'From your data this evening';
+
+  @override
+  String get homeNoticedSeeStock => 'See stock';
+
+  @override
+  String get homeNoticedOpenOutlet => 'Open outlet';
+
+  @override
+  String get homeNoticedFollowUp => 'Follow up';
+
+  @override
+  String statesKeptOnPhone(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          '$n changes are kept on this phone. They are sent as soon as you sign in again.',
+      one: '1 change is kept on this phone. It is sent as soon as you sign in again.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String statesKeptOnPhoneBold(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n changes are kept on this phone.',
+      one: '1 change is kept on this phone.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statesPlaceSearch => 'Search';
+
+  @override
+  String get statesPlaceOrder => 'the order';
+
+  @override
+  String get statesPlaceAtompay => 'the AtomPay order';
+
+  @override
+  String get statesPlaceDeal => 'the bulk deal';
+
+  @override
+  String get statesPlaceBulkRequest => 'the bulk request';
+
+  @override
+  String get statesPlaceProduct => 'the product';
+
+  @override
+  String get statesPlaceBrandPage => 'Brand page';
+
+  @override
+  String get statesPlaceStock => 'Stock';
+
+  @override
+  String get statesPlaceTeam => 'Team';
+
+  @override
+  String get statesPlaceOutlets => 'Outlets';
+
+  @override
+  String get statesPlacePlan => 'Plan & billing';
+
+  @override
+  String get statesPlaceReports => 'Reports';
+
+  @override
+  String get statesPlaceAskAtom => 'Ask Atom';
+
+  @override
+  String get statesPlaceSync => 'Sync centre';
+
+  @override
+  String get statesPlaceHelp => 'Help';
+
+  @override
+  String get statesPlaceSettings => 'Settings';
+
+  @override
+  String get statesPlaceNotifications => 'Notifications';
+
+  @override
+  String get statesPlaceMenu => 'Menu';
+
+  @override
   String get commonBack => 'Back';
 
   @override
@@ -303,14 +504,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String removedBody(String business) {
-    return 'Your package on $business has ended. Everything you saved is kept safe: products, orders, deals and stock.';
+    return 'Your package on $business has ended. Everything you saved is kept safe: products, orders, bulk deals and stock.';
   }
 
   @override
   String get removedOpenNow => 'Open now';
 
   @override
-  String get removedOpenNowValue => 'Plan & billing, bills, your profile';
+  String get removedOpenNowValue => 'Plan & billing, your profile';
 
   @override
   String get removedAfterPaying => 'After paying';
@@ -336,7 +537,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'This account has no package yet. Choose one to start using Brand Partner.';
 
   @override
-  String get notInRoleTitle => 'This isn\'t in your role';
+  String get notInRoleTitle => 'Your role doesn\'t include this';
+
+  @override
+  String get statesAskWhyQuestion => 'Why doesn\'t my role include this?';
+
+  @override
+  String get statesCanEverything => 'Everything: you own the brand';
+
+  @override
+  String get statesCanPayments => 'payments';
+
+  @override
+  String get statesCanAtompay => 'AtomPay';
+
+  @override
+  String get statesCanTeam => 'team';
+
+  @override
+  String statesCanSee(String list) {
+    return 'see $list';
+  }
 
   @override
   String get notInRoleBody =>
@@ -370,16 +591,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restrictedTitle => 'Atomshop has paused changes on your account';
 
   @override
-  String get restrictedPayments => 'Recording payments';
+  String get restrictedPayments => 'Recording payments and deliveries';
 
   @override
   String get restrictedWorks => 'Works';
 
   @override
-  String get restrictedCloseDeals => 'Closing deals, Ask Atom';
+  String get restrictedCloseDeals => 'AtomPay hand-overs, Ask Atom';
 
   @override
-  String get restrictedNewThings => 'New orders, products, stock';
+  String get restrictedNewThings => 'Products, quotes, stock';
 
   @override
   String get restrictedPaused => 'Paused';
@@ -394,7 +615,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get restrictedNote =>
-      'This isn\'t about a bill, so there is nothing to pay. Your buyers are not affected.';
+      'This isn\'t about a bill, so there is nothing to pay. Orders already placed carry on.';
 
   @override
   String get bannerPay => 'Pay';
@@ -406,7 +627,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuSignOut => 'Sign out';
 
   @override
-  String get signOutConfirmTitle => 'Log out of Brand Partner?';
+  String get signOutConfirmTitle => 'Sign out of Brand Partner?';
 
   @override
   String signOutUnsentBody(int count) {
@@ -705,11 +926,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataKept => 'What Brand Partner keeps';
 
   @override
-  String get dataShop => 'Your brand and orders';
+  String get dataShop => 'Your brand';
 
   @override
   String get dataShopBody =>
-      'Products, orders, deals, payments and stock, on Atomshop\'s servers.';
+      'Products, orders, payments, bulk deals and stock, on Atomshop\'s servers.';
 
   @override
   String get dataPhone => 'On this phone';
@@ -717,6 +938,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dataPhoneBody =>
       'Only what is on screen; nothing stays after you sign out.';
+
+  @override
+  String get dataPhoneOfflineBody =>
+      'An encrypted copy for offline work, deleted when you sign out or the phone is signed out.';
 
   @override
   String get dataCamera => 'Camera and photos';
@@ -975,7 +1200,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noticeOpenFromList => 'Open this message from Notifications.';
 
   @override
-  String get noticeSettingsFoot => 'These are for you on this account.';
+  String get noticeSettingsFoot =>
+      'These are for you on this phone. The brand portal has its own bell; the morning message is in Settings › Daily summary.';
+
+  @override
+  String get notifMorningTitle => 'Morning summary';
+
+  @override
+  String get notifMorningSub => 'One message with today\'s work';
+
+  @override
+  String get notifMorningAt => '8:30 am';
+
+  @override
+  String get notifActFollowUp => 'Follow up';
 
   @override
   String get noticeSettingsSub => 'What you get, quiet hours';
@@ -996,11 +1234,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noticesShowOlder => 'Show older';
 
   @override
-  String get noticesEmptyAction => 'Go to Home';
+  String get noticesEmptyAction => 'Go to orders';
+
+  @override
+  String get notifEmptyHome => 'Go to Home';
 
   @override
   String get noticesEmptyBody =>
-      'New orders, bulk requests and messages from Atomshop show here. Older ones are kept for 90 days.';
+      'New orders, bulk requests, AtomPay hand-overs and product reviews show here. Older ones are kept for 90 days.';
 
   @override
   String get noticesEmptyTitle => 'You\'re all caught up';
@@ -1015,7 +1256,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noticesOrders => 'Orders';
 
   @override
-  String get noticesReadAll => 'Mark all read';
+  String get noticesReadAll => 'Mark all as read';
+
+  @override
+  String get notifActConfirm => 'Confirm';
+
+  @override
+  String get notifActHandOver => 'Hand over';
+
+  @override
+  String get notifActSendQuote => 'Send quote';
+
+  @override
+  String get notifActReply => 'Reply';
+
+  @override
+  String get notifActAnswer => 'Answer';
+
+  @override
+  String get notifActOpenDeal => 'Open deal';
+
+  @override
+  String get notifActStockIn => 'Stock in';
+
+  @override
+  String get notifActFix => 'Fix and resend';
 
   @override
   String get noticesStock => 'Stock';
@@ -1092,7 +1357,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionsNotificationsSub =>
-      'Orders, bulk requests, Atomshop messages';
+      'New orders, bulk requests, AtomPay, product reviews';
 
   @override
   String get permissionsTurnOn => 'Turn on';
@@ -1301,7 +1566,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncWaitingTitle => 'Waiting to send';
 
   @override
-  String get syncWaitingSub => 'Payments, orders and notes made on this phone';
+  String get syncWaitingSub =>
+      'Deliveries, payments, stock in, notes made on this phone';
 
   @override
   String get syncWaitingNone => 'Nothing is waiting';
@@ -1420,7 +1686,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ecosystemTitle => 'Our ecosystem';
 
   @override
-  String get faqsNone => 'No answer matches. Ask Atomshop on WhatsApp.';
+  String get faqsNone =>
+      'No answer matches. Try other words, or ask Atomshop on WhatsApp.';
+
+  @override
+  String get helpFaqsEmpty => 'No answers here yet';
+
+  @override
+  String get helpFaqsEmptySub =>
+      'Atomshop is still writing answers for this topic. Ask Atomshop on WhatsApp meanwhile.';
 
   @override
   String get faqsTitle => 'FAQs';
@@ -1438,7 +1712,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpPopular => 'Popular';
 
   @override
-  String get helpSearch => 'Search help: \"close a deal\", \"receipt\"…';
+  String get helpSearch => 'Search help: \"hand over\", \"quote\"…';
 
   @override
   String get helpTalk => 'Talk to Atomshop';
@@ -1768,11 +2042,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get auth2WaitingForInternet => 'Waiting for internet…';
 
   @override
-  String get auth2PendingTitle => 'Your account is being checked.';
+  String get auth2PendingTitle => 'Your application is being checked.';
 
   @override
   String get auth2PendingBody =>
-      'Atomshop verifies every new brand before it can sign in. We will message you on WhatsApp when it is ready, usually within two working days.';
+      'Atomshop reviews every brand before it can sign in, then creates your login. We will message you on WhatsApp when it is ready, usually within two working days.';
 
   @override
   String get auth2AskOnWhatsApp => 'Ask Atomshop on WhatsApp';
@@ -1871,7 +2145,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get auth2TooManyBody =>
-      'To keep your brand\'s details safe, the app is paused for a few minutes.';
+      'To keep your brand\'s orders and customer details safe, the app is paused for a few minutes.';
 
   @override
   String get auth2TryAgainIn => 'Try again in';
@@ -2201,7 +2475,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dpDdDataCameraBody =>
-      'Only when you scan or take a photo. Scanning runs on the phone; nothing goes to Google.';
+      'Only when you scan a serial or take a delivery or product photo. Scanning runs on the phone; nothing goes to Google.';
 
   @override
   String get dpDdDataAtom => 'Ask Atom';
@@ -2214,11 +2488,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dpDdDownloadAll => 'Download everything as Excel';
 
   @override
-  String get dpDdDownloadAllSub => 'Orders, deals, payments, stock';
+  String get dpDdDownloadAllSub =>
+      'Orders, payments, products, bulk deals, stock';
 
   @override
   String get dpDdExportNote =>
-      'Atomshop makes the file and emails a link valid for 24 hours.';
+      'Atomshop makes the file and emails a link valid for 24 hours. Delivery photos are not included.';
 
   @override
   String get dpDdMore => 'More';
@@ -2227,7 +2502,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dpDdOnThisPhone => 'On this phone';
 
   @override
-  String get dpDdCameraSub => 'Scan serials, take photos';
+  String get dpDdCameraSub =>
+      'Scan serials and IMEIs, delivery and product photos';
 
   @override
   String get dpDdSelected => 'Selected';
@@ -2442,7 +2718,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dpDcPrivacyLead =>
-      'How Atomshop.pk and Brand Partner keep your brand\'s information.';
+      'How Atomshop.pk and Brand Partner keep your brand\'s information and the details of buyers who order from you.';
 
   @override
   String dpDcPrivacyFoot(String email) {
@@ -2454,14 +2730,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dpDcEcoLead =>
-      'Buyers find products on Atomshop and pay in steps. Verified sellers run the deals and source stock from brands. Brands like yours list products, supply sellers and fulfil orders. AtomPay gives verified buyers a 0% markup limit.';
+      'Customers find products on Atomshop. Brands like yours list them and deliver. Verified local sellers handle AtomPay orders and buy in bulk. AtomPay gives verified customers a 0% markup limit.';
 
   @override
   String get dpDcEcoFlowLabel =>
-      'Buyers order on Atomshop, sellers deliver, brands supply';
+      'Customers order on Atomshop, you deliver, sellers buy in bulk and handle AtomPay';
 
   @override
-  String get dpDcEcoCustomers => 'Buyers';
+  String get dpDcEcoCustomers => 'Customers';
 
   @override
   String get dpDcEcoCustomersSub => 'order on Atomshop';
@@ -2470,32 +2746,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dpDcEcoYou => 'You';
 
   @override
-  String get dpDcEcoYouSub => 'supply and fulfil in Brand Partner';
+  String get dpDcEcoYouSub => 'confirm and deliver in Brand Partner';
 
   @override
   String get dpDcEcoBrands => 'Sellers';
 
   @override
-  String get dpDcEcoBrandsSub => 'source from you in Atom Seller';
+  String get dpDcEcoBrandsSub => 'buy in bulk and take AtomPay units';
 
   @override
   String get dpDcYouAreHere => 'You are here';
 
   @override
   String get dpDcEcoSeller =>
-      'Run your brand: orders, AtomPay, bulk deals, products, stock and your team.';
+      'Run your brand on Atomshop: orders, AtomPay hand-overs, bulk deals, products, stock and your team.';
 
   @override
-  String get dpDcShareSeller => 'Share with a brand';
+  String get dpDcShareSeller => 'Share with your team';
 
   @override
   String dpDcShareSellerText(String link) {
-    return 'List your brand on Atomshop with Brand Partner: $link';
+    return 'Get Brand Partner to work on our Atomshop orders with me: $link';
   }
 
   @override
   String get dpDcEcoAtomshop =>
-      'For buyers: browse, choose a plan and order. Orders for your products come to you.';
+      'For customers: browse your brand page, order cash or with AtomPay. Their orders come to you.';
 
   @override
   String get dpDcSendCustomer => 'Send to a buyer';
@@ -2507,19 +2783,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dpDcEcoPay =>
-      'Verified buyers get a 0% markup limit for eligible products: 3 months, no advance.';
+      'Verified customers get a 0% markup limit for eligible products: 3 months, no advance.';
 
   @override
   String get dpDcEcoBrand =>
-      'For sellers: their shop, orders and stock, and sourcing from brands like yours.';
+      'For verified local sellers: they take AtomPay units from you and send bulk requests.';
 
   @override
   String get dpDcEcoSiteShop =>
-      'Where buyers find you. Your brand page shows your catalogue to buyers across Pakistan.';
+      'Where customers find you. Your brand page shows your story, slides and live products.';
 
   @override
-  String get dpDcEcoSite =>
-      'Where buyers find products, choose a plan and order.';
+  String get dpDcEcoSite => 'Where customers find you and order your products.';
 
   @override
   String get dpDcOpenSite => 'Open atomshop.pk';
@@ -2587,7 +2862,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secBlockShots => 'Block screenshots';
 
   @override
-  String get secBlockShotsSub => 'Of documents and payment proofs';
+  String get secBlockShotsSub => 'Of orders, buyer phone numbers and invoices';
 
   @override
   String get recoTitle => 'Recommendations';
@@ -2714,6 +2989,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tabBulk => 'Bulk deals';
+
+  @override
+  String get tabAtompay => 'AtomPay';
 
   @override
   String get tabProducts => 'Products';
@@ -2911,6 +3189,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuReports => 'Reports';
+
+  @override
+  String get menuLogOut => 'Log out';
+
+  @override
+  String get menuRoleOwner => 'Owner';
+
+  @override
+  String get menuTeamRoles => 'Team & roles';
+
+  @override
+  String get menuProfileSettings => 'Profile & settings';
+
+  @override
+  String get menuHelpSupport => 'Help and support';
+
+  @override
+  String get menuGroupHelp => 'Help';
+
+  @override
+  String menuBadgeNew(int count) {
+    return '$count new';
+  }
+
+  @override
+  String menuBadgeOut(int count) {
+    return '$count out';
+  }
+
+  @override
+  String menuPaidUntil(String date) {
+    return 'Paid until $date';
+  }
+
+  @override
+  String menuPeople(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people',
+      one: '1 person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String menuOutletsOpen(int count) {
+    return '$count open';
+  }
+
+  @override
+  String menuSyncedAt(String time) {
+    return 'Synced $time';
+  }
 
   @override
   String get menuMyPassword => 'My password';
@@ -4286,7 +4618,74 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsTalkSub => 'Your requests and the partner team';
+  String get settingsTalkSub => 'WhatsApp the partner team';
+
+  @override
+  String get settingsPasswordRow => 'Password';
+
+  @override
+  String get settingsPageLive => 'Live';
+
+  @override
+  String get settingsPageNotLive => 'Not live';
+
+  @override
+  String get settingsDeleteRowSub => 'Delete your account · password-confirmed';
+
+  @override
+  String get settingsStatusActivePartner => 'Active partner';
+
+  @override
+  String get settingsBioNoneSub =>
+      'Set up a fingerprint or face in the phone\'s settings first';
+
+  @override
+  String get settingsBioPinFirst => 'Set a PIN first, then switch this on';
+
+  @override
+  String get settingsOfflineCopy => 'Offline copy';
+
+  @override
+  String get settingsOfflineCopySub =>
+      'Orders, products, stock, bulk deals · encrypted';
+
+  @override
+  String get settingsBlueKey => 'Blue: offline copy';
+
+  @override
+  String get settingsOfflineCopyNote =>
+      'The offline copy is removed only when you sign out, so nothing waiting is lost.';
+
+  @override
+  String get settingsMic => 'Microphone';
+
+  @override
+  String get settingsMicSub => 'Only for speaking to Ask Atom';
+
+  @override
+  String get settingsSignOutOthersDone => 'Your other devices are signed out';
+
+  @override
+  String get settingsSignOutOthersNone =>
+      'You weren\'t signed in anywhere else';
+
+  @override
+  String get settingsSignOutOthersTitle => 'Sign out all other devices?';
+
+  @override
+  String get settingsSignOutOthersBody =>
+      'Every other phone, tablet and the brand portal signs out at once. This phone stays signed in.';
+
+  @override
+  String get settingsSessionsNote =>
+      'A device you sign out is signed out at once. With Offline working, its saved copy is deleted the next time it goes online. Needs internet.';
+
+  @override
+  String get settingsSessionsNow => 'Signed in now';
+
+  @override
+  String get settingsDailyPreviewNone =>
+      'Nothing to report today, so no message would go out.';
 
   @override
   String get settingsNoticesSub => 'What you get, quiet hours';
@@ -4884,8 +5283,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Send $count changes waiting',
-      one: 'Send 1 change waiting',
+      other: 'Send $count waiting changes',
+      one: 'Send 1 waiting change',
     );
     return '$_temp0';
   }
@@ -5136,6 +5535,146 @@ class AppLocalizationsEn extends AppLocalizations {
   String stockOutletFilter(String name) {
     return 'Outlet: $name';
   }
+
+  @override
+  String stockCategoryFilter(String name) {
+    return 'Category: $name';
+  }
+
+  @override
+  String get stockCategory => 'Category';
+
+  @override
+  String get stockNoRecentIn => 'Nothing received in the last 30 days.';
+
+  @override
+  String get stockCameraOffTitle => 'The camera is off for Brand Partner';
+
+  @override
+  String get stockCameraOffBody =>
+      'To scan serials and IMEIs, allow the camera in your phone\'s settings. You can also type the number.';
+
+  @override
+  String get stockCameraFailedTitle => 'The camera didn\'t start';
+
+  @override
+  String get stockCameraFailedBody =>
+      'Close other apps using the camera and try again, or type the number.';
+
+  @override
+  String get stockOpenSettings => 'Open settings';
+
+  @override
+  String get catVarPickCategory =>
+      'Choose a category first. The options follow it: storage for phones, screen size for TVs.';
+
+  @override
+  String get catVarOneVersion =>
+      'Products in this category come in one version.';
+
+  @override
+  String get catVarNoColours =>
+      'Atomshop hasn\'t added colours yet. Ask support for the ones you need.';
+
+  @override
+  String get catVarNoSizes =>
+      'Atomshop hasn\'t added screen sizes yet. Ask support for the ones you need.';
+
+  @override
+  String get catVarNoStorage =>
+      'Atomshop hasn\'t added storage options yet. Ask support for the ones you need.';
+
+  @override
+  String get syncNoTeamPhone => 'No phone signed in yet';
+
+  @override
+  String get teamKpiOrders => 'Orders handled this month';
+
+  @override
+  String get teamKpiOrdersNote => 'Confirmed or delivered';
+
+  @override
+  String teamOrdersMonthN(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n orders this month',
+      one: '1 order this month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamKpiHandled(String month) {
+    return 'Orders handled · $month';
+  }
+
+  @override
+  String teamKpiHandledNote(int confirmed, int delivered) {
+    return '$confirmed confirmed, $delivered delivered';
+  }
+
+  @override
+  String teamKpiPaid(String month) {
+    return 'Payments recorded · $month';
+  }
+
+  @override
+  String teamKpiPaidNote(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n payments',
+      one: '1 payment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamPhonesRow => 'Sign out their phones';
+
+  @override
+  String get teamPhonesSub => 'They can sign in again';
+
+  @override
+  String teamPhonesTitle(String name) {
+    return 'Sign out $name\'s phones?';
+  }
+
+  @override
+  String get teamPhonesBody =>
+      'Every phone they use is signed out. A phone with an offline copy deletes it the next time it goes online, with anything it never sent. Their login stays.';
+
+  @override
+  String get teamPhonesButton => 'Sign out phones';
+
+  @override
+  String teamPhonesDone(String name) {
+    return '$name\'s phones are signed out.';
+  }
+
+  @override
+  String get teamPhonesNone => 'No phone was signed in.';
+
+  @override
+  String get teamBlurbManager =>
+      'Everything except outlets, settings and billing';
+
+  @override
+  String get teamBlurbOrders =>
+      'Orders, payments, AtomPay; sees products and stock';
+
+  @override
+  String get teamBlurbBulk => 'Bulk requests, quotes and deals';
+
+  @override
+  String get teamBlurbStock => 'Stock in, adjust, move; warehouses';
+
+  @override
+  String get teamBlurbMarketing => 'Products and the brand page';
+
+  @override
+  String get teamBlurbAccountant => 'Totals, payments, reports and exports';
 
   @override
   String stockProductFilter(String name) {
@@ -7755,6 +8294,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get acctExcelOnline => 'Excel · online';
 
   @override
+  String accountReportOrders(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders',
+      one: '1 order',
+      zero: 'No orders',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountReportStillDue(String amount) {
+    return '$amount still due';
+  }
+
+  @override
+  String accountReportUnits(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count units',
+      one: '1 unit',
+      zero: 'No units',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountReportDeals(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count deals',
+      one: '1 deal',
+      zero: 'No deals',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountReportNoneToday => 'None today';
+
+  @override
+  String accountReportMethodIs(String method) {
+    return 'Method: $method';
+  }
+
+  @override
+  String get accountReportMethodAny => 'Any';
+
+  @override
+  String get accountReportWhichMethod => 'Which method?';
+
+  @override
+  String get accountNoPaymentsYet => 'No payments yet';
+
+  @override
+  String get accountNoBillsYet => 'No bills yet';
+
+  @override
   String acctOutletIs(String outlet) {
     return 'Outlet: $outlet';
   }
@@ -7956,7 +8556,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Atom answers the way you write: English, Roman Urdu or اردو.';
 
   @override
-  String get askAtomHint => 'Ask about your orders, deals or stock';
+  String get askAtomHint => 'Ask, or tap the mic';
 
   @override
   String get askAtomHintOffline => 'Atom needs internet';
@@ -8005,6 +8605,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get askAtomQRequests => 'Which seller requests are new?';
+
+  @override
+  String get askAtomQAtompay => 'Is mahine kitni AtomPay sales hui?';
+
+  @override
+  String get askAtomShowThem => 'Show them';
+
+  @override
+  String get askAtomMic => 'Speak your question';
+
+  @override
+  String get askAtomMicStop => 'Stop listening';
+
+  @override
+  String get askAtomListening => 'Listening…';
+
+  @override
+  String get askAtomMicDenied =>
+      'Atom can\'t hear you: the microphone is off for Brand Partner. Allow it in your phone\'s settings, or type your question.';
+
+  @override
+  String get askAtomMicUnavailable =>
+      'Voice isn\'t available on this phone. Type your question instead.';
 
   @override
   String get applyTypeManufacturer => 'Manufacturer';
@@ -8615,7 +9238,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get outletsKpiOpenNote => 'Not yet delivered';
 
   @override
-  String get outletsOrdersThisMonth => 'Latest orders';
+  String get outletsOrdersThisMonth => 'Orders this month';
 
   @override
   String get outletsNoOrders => 'No orders for this outlet yet.';
@@ -10723,6 +11346,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bulkNewQuoteRevision => 'New quote revision';
 
   @override
+  String get bulkAll => 'All';
+
+  @override
+  String bulkReceivedFilter(String when) {
+    return 'Received: $when';
+  }
+
+  @override
+  String get bulkReceivedTitle => 'Received';
+
+  @override
+  String get bulkAnyTime => 'Any time';
+
+  @override
+  String get bulkRangeToday => 'Today';
+
+  @override
+  String get bulkRangeWeek => 'Last 7 days';
+
+  @override
+  String get bulkRangeDays30 => 'Last 30 days';
+
+  @override
+  String get bulkRangeThisMonth => 'This month';
+
+  @override
+  String get bulkRangePick => 'Pick dates';
+
+  @override
+  String bulkRangeDates(String from, String to) {
+    return '$from – $to';
+  }
+
+  @override
+  String get bulkEmptyReceived => 'No requests received then';
+
+  @override
+  String get bulkEmptyReceivedBody => 'Try another time, or Any time.';
+
+  @override
+  String get bulkLoadErrorTitle => 'That didn\'t load';
+
+  @override
+  String get bulkLoadErrorBody =>
+      'Atomshop couldn\'t load this just now. Nothing was changed.';
+
+  @override
+  String get bulkNoDelivery => 'No delivery yet.';
+
+  @override
+  String get bulkFromRequest => 'From request';
+
+  @override
+  String get bulkAddress => 'Address';
+
+  @override
+  String get bulkCommissionNoneInfo =>
+      'Seller deals carry no commission for your brand today. If Atomshop sets a rate, it is shown here before you send a quote and fixed when the deal opens; it is added to your monthly bill, never taken from the seller\'s payment.';
+
+  @override
+  String get bulkReceivedFromAtomshop => 'Request received from Atomshop';
+
+  @override
+  String get bulkAddPhotoTitle => 'Add a photo';
+
+  @override
   String get teamSemYes => 'yes';
 
   @override
@@ -11042,4 +11731,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamSemOff => 'off';
+
+  @override
+  String get ordersClearSearch => 'Clear search';
+
+  @override
+  String get ordersSearchPlaceholder =>
+      'Order number, customer, phone or product';
+
+  @override
+  String get atompaySearchPlaceholder => 'Order number or product';
+
+  @override
+  String get ordersPlacedTitle => 'Placed';
+
+  @override
+  String ordersPlacedFilter(String when) {
+    return 'Placed: $when';
+  }
+
+  @override
+  String get ordersLoadErrorTitle => 'That didn\'t load';
+
+  @override
+  String get ordersLoadErrorBody =>
+      'Atomshop couldn\'t load this just now. Nothing was changed.';
+
+  @override
+  String ordersErrorRef(String ref) {
+    return 'Ref $ref';
+  }
+
+  @override
+  String get ordersSaveErrorBody =>
+      'That didn\'t save. Nothing was changed; try again.';
+
+  @override
+  String get ordersDeliveryFree => 'Free';
+
+  @override
+  String get ordersNotVerified => 'Not verified';
+
+  @override
+  String get ordersNotGiven => 'Not given';
+
+  @override
+  String get ordersDeliveredBy => 'Delivered by';
 }

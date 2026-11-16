@@ -27,6 +27,11 @@ class AtomAnswer {
     this.id,
     this.notice,
     this.langLabel,
+    this.ask,
+    this.askLabel,
+    this.rowActions = const [],
+    this.bulkRequestId,
+    this.fromSeller = false,
   });
 
   /// problem, info, numbers, confirm or ask.
@@ -58,6 +63,19 @@ class AtomAnswer {
   final String? notice;
   final String? langLabel;
 
+  /// On a notice: the question "Show them" asks in the chat, and its
+  /// button's label.
+  final String? ask;
+  final String? askLabel;
+
+  /// One per row of [rows] (null for a row without one): the row's own
+  /// button, e.g. Confirm on an order waiting to be confirmed (12.12).
+  final List<AtomRowAction?> rowActions;
+
+  /// On a quote notice: the bulk request it belongs to, for Follow up.
+  final int? bulkRequestId;
+  final bool fromSeller;
+
   static List<(String, String)> _pairs(Object? v) => [
     for (final p in Json.list(v))
       if (Json.list(p).length >= 2)
@@ -83,9 +101,50 @@ class AtomAnswer {
       id: Json.integer(j['id']),
       notice: Json.str(j['notice']),
       langLabel: Json.str(Json.map(j['lang'])['label']),
+      ask: Json.str(j['ask']),
+      askLabel: Json.str(j['ask_label']),
+      rowActions: [
+        for (final r in Json.list(j['row_actions']))
+          r is Map ? AtomRowAction.fromJson(r) : null,
+      ],
+      bulkRequestId: Json.integer(j['bulk_request_id']),
+      fromSeller: Json.flag(j['from_seller']),
     );
   }
 }
+
+/// A row's own button in an answer's table (`row_actions[i]`): its label,
+/// the portal link, and the record the app opens itself.
+@immutable
+class AtomRowAction {
+  const AtomRowAction({
+    required this.label,
+    this.url,
+    this.orderUuid,
+    this.bulkRequestId,
+    this.fromSeller = false,
+  });
+
+  final String label;
+  final String? url;
+  final String? orderUuid;
+  final int? bulkRequestId;
+  final bool fromSeller;
+
+  factory AtomRowAction.fromJson(Object? raw) {
+    final j = Json.map(raw);
+    return AtomRowAction(
+      label: Json.str(j['label']) ?? '',
+      url: Json.str(j['url']),
+      orderUuid: Json.str(j['order_uuid']),
+      bulkRequestId: Json.integer(j['bulk_request_id']),
+      fromSeller: Json.flag(j['from_seller']),
+    );
+  }
+}
+
+/// A question asked before (`GET ask-atom/recent`), for "Recent".
+typedef AtomRecent = ({String question, DateTime? at});
 
 /// What Atom noticed and the questions that fit (`GET ask-atom/context`):
 /// `{notices[], questions[] (shown), prompts[] (sent), lang}`.
@@ -132,9 +191,10 @@ typedef AtomHandover = ({String code, String? whatsapp});
 /// A turn of the chat, for `history`.
 typedef AtomTurn = ({bool mine, String text});
 
-/// The portal screen the app's Ask Atom stands for: the brand dashboard,
-/// so the context answers with brand-wide notices and questions.
-const atomScreen = 'brand.dashboard';
+/// The screen the app's Ask Atom stands for: the app's own start screen,
+/// so the context answers with brand-wide notices and the 12.10 questions
+/// (`Insights::APP_HOME` on the server).
+const atomScreen = 'app.home';
 
 abstract interface class AskAtomRepository {
   Future<ApiResult<AtomContext>> context({required String lang});
@@ -145,6 +205,9 @@ abstract interface class AskAtomRepository {
     List<AtomTurn> history = const [],
     String? error,
   });
+
+  /// The last questions this person asked Atom, newest first.
+  Future<ApiResult<List<AtomRecent>>> recent();
 
   Future<ApiResult<AtomAnswer>> confirm(String token, {required String lang});
 
@@ -193,6 +256,19 @@ class ApiAskAtomRepository implements AskAtomRepository {
       'error': ?error,
     },
     parse: AtomAnswer.fromJson,
+  );
+
+  @override
+  Future<ApiResult<List<AtomRecent>>> recent() => _api.get(
+    'ask-atom/recent',
+    parse: (data) => [
+      for (final r in Json.list(Json.map(data)['items']))
+        if (Json.str(Json.map(r)['question']) case final q? when q.isNotEmpty)
+          (
+            question: q,
+            at: DateTime.tryParse(Json.str(Json.map(r)['at']) ?? '')?.toLocal(),
+          ),
+    ],
   );
 
   @override

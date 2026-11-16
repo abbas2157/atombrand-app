@@ -212,43 +212,66 @@ class _StatusSheetState extends ConsumerState<StatusSheet> {
           ),
           const SizedBox(height: 16),
           if (!widget.declineOnly) ...[
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            // `.stats`: three equal buttons in a row.
+            Row(
               children: [
-                for (final c in choices)
-                  _StatusOption(
-                    label: c.label(l),
-                    colour: switch (c) {
-                      StatusChoice.contacted => AtomColors.purpleInk,
-                      StatusChoice.lost => AtomColors.rose,
-                      StatusChoice.backToNew => AtomColors.primary,
-                    },
-                    on: _choice == c,
-                    onTap: () => setState(() {
-                      _choice = c;
-                      _error = null;
-                    }),
+                for (final (i, c) in choices.indexed) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: _StatusOption(
+                      label: c.label(l),
+                      colour: switch (c) {
+                        StatusChoice.contacted => AtomColors.purpleInk,
+                        StatusChoice.lost => AtomColors.rose,
+                        StatusChoice.backToNew => AtomColors.primary,
+                      },
+                      on: _choice == c,
+                      onTap: () => setState(() {
+                        _choice = c;
+                        _error = null;
+                      }),
+                    ),
                   ),
+                ],
+                for (var i = choices.length; i < 3; i++) ...[
+                  const SizedBox(width: 8),
+                  const Expanded(child: SizedBox.shrink()),
+                ],
               ],
             ),
             const SizedBox(height: 14),
           ],
           if (isLost) ...[
-            AtomSelectField<String>(
-              label: widget.declineOnly ? l.bulkWhyDeclining : l.bulkWhyLost,
-              value: _reason,
-              valueLabel: _reason,
-              placeholder: l.bulkChooseReason,
-              sheetTitle: l.bulkReason,
-              options: [
-                for (final r in lostReasonList) AtomOption(value: r, label: r),
-              ],
-              onChanged: (r) => setState(() {
-                _reason = r;
-                _error = null;
-              }),
-            ),
+            // `.chips`: the board's five reasons as pills; a longer list
+            // from the server keeps the searchable picker.
+            if (lostReasonList.length >= 2 && lostReasonList.length <= 5)
+              AtomField(
+                label: widget.declineOnly ? l.bulkWhyDeclining : l.bulkWhyLost,
+                child: AtomChips<String>(
+                  chips: [for (final r in lostReasonList) AtomChip(r, r)],
+                  selected: _reason,
+                  onChanged: (r) => setState(() {
+                    _reason = r;
+                    _error = null;
+                  }),
+                ),
+              )
+            else
+              AtomSelectField<String>(
+                label: widget.declineOnly ? l.bulkWhyDeclining : l.bulkWhyLost,
+                value: _reason,
+                valueLabel: _reason,
+                placeholder: l.bulkChooseReason,
+                sheetTitle: l.bulkReason,
+                options: [
+                  for (final r in lostReasonList)
+                    AtomOption(value: r, label: r),
+                ],
+                onChanged: (r) => setState(() {
+                  _reason = r;
+                  _error = null;
+                }),
+              ),
             if (widget.declineOnly) ...[
               const SizedBox(height: 8),
               Text(l.bulkDeclineNote, style: AtomText.small),
@@ -256,7 +279,7 @@ class _StatusSheetState extends ConsumerState<StatusSheet> {
             const SizedBox(height: 14),
           ],
           if (_choice == StatusChoice.contacted) ...[
-            Text(l.bulkContactedHint, style: AtomText.secondary),
+            Text(l.bulkContactedHint, style: AtomText.small),
             const SizedBox(height: 14),
           ],
           AtomTextField(
@@ -310,33 +333,38 @@ class _StatusOption extends StatelessWidget {
     semanticLabel: label,
     focusRadius: AtomRadius.brControl,
     builder: (_, _) => Container(
-      constraints: const BoxConstraints(minHeight: 44),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: on ? AtomColors.primarySoft : AtomColors.paper,
         borderRadius: AtomRadius.brControl,
         border: Border.all(
           color: on ? AtomColors.primary : AtomColors.line2,
-          width: on ? 1.5 : 1,
+          width: on ? 2 : 1,
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: colour, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: AtomText.body.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AtomColors.ink,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(color: colour, shape: BoxShape.circle),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Text(
+              label,
+              maxLines: 1,
+              style: AtomText.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: on ? AtomColors.primary : AtomColors.text,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -461,20 +489,17 @@ class _WonSheetState extends ConsumerState<WonSheet> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final x in sendable) ...[
-                        AtomOptionCard(
+                        _QuoteOption(
                           title: x.name,
-                          subtitle: [
+                          line: [
                             if (x.sentAt != null)
                               l.bulkSentWhen(bulkWhen(l, x.sentAt)),
                             if (x.advancePct > 0)
                               l.bulkAdvancePct(x.advancePct),
                           ].join(' · '),
-                          selected: x.id == picked?.id,
+                          total: formatRs(x.total),
+                          on: x.id == picked?.id,
                           onTap: () => setState(() => _quoteId = x.id),
-                          trailing: Text(
-                            formatRs(x.total),
-                            style: AtomText.money,
-                          ),
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -546,4 +571,69 @@ class _WonSheetState extends ConsumerState<WonSheet> {
       ),
     );
   }
+}
+
+/// `.opt`: one quote to accept — its name and line, the total, and the
+/// radio on the right.
+class _QuoteOption extends StatelessWidget {
+  const _QuoteOption({
+    required this.title,
+    required this.line,
+    required this.total,
+    required this.on,
+    required this.onTap,
+  });
+
+  final String title;
+  final String line;
+  final String total;
+  final bool on;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => AtomPressable(
+    onTap: onTap,
+    selected: on,
+    semanticLabel: '$title, $total',
+    focusRadius: AtomRadius.brCard,
+    builder: (_, _) => Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: on ? 13 : 14,
+        vertical: on ? 11 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: AtomColors.paper,
+        borderRadius: AtomRadius.brCard,
+        border: Border.all(
+          color: on ? AtomColors.primary : AtomColors.line,
+          width: on ? 2 : 1,
+        ),
+        boxShadow: on
+            ? const [BoxShadow(color: AtomColors.primarySoft, spreadRadius: 3)]
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AtomText.listTitle.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (line.isNotEmpty) Text(line, style: AtomText.secondary),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(total, style: AtomText.money.copyWith(fontSize: 15)),
+          const SizedBox(width: 12),
+          AtomRadio(on: on),
+        ],
+      ),
+    ),
+  );
 }

@@ -4,7 +4,15 @@ import '../../app/routes.dart';
 import 'ui/state_screens.dart';
 
 /// App-wide state screens (13.x, 18.15, 18.16).
-final stateRoutes = <RouteBase>[
+///
+/// Reading it (when the router is built) also makes every
+/// `AtomErrorState(error:)` show 13.3 for a 403 ([registerRoleRefusal]).
+final stateRoutes = () {
+  registerRoleRefusal();
+  return _stateRoutes;
+}();
+
+final _stateRoutes = <RouteBase>[
   GoRoute(
     path: V2Routes.signedOut,
     builder: (_, state) =>

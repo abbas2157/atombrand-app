@@ -9,6 +9,7 @@ import 'ui/stock_adjust_screen.dart';
 import 'ui/stock_history_screen.dart';
 import 'ui/stock_in_screen.dart';
 import 'ui/stock_list_screen.dart';
+import 'ui/stock_parts.dart';
 import 'ui/stock_transfer_screen.dart';
 import 'ui/warehouses_screen.dart';
 
@@ -55,12 +56,16 @@ final stockRoutes = <RouteBase>[
           productId: intQuery(state, 'product'),
         ),
       ),
+      // 9.7 is a bottom sheet over the screen that opened it.
       GoRoute(
         path: 'adjust',
-        builder: (_, state) => StockAdjustScreen(
-          serial: _text(state, 'serial'),
-          found: _text(state, 'dir') == 'in',
-          productId: intQuery(state, 'product'),
+        pageBuilder: (_, state) => StockSheetPage<void>(
+          key: state.pageKey,
+          child: StockAdjustScreen(
+            serial: _text(state, 'serial'),
+            found: _text(state, 'dir') == 'in',
+            productId: intQuery(state, 'product'),
+          ),
         ),
       ),
       GoRoute(path: 'scan', builder: (_, _) => const ScanUnitScreen()),

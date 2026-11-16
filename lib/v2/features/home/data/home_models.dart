@@ -411,6 +411,7 @@ class HomeDashboard {
     this.latestOrders,
     this.activity = const [],
     this.plan,
+    this.noticed,
     this.catalogueTotal = 0,
     this.cataloguePublished = 0,
     this.ordersTotal = 0,
@@ -432,6 +433,9 @@ class HomeDashboard {
   final List<HomeOrder>? latestOrders;
   final List<HomeActivity> activity;
   final PlanSummary? plan;
+
+  /// "Atom noticed" (5.1): one insight, or null when nothing stands out.
+  final HomeNoticed? noticed;
 
   /// The v1 figures, always sent: the first-day check reads them.
   final int catalogueTotal;
@@ -481,6 +485,7 @@ class HomeDashboard {
       latestOrders: listOrNull(h['latest_orders'], HomeOrder.fromJson),
       activity: listOrNull(h['activity'], HomeActivity.fromJson) ?? const [],
       plan: h['plan'] is Map ? PlanSummary.fromJson(h['plan']) : null,
+      noticed: HomeNoticed.tryParse(h['noticed']),
       catalogueTotal: Json.integer(catalogue['total']) ?? 0,
       cataloguePublished: Json.integer(catalogue['published']) ?? 0,
       ordersTotal: Json.integer(orders['total']) ?? 0,
@@ -749,6 +754,49 @@ class AddonEnd {
       state: Json.str(j['state']) ?? 'off',
       endsOn: AtomDates.parse(j['ends_on']),
       renew: j['renew'] == null || Json.flag(j['renew']),
+    );
+  }
+}
+
+/// "Atom noticed" on Home (5.1, Ask Atom add-on): the server's one short
+/// insight from the dashboard's own numbers (`home.noticed`): `{key, tone,
+/// title, text, action: {screen, params}}`.
+@immutable
+class HomeNoticed {
+  const HomeNoticed({
+    required this.key,
+    required this.title,
+    required this.text,
+    this.warning = false,
+    this.screen,
+    this.params = const {},
+  });
+
+  /// `low_stock`, `orders_waiting`, `slow_outlet` or `quotes_expiring`.
+  final String key;
+  final String title;
+  final String text;
+  final bool warning;
+
+  /// Where its button goes (`stock_product`, `orders`, `outlets`,
+  /// `bulk_orders`); null for none.
+  final String? screen;
+  final Map<String, dynamic> params;
+
+  static HomeNoticed? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final j = Json.map(raw);
+    final text = Json.str(j['text']) ?? '';
+    final title = Json.str(j['title']) ?? '';
+    if (text.isEmpty && title.isEmpty) return null;
+    final action = Json.map(j['action']);
+    return HomeNoticed(
+      key: Json.str(j['key']) ?? '',
+      title: title,
+      text: text,
+      warning: j['tone'] == 'warning',
+      screen: Json.str(action['screen']),
+      params: Json.map(action['params']),
     );
   }
 }

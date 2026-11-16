@@ -116,7 +116,9 @@ class _ActionsSheetState extends ConsumerState<_ActionsSheet> {
                     ),
                     Text(
                       [
-                        p.prNumber ?? l.catNewCode,
+                        p.isNew || p.prNumber == null
+                            ? l.catNewCode
+                            : p.prNumber!,
                         formatRs(p.price),
                         p.statusLabel(l),
                       ].join(' · '),

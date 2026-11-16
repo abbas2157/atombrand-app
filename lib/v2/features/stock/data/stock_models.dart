@@ -363,10 +363,14 @@ class StockOverview {
     this.totals = const StockTotals(),
     this.warehouses = const [],
     this.held = const [],
+    this.categories = const [],
     this.fromCopy = false,
   });
 
   final List<StockProduct> items;
+
+  /// The "Category: All" filter's choices (`categories`): id and title.
+  final List<({int id, String title})> categories;
   final int page;
   final int lastPage;
   final int total;
@@ -395,6 +399,11 @@ class StockOverview {
         for (final w in Json.list(j['warehouses'])) StockWarehouse.fromJson(w),
       ],
       held: [for (final h in Json.list(j['held'])) StockHold.fromJson(h)],
+      categories: [
+        for (final c in Json.list(j['categories']))
+          if (Json.integer(Json.map(c)['id']) case final id?)
+            (id: id, title: Json.str(Json.map(c)['title']) ?? ''),
+      ],
       fromCopy: fromCopy,
     );
   }
@@ -516,6 +525,7 @@ class ProductStock {
     this.autoPrefix,
     this.catalogueProductId,
     this.prNumber,
+    this.category,
     this.websiteStatus,
     this.canChangeTracking = false,
     this.access = const StockAccess(),
@@ -532,6 +542,7 @@ class ProductStock {
   final String? autoPrefix;
   final int? catalogueProductId;
   final String? prNumber;
+  final String? category;
   final String? websiteStatus;
   final bool canChangeTracking;
   final StockAccess access;
@@ -551,6 +562,7 @@ class ProductStock {
       autoPrefix: Json.str(p['auto_prefix']),
       catalogueProductId: Json.integer(p['catalogue_product_id']),
       prNumber: Json.str(p['pr_number']),
+      category: Json.str(p['category']),
       websiteStatus: Json.str(p['website_status']),
       canChangeTracking: Json.flag(p['can_change_tracking']),
       access: StockAccess.fromJson(j['access']),

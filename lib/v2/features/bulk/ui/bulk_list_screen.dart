@@ -42,6 +42,50 @@ _Tab _tabOf(String? s) => switch (s) {
   _ => _Tab.sellers,
 };
 
+/// The Seller requests chips (7.1): All, New, Change asked, Quoted,
+/// Accepted, Declined.
+enum _SellerChip { all, fresh, changeAsked, quoted, accepted, declined }
+
+/// The Website tab's "Received" filter: a preset or picked days.
+@immutable
+class _Received {
+  const _Received([this.key = 'any', this.since, this.until]);
+
+  /// `any`, `today`, `week`, `days30`, `month` or `pick`.
+  final String key;
+  final DateTime? since;
+  final DateTime? until;
+
+  bool get any => key == 'any';
+
+  static _Received preset(String key, DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    return switch (key) {
+      'today' => _Received(key, today, today),
+      'week' => _Received(key, today.subtract(const Duration(days: 6)), today),
+      'days30' => _Received(
+        key,
+        today.subtract(const Duration(days: 29)),
+        today,
+      ),
+      'month' => _Received(key, DateTime(today.year, today.month), today),
+      _ => const _Received(),
+    };
+  }
+
+  String label(AppLocalizations l) => switch (key) {
+    'today' => l.bulkRangeToday,
+    'week' => l.bulkRangeWeek,
+    'days30' => l.bulkRangeDays30,
+    'month' => l.bulkRangeThisMonth,
+    'pick' when since != null && until != null =>
+      since == until
+          ? AtomDates.short(since!)
+          : l.bulkRangeDates(AtomDates.short(since!), AtomDates.short(until!)),
+    _ => l.bulkAnyTime,
+  };
+}
+
 /// Pages after the first, read as the list scrolls.
 class _More<T> {
   Object? key;
@@ -58,8 +102,9 @@ class _More<T> {
 
 class _BulkListScreenState extends ConsumerState<BulkListScreen> {
   late _Tab _tab = _tabOf(widget.tab);
-  RequestStatus _sellerStatus = RequestStatus.fresh;
-  RequestStatus _webStatus = RequestStatus.fresh;
+  _SellerChip _sellerChip = _SellerChip.all;
+  RequestStatus? _webStatus;
+  _Received _received = const _Received();
   DealStatus? _dealStatus;
 
   final _moreRequests = _More<BulkRequest>();
@@ -78,8 +123,72 @@ class _BulkListScreenState extends ConsumerState<BulkListScreen> {
   }
 
   RequestsQuery get _requestsQuery => _tab == _Tab.sellers
-      ? (from: 'sellers', status: _sellerStatus, search: '')
-      : (from: 'buyers', status: _webStatus, search: '');
+      ? (
+          from: 'sellers',
+          status: switch (_sellerChip) {
+            _SellerChip.fresh => RequestStatus.fresh,
+            _SellerChip.quoted => RequestStatus.quoted,
+            _SellerChip.accepted => RequestStatus.won,
+            _SellerChip.declined => RequestStatus.lost,
+            _SellerChip.all || _SellerChip.changeAsked => null,
+          },
+          changeAsked: _sellerChip == _SellerChip.changeAsked,
+          since: null,
+          until: null,
+          search: '',
+        )
+      : (
+          from: 'buyers',
+          status: _webStatus,
+          changeAsked: false,
+          since: _received.since,
+          until: _received.until,
+          search: '',
+        );
+
+  /// The Website tab's Received filter: a preset, or days picked on the
+  /// calendar.
+  Future<void> _pickReceived() async {
+    final l = AppLocalizations.of(context);
+    final v = await showAtomSelect<String>(
+      context,
+      title: l.bulkReceivedTitle,
+      selected: _received.key,
+      options: [
+        AtomOption(value: 'any', label: l.bulkAnyTime),
+        AtomOption(value: 'today', label: l.bulkRangeToday),
+        AtomOption(value: 'week', label: l.bulkRangeWeek),
+        AtomOption(value: 'days30', label: l.bulkRangeDays30),
+        AtomOption(value: 'month', label: l.bulkRangeThisMonth),
+        AtomOption(
+          value: 'pick',
+          label: l.bulkRangePick,
+          subtitle: _received.key == 'pick' ? _received.label(l) : null,
+        ),
+      ],
+    );
+    if (v == null || !mounted) return;
+    final now = AtomDates.now();
+    var next = _Received.preset(v, now);
+    if (v == 'pick') {
+      final today = DateTime(now.year, now.month, now.day);
+      final range = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(today.year - 3),
+        lastDate: today,
+        initialDateRange: _received.since != null && _received.until != null
+            ? DateTimeRange(start: _received.since!, end: _received.until!)
+            : null,
+        helpText: l.bulkReceivedTitle,
+      );
+      if (range == null || !mounted) return;
+      next = _Received('pick', range.start, range.end);
+    }
+    setState(() {
+      _received = next;
+      _moreRequests.reset();
+    });
+  }
 
   DealsQuery get _dealsQuery => (status: _dealStatus, search: '');
 
@@ -111,7 +220,14 @@ class _BulkListScreenState extends ConsumerState<BulkListScreen> {
     setState(() => m.loading = true);
     final r = await ref
         .read(bulkRepositoryProvider)
-        .requests(from: q.from, status: q.status, page: last + 1);
+        .requests(
+          from: q.from,
+          status: q.status,
+          changeAsked: q.changeAsked,
+          since: q.since,
+          until: q.until,
+          page: last + 1,
+        );
     if (!mounted) return;
     setState(() {
       m.loading = false;
@@ -173,7 +289,7 @@ class _BulkListScreenState extends ConsumerState<BulkListScreen> {
         skipLoadingOnReload: true,
         loading: () => const _Loading(),
         error: (e, _) =>
-            _Error(onRetry: () => ref.invalidate(dealsProvider(q))),
+            _Error(error: e, onRetry: () => ref.invalidate(dealsProvider(q))),
         data: (p) {
           final rows = [
             ...p.items,
@@ -205,8 +321,10 @@ class _BulkListScreenState extends ConsumerState<BulkListScreen> {
         skipLoadingOnRefresh: true,
         skipLoadingOnReload: true,
         loading: () => const _Loading(),
-        error: (e, _) =>
-            _Error(onRetry: () => ref.invalidate(bulkRequestsProvider(q))),
+        error: (e, _) => _Error(
+          error: e,
+          onRetry: () => ref.invalidate(bulkRequestsProvider(q)),
+        ),
         data: (p) {
           final rows = [
             ...p.items,
@@ -223,20 +341,21 @@ class _BulkListScreenState extends ConsumerState<BulkListScreen> {
           return _tab == _Tab.sellers
               ? _SellersTab(
                   requests: rows,
-                  status: _sellerStatus,
-                  total: p.page.total,
-                  sellerCounts: counts?.seller ?? p.sellerCounts,
+                  chip: _sellerChip,
+                  page: p,
                   canQuote: canQuote,
-                  onStatus: (s) => setState(() {
-                    _sellerStatus = s;
+                  onChip: (c) => setState(() {
+                    _sellerChip = c;
                     _moreRequests.reset();
                   }),
                 )
               : _WebsiteTab(
                   requests: rows,
                   status: _webStatus,
-                  total: p.page.total,
+                  page: p,
+                  received: _received,
                   canQuote: canQuote,
+                  onReceived: _pickReceived,
                   onStatus: (s) => setState(() {
                     _webStatus = s;
                     _moreRequests.reset();
@@ -252,7 +371,14 @@ class _BulkListScreenState extends ConsumerState<BulkListScreen> {
         .watch(
           bulkRequestsProvider(
             _tab == _Tab.deals
-                ? (from: 'buyers', status: RequestStatus.fresh, search: '')
+                ? (
+                    from: 'buyers',
+                    status: RequestStatus.fresh,
+                    changeAsked: false,
+                    since: null,
+                    until: null,
+                    search: '',
+                  )
                 : _requestsQuery,
           ),
         )
@@ -270,6 +396,8 @@ class _BulkListScreenState extends ConsumerState<BulkListScreen> {
         _Header(
           tab: _tab,
           sellerBadge: counts?.seller.badge ?? counts?.sellerRequests ?? 0,
+          websiteCount: counts?.website,
+          dealsCount: counts?.deals,
           askAtom: access.has(Addon.askAtom),
           onTab: (t) => setState(() => _tab = t),
         ),
@@ -367,10 +495,14 @@ class _Header extends StatelessWidget {
     required this.sellerBadge,
     required this.askAtom,
     required this.onTab,
+    this.websiteCount,
+    this.dealsCount,
   });
 
   final _Tab tab;
   final int sellerBadge;
+  final int? websiteCount;
+  final int? dealsCount;
   final bool askAtom;
   final ValueChanged<_Tab> onTab;
 
@@ -407,7 +539,7 @@ class _Header extends StatelessWidget {
                       AtomIconButton(
                         icon: LucideIcons.sparkles,
                         label: l.bulkAskAtom,
-                        glyph: const AtomAiMark(size: 28),
+                        glyph: const AtomAiMark(size: 30, ring: true),
                         onTap: () => context.push(V2Routes.askAtom),
                       ),
                     AtomIconButton(
@@ -421,7 +553,13 @@ class _Header extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: _TabSeg(tab: tab, sellerBadge: sellerBadge, onTab: onTab),
+              child: _TabSeg(
+                tab: tab,
+                sellerBadge: sellerBadge,
+                websiteCount: websiteCount,
+                dealsCount: dealsCount,
+                onTab: onTab,
+              ),
             ),
           ],
         ),
@@ -430,22 +568,27 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// `.seg` with three tabs; Seller requests carries the red badge.
+/// `.seg` with three tabs; Seller requests carries the red badge, Website
+/// and Deals a neutral count (`.num`).
 class _TabSeg extends StatelessWidget {
   const _TabSeg({
     required this.tab,
     required this.sellerBadge,
     required this.onTab,
+    this.websiteCount,
+    this.dealsCount,
   });
 
   final _Tab tab;
   final int sellerBadge;
+  final int? websiteCount;
+  final int? dealsCount;
   final ValueChanged<_Tab> onTab;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    Widget seg(_Tab t, String label, {int flex = 100, int? badge}) {
+    Widget seg(_Tab t, String label, {int flex = 100, int? badge, int? count}) {
       final on = t == tab;
       final colour = on ? AtomColors.ink : AtomColors.muted;
       return Expanded(
@@ -456,6 +599,8 @@ class _TabSeg extends StatelessWidget {
           scaleOnPress: false,
           semanticLabel: badge != null && badge > 0
               ? l.bulkTabBadge(label, badge)
+              : count != null
+              ? '$label $count'
               : label,
           builder: (context, _) => Container(
             constraints: const BoxConstraints(minHeight: 38),
@@ -487,6 +632,17 @@ class _TabSeg extends StatelessWidget {
                       style: AtomText.smallButton.copyWith(color: colour),
                     ),
                   ),
+                  if (count != null) ...[
+                    const SizedBox(width: 5),
+                    Text(
+                      '$count',
+                      maxLines: 1,
+                      style: AtomText.smallButton.copyWith(
+                        color: AtomColors.faint,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
                   if (badge != null && badge > 0) ...[
                     const SizedBox(width: 5),
                     Container(
@@ -525,8 +681,8 @@ class _TabSeg extends StatelessWidget {
       child: Row(
         children: [
           seg(_Tab.sellers, l.bulkTabSellers, flex: 135, badge: sellerBadge),
-          seg(_Tab.website, l.bulkTabWebsite),
-          seg(_Tab.deals, l.bulkTabDeals),
+          seg(_Tab.website, l.bulkTabWebsite, count: websiteCount),
+          seg(_Tab.deals, l.bulkTabDeals, count: dealsCount),
         ],
       ),
     );
@@ -549,11 +705,13 @@ class _KpiStrip extends StatelessWidget {
     final kpis = <AtomKpi>[
       if (t != null) ...[
         AtomKpi(
+          valueSize: 17,
           label: l.bulkKpiNew,
           value: '${t.fresh}',
           note: l.bulkKpiNewNote,
         ),
         AtomKpi(
+          valueSize: 17,
           label: l.bulkKpiQuotesOut,
           value: formatRs(t.outValue),
           note: [
@@ -562,6 +720,7 @@ class _KpiStrip extends StatelessWidget {
           ].join(', '),
         ),
         AtomKpi(
+          valueSize: 17,
           label: l.bulkKpiWon,
           value: formatRs(t.wonValue),
           note: [
@@ -570,17 +729,20 @@ class _KpiStrip extends StatelessWidget {
           ].join(' · '),
         ),
         AtomKpi(
+          valueSize: 17,
           label: l.bulkKpiCollect,
           value: formatRs(t.toCollect),
           note: l.bulkKpiOpenDeals(t.openDeals),
         ),
       ] else if (c != null) ...[
         AtomKpi(
+          valueSize: 17,
           label: l.bulkKpiNew,
           value: '${c.count}',
           note: l.bulkKpiNewNote,
         ),
         AtomKpi(
+          valueSize: 17,
           label: l.bulkTabSellers,
           value: '${c.seller.open}',
           note: c.seller.changeAsked > 0
@@ -592,12 +754,13 @@ class _KpiStrip extends StatelessWidget {
     if (kpis.isEmpty) return const SizedBox(height: 0);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: AtomKpiGrid(kpis: kpis),
+      // `.kstrip`: tighter tiles, 17px figures.
+      child: AtomKpiGrid(dense: true, kpis: kpis),
     );
   }
 }
 
-// ───────────────────────────────────────────────────────────── states
+/// ───────────────────────────────────────────────────────────── states
 
 class _Loading extends StatelessWidget {
   const _Loading();
@@ -606,13 +769,45 @@ class _Loading extends StatelessWidget {
   Widget build(BuildContext context) => const AtomLoadingCard(count: 4);
 }
 
+/// A list that didn't load (13.7): no signal says so; a role without the
+/// list gets the not-in-role state (13.3); anything else is the board's
+/// "That didn't load" with the server's reference, never its message.
 class _Error extends StatelessWidget {
-  const _Error({required this.onRetry});
+  const _Error({required this.error, required this.onRetry});
+
+  final Object error;
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) =>
-      SizedBox(height: 360, child: AtomErrorState(onRetry: onRetry));
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final f = error is ApiFailure ? error as ApiFailure : null;
+    final Widget state = switch (f?.kind) {
+      ApiFailureKind.notInRole || ApiFailureKind.ownerOnly => AtomMessageState(
+        icon: LucideIcons.lock,
+        title: l.notInRoleTitle,
+        body: l.notInRoleBody,
+      ),
+      ApiFailureKind.offline || ApiFailureKind.timeout => AtomErrorState(
+        onRetry: onRetry,
+        message: sayFailure(l, f!),
+      ),
+      _ => AtomMessageState(
+        icon: LucideIcons.circleAlert,
+        tone: AtomTone.rose,
+        art: false,
+        title: l.bulkLoadErrorTitle,
+        body: switch (f?.body?['ref']) {
+          final String ref when ref.isNotEmpty =>
+            '${l.bulkLoadErrorBody}\n${l.dpDbErrorRef(ref, bulkWhen(l, AtomDates.now()))}',
+          _ => l.bulkLoadErrorBody,
+        },
+        actionLabel: l.commonTryAgain,
+        onAction: onRetry,
+      ),
+    };
+    return SizedBox(height: 360, child: state);
+  }
 }
 
 class _Empty extends StatelessWidget {
@@ -629,17 +824,18 @@ class _Empty extends StatelessWidget {
   );
 }
 
-/// `.chips` over a list: one status at a time, scrolling sideways.
-class _StatusChips extends StatelessWidget {
-  const _StatusChips({
+/// `.chips` over a list: one choice at a time, each with its count in
+/// grey (`.num`), scrolling sideways.
+class _Chips<T> extends StatelessWidget {
+  const _Chips({
     required this.chips,
     required this.selected,
     required this.onChanged,
   });
 
-  final List<(RequestStatus, String)> chips;
-  final RequestStatus selected;
-  final ValueChanged<RequestStatus> onChanged;
+  final List<(T, String, int?)> chips;
+  final T selected;
+  final ValueChanged<T> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -648,15 +844,15 @@ class _StatusChips extends StatelessWidget {
       clipBehavior: Clip.none,
       child: Row(
         children: [
-          for (final (s, label) in chips) ...[
-            if (s != chips.first.$1) const SizedBox(width: 8),
+          for (final (i, (v, label, n)) in chips.indexed) ...[
+            if (i > 0) const SizedBox(width: 8),
             AtomPressable(
-              onTap: () => onChanged(s),
-              selected: s == selected,
-              semanticLabel: label,
+              onTap: () => onChanged(v),
+              selected: v == selected,
+              semanticLabel: n == null ? label : '$label $n',
               focusRadius: AtomRadius.brPill,
               builder: (_, _) {
-                final on = s == selected;
+                final on = v == selected;
                 return Container(
                   constraints: const BoxConstraints(minHeight: 36),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -668,10 +864,25 @@ class _StatusChips extends StatelessWidget {
                       color: on ? AtomColors.primary : AtomColors.line2,
                     ),
                   ),
-                  child: Text(
-                    label,
-                    style: AtomText.smallButton.copyWith(
-                      color: on ? AtomColors.primary : AtomColors.text,
+                  child: ExcludeSemantics(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: label),
+                          if (n != null)
+                            TextSpan(
+                              text: ' $n',
+                              style: const TextStyle(
+                                color: AtomColors.faint,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      style: AtomText.smallButton.copyWith(
+                        color: on ? AtomColors.primary : AtomColors.text,
+                      ),
                     ),
                   ),
                 );
@@ -684,37 +895,34 @@ class _StatusChips extends StatelessWidget {
   }
 }
 
-/// A chip with its count beside the label when known.
-String _chipLabel(String label, int? n) => n == null ? label : '$label  $n';
-
 // ───────────────────────────────────────────────────── seller requests
 
 class _SellersTab extends StatelessWidget {
   const _SellersTab({
     required this.requests,
-    required this.status,
-    required this.total,
-    required this.sellerCounts,
+    required this.chip,
+    required this.page,
     required this.canQuote,
-    required this.onStatus,
+    required this.onChip,
   });
 
   final List<BulkRequest> requests;
-  final RequestStatus status;
-  final int total;
-  final SellerCounts sellerCounts;
+  final _SellerChip chip;
+  final BulkRequestsPage page;
   final bool canQuote;
-  final ValueChanged<RequestStatus> onStatus;
+  final ValueChanged<_SellerChip> onChip;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final chips = [
-      (RequestStatus.fresh, l.bulkStatusNew),
-      (RequestStatus.contacted, l.bulkStatusContacted),
-      (RequestStatus.quoted, l.bulkStatusQuoted),
-      (RequestStatus.won, l.bulkStatusAccepted),
-      (RequestStatus.lost, l.bulkStatusDeclined),
+    final c = page.counts;
+    final chips = <(_SellerChip, String, int?)>[
+      (_SellerChip.all, l.bulkAll, page.all),
+      (_SellerChip.fresh, l.bulkStatusNew, c[RequestStatus.fresh]),
+      (_SellerChip.changeAsked, l.bulkStatusChangeAsked, page.changeAskedCount),
+      (_SellerChip.quoted, l.bulkStatusQuoted, c[RequestStatus.quoted]),
+      (_SellerChip.accepted, l.bulkStatusAccepted, c[RequestStatus.won]),
+      (_SellerChip.declined, l.bulkStatusDeclined, c[RequestStatus.lost]),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -726,36 +934,20 @@ class _SellersTab extends StatelessWidget {
           bold: [l.bulkSellersNoteBold],
         ),
         const SizedBox(height: 10),
-        _StatusChips(
-          chips: [
-            for (final (s, label) in chips)
-              (s, _chipLabel(label, s == status ? total : null)),
-          ],
-          selected: status,
-          onChanged: onStatus,
-        ),
-        if (sellerCounts.changeAsked > 0 && status != RequestStatus.quoted) ...[
-          const SizedBox(height: 10),
-          AtomPressable(
-            onTap: () => onStatus(RequestStatus.quoted),
-            builder: (_, _) => AtomNote(
-              kind: AtomNoteKind.warning,
-              icon: LucideIcons.messageSquareWarning,
-              message: l.bulkChangeAskedNote(sellerCounts.changeAsked),
-            ),
-          ),
-        ],
+        _Chips<_SellerChip>(chips: chips, selected: chip, onChanged: onChip),
         const SizedBox(height: 10),
         if (requests.isEmpty)
           _Empty(
             icon: LucideIcons.store,
-            title: switch (status) {
-              RequestStatus.fresh => l.bulkEmptySellersNew,
-              RequestStatus.won => l.bulkEmptyAccepted,
-              RequestStatus.lost => l.bulkEmptyDeclined,
+            title: switch (chip) {
+              _SellerChip.all || _SellerChip.fresh => l.bulkEmptySellersNew,
+              _SellerChip.accepted => l.bulkEmptyAccepted,
+              _SellerChip.declined => l.bulkEmptyDeclined,
               _ => l.bulkEmptyHere,
             },
-            body: status == RequestStatus.fresh ? l.bulkEmptySellersBody : null,
+            body: chip == _SellerChip.all || chip == _SellerChip.fresh
+                ? l.bulkEmptySellersBody
+                : null,
           )
         else
           for (final r in requests) ...[
@@ -889,7 +1081,9 @@ class _SellerCard extends StatelessWidget {
             AtomPressable(
               onTap: _openOrPick(context, pick, V2Routes.sellerRequestOf(r.id)),
               scaleOnPress: false,
-              builder: (_, _) => Padding(
+              // Full width: the pressable centres a narrower child.
+              builder: (_, _) => Container(
+                width: double.infinity,
                 padding: const EdgeInsets.only(left: 52, top: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -936,23 +1130,20 @@ class _SellerCard extends StatelessWidget {
                   ),
                 ),
               ),
+            // The needed-by pill and the action share a line (the pill
+            // shrinks a touch on a narrow card); at large text the action
+            // drops below.
             Padding(
               padding: const EdgeInsets.only(left: 52, top: 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: need == null
-                          ? const SizedBox.shrink()
-                          : NeedByChip(
-                              text: need.text,
-                              urgency: state.canQuote ? need.urgency : 0,
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  AtomButton(
+              child: Builder(
+                builder: (context) {
+                  final chip = need == null
+                      ? const SizedBox.shrink()
+                      : NeedByChip(
+                          text: need.text,
+                          urgency: state.canQuote ? need.urgency : 0,
+                        );
+                  final button = AtomButton(
                     label: act,
                     small: true,
                     expand: false,
@@ -960,8 +1151,29 @@ class _SellerCard extends StatelessWidget {
                         ? AtomButtonKind.primary
                         : AtomButtonKind.outline,
                     onPressed: () => context.push(path),
-                  ),
-                ],
+                  );
+                  if (MediaQuery.textScalerOf(context).scale(10) >= 13) {
+                    return Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [chip, button],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: chip,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      button,
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -977,16 +1189,20 @@ class _WebsiteTab extends StatelessWidget {
   const _WebsiteTab({
     required this.requests,
     required this.status,
-    required this.total,
+    required this.page,
+    required this.received,
     required this.canQuote,
     required this.onStatus,
+    required this.onReceived,
   });
 
   final List<BulkRequest> requests;
-  final RequestStatus status;
-  final int total;
+  final RequestStatus? status;
+  final BulkRequestsPage page;
+  final _Received received;
   final bool canQuote;
-  final ValueChanged<RequestStatus> onStatus;
+  final ValueChanged<RequestStatus?> onStatus;
+  final VoidCallback onReceived;
 
   @override
   Widget build(BuildContext context) {
@@ -994,22 +1210,39 @@ class _WebsiteTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _StatusChips(
+        _Chips<RequestStatus?>(
           chips: [
+            (null, l.bulkAll, page.all),
             for (final s in RequestStatus.values)
-              (s, _chipLabel(requestLabel(l, s), s == status ? total : null)),
+              (s, requestLabel(l, s), page.counts[s]),
           ],
           selected: status,
           onChanged: onStatus,
         ),
         const SizedBox(height: 10),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: AtomFilterChip(
+            label: l.bulkReceivedFilter(received.label(l)),
+            active: !received.any,
+            minHeight: 36,
+            onTap: onReceived,
+          ),
+        ),
+        const SizedBox(height: 10),
         if (requests.isEmpty)
           _Empty(
             icon: LucideIcons.funnel,
-            title: status == RequestStatus.fresh
+            title: !received.any
+                ? l.bulkEmptyReceived
+                : status == null || status == RequestStatus.fresh
                 ? l.bulkEmptyWebNew
                 : l.bulkEmptyHere,
-            body: status == RequestStatus.fresh ? l.bulkEmptyWebBody : null,
+            body: !received.any
+                ? l.bulkEmptyReceivedBody
+                : status == null || status == RequestStatus.fresh
+                ? l.bulkEmptyWebBody
+                : null,
           )
         else
           BulkCard(
@@ -1306,21 +1539,33 @@ class _DealCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  AtomPill(
-                    label: d.statusLabel ?? d.status.label(l),
-                    tone: dealTone(d.status),
+                  // At the card's right edge (a Flexible beside the
+                  // Expanded took half the row and left it mid-card); a
+                  // long label shrinks rather than crowd the name.
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 150),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.topEnd,
+                      child: AtomPill(
+                        label: d.statusLabel ?? d.status.label(l),
+                        tone: dealTone(d.status),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 10,
               children: [
-                Expanded(
-                  child: Text(
-                    l.bulkUnits(d.units),
-                    style: AtomText.body.copyWith(color: AtomColors.muted),
-                  ),
+                Text(
+                  d.itemTitles.toSet().length == 1
+                      ? '${d.units} × ${d.itemTitles.first}'
+                      : l.bulkUnits(d.units),
+                  style: AtomText.body.copyWith(color: AtomColors.text),
                 ),
                 Text(
                   formatRs(d.total),
@@ -1329,13 +1574,13 @@ class _DealCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 10,
               children: [
-                Expanded(
-                  child: Text(
-                    l.bulkDeliveredOf(d.deliveredUnits, d.units),
-                    style: AtomText.secondary,
-                  ),
+                Text(
+                  l.bulkDeliveredOf(d.deliveredUnits, d.units),
+                  style: AtomText.secondary,
                 ),
                 Text(
                   l.bulkPaidAmount(formatRs(d.paid)),
@@ -1349,21 +1594,23 @@ class _DealCard extends StatelessWidget {
               semanticLabel: l.bulkPercentPaid(pct),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Expanded(
-                  child: Text(
-                    d.balance > 0
-                        ? l.bulkAmountDue(formatRs(d.balance))
-                        : d.status == DealStatus.lost
-                        ? l.bulkStatusLost
-                        : l.bulkPaidInFull,
-                    style: AtomText.smallButton.copyWith(
-                      color: d.balance > 0
-                          ? AtomColors.amberInk
-                          : AtomColors.green,
-                      fontWeight: FontWeight.w700,
-                    ),
+                Text(
+                  d.balance > 0
+                      ? l.bulkAmountDue(formatRs(d.balance))
+                      : d.status == DealStatus.lost
+                      ? l.bulkStatusLost
+                      : l.bulkPaidInFull,
+                  style: AtomText.smallButton.copyWith(
+                    color: d.balance > 0
+                        ? AtomColors.amberInk
+                        : AtomColors.green,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 if (action != null)

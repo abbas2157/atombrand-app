@@ -441,7 +441,7 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
                             semanticLabel: l.bulkAddLine,
                             scaleOnPress: false,
                             builder: (_, _) => Container(
-                              height: 48,
+                              constraints: const BoxConstraints(minHeight: 48),
                               decoration: const BoxDecoration(
                                 border: Border(
                                   top: BorderSide(color: AtomColors.line),
@@ -457,11 +457,15 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
                                     color: AtomColors.primary,
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    l.bulkAddLine,
-                                    style: AtomText.body.copyWith(
-                                      color: AtomColors.primary,
-                                      fontWeight: FontWeight.w600,
+                                  Flexible(
+                                    child: Text(
+                                      l.bulkAddLine,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AtomText.body.copyWith(
+                                        color: AtomColors.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -648,61 +652,55 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: _Grid3(
               children: [
-                if (colours.isNotEmpty) ...[
-                  Expanded(
-                    child: AtomSelectField<int>(
-                      label: l.bulkColour,
-                      value: v.colorId,
-                      valueLabel: colours
-                          .where((c) => c.id == v.colorId)
-                          .firstOrNull
-                          ?.title,
-                      placeholder: l.bulkAny,
-                      sheetTitle: l.bulkColour,
-                      options: [
-                        for (final c in colours)
-                          AtomOption(value: c.id, label: c.title),
-                      ],
-                      onChanged: (c) => _changed(
-                        () =>
-                            line.value = line.value.copyWith(colorId: () => c),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: AtomField(
-                    label: l.bulkQty,
-                    child: _Stepper(
-                      value: v.qty,
-                      onChanged: (q) => _changed(
-                        () => line.value = line.value.copyWith(qty: q),
-                      ),
+                // Colour, Qty, Discount % (`.g3`): the colour lists the
+                // product's colours; a product with none quotes Any.
+                AtomSelectField<int>(
+                  label: l.bulkColour,
+                  value: v.colorId,
+                  valueLabel: colours
+                      .where((c) => c.id == v.colorId)
+                      .firstOrNull
+                      ?.title,
+                  placeholder: l.bulkAny,
+                  sheetTitle: l.bulkColour,
+                  options: [
+                    for (final c in colours)
+                      AtomOption(value: c.id, label: c.title),
+                  ],
+                  onChanged: colours.isEmpty
+                      ? null
+                      : (c) => _changed(
+                          () => line.value = line.value.copyWith(
+                            colorId: () => c,
+                          ),
+                        ),
+                ),
+                AtomField(
+                  label: l.bulkQty,
+                  child: _Stepper(
+                    value: v.qty,
+                    onChanged: (q) => _changed(
+                      () => line.value = line.value.copyWith(qty: q),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: AtomTextField(
-                    label: l.bulkDiscountPct,
-                    controller: line.disc,
-                    placeholder: '0',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                AtomTextField(
+                  label: l.bulkDiscountPct,
+                  controller: line.disc,
+                  placeholder: '0',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d{0,3}(\.\d{0,2})?'),
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d{0,3}(\.\d{0,2})?'),
-                      ),
-                    ],
-                    onChanged: (t) => _changed(
-                      () => line.value = line.value.copyWith(
-                        discountPct: (double.tryParse(t) ?? 0).clamp(0, 100),
-                      ),
+                  ],
+                  onChanged: (t) => _changed(
+                    () => line.value = line.value.copyWith(
+                      discountPct: (double.tryParse(t) ?? 0).clamp(0, 100),
                     ),
                   ),
                 ),
@@ -731,17 +729,23 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(l.bulkLineTotal, style: AtomText.small),
-                      Text(
-                        formatRs(v.total),
-                        style: AtomText.money.copyWith(fontSize: 17),
-                      ),
-                    ],
+                // Expanded: right-aligned at the card's edge, as the board.
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(l.bulkLineTotal, style: AtomText.small),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            formatRs(v.total),
+                            style: AtomText.money.copyWith(fontSize: 17),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -753,6 +757,37 @@ class _QuoteFormState extends ConsumerState<_QuoteForm> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// `.g3`: three fields side by side; at large text, one under another.
+class _Grid3 extends StatelessWidget {
+  const _Grid3({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.textScalerOf(context).scale(10) >= 14) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, c) in children.indexed) ...[
+            if (i > 0) const SizedBox(height: 10),
+            c,
+          ],
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (i, c) in children.indexed) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(child: c),
+        ],
+      ],
     );
   }
 }
@@ -770,39 +805,58 @@ class _Stepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    Widget button(IconData icon, String label, int? next) => AtomPressable(
-      onTap: next == null ? null : () => onChanged(next),
-      semanticLabel: label,
-      builder: (_, _) => SizedBox(
-        width: 36,
-        height: AtomSize.control - 8,
-        child: Icon(
-          icon,
-          size: 18,
-          color: next == null ? AtomColors.line2 : AtomColors.ink,
-        ),
-      ),
-    );
-    return Container(
-      height: AtomSize.control,
-      decoration: BoxDecoration(
-        color: AtomColors.paper,
-        borderRadius: AtomRadius.brControl,
-        border: Border.all(color: AtomColors.line2),
-      ),
-      child: Row(
-        children: [
-          button(LucideIcons.minus, l.bulkLess, value > min ? value - 1 : null),
-          Expanded(
-            child: Text(
-              '$value',
-              textAlign: TextAlign.center,
-              style: AtomText.money,
+    return LayoutBuilder(
+      builder: (context, box) {
+        // `.stepper button` is 36 wide; in a third of a narrow card the
+        // buttons give room to the number, down to 28.
+        final w = box.maxWidth.isFinite ? box.maxWidth : 140.0;
+        final bw = ((w - 2 - 28) / 2).clamp(28.0, 48.0);
+        Widget button(IconData icon, String label, int? next) => SizedBox(
+          width: bw,
+          height: AtomSize.control - 2,
+          child: AtomPressable(
+            onTap: next == null ? null : () => onChanged(next),
+            semanticLabel: label,
+            builder: (_, _) => Icon(
+              icon,
+              size: 18,
+              color: next == null ? AtomColors.line2 : AtomColors.ink,
             ),
           ),
-          button(LucideIcons.plus, l.bulkMore, value < max ? value + 1 : null),
-        ],
-      ),
+        );
+        return Container(
+          height: AtomSize.control,
+          decoration: BoxDecoration(
+            color: AtomColors.paper,
+            borderRadius: AtomRadius.brControl,
+            border: Border.all(color: AtomColors.line2),
+          ),
+          child: Row(
+            children: [
+              button(
+                LucideIcons.minus,
+                l.bulkLess,
+                value > min ? value - 1 : null,
+              ),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '$value',
+                    textAlign: TextAlign.center,
+                    style: AtomText.money,
+                  ),
+                ),
+              ),
+              button(
+                LucideIcons.plus,
+                l.bulkMore,
+                value < max ? value + 1 : null,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -825,12 +879,29 @@ class _Totals extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final t = totals;
+    // `.tot .r`: 13px rows, kept tight so the panel stays compact.
     Widget row(String label, String value) => Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: 2),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: AtomText.secondary)),
-          Text(value, style: AtomText.money.copyWith(fontSize: 13)),
+          Expanded(
+            child: Text(
+              label,
+              style: AtomText.secondary.copyWith(fontSize: 13, height: 1.3),
+            ),
+          ),
+          // Right-aligned: a bare Flexible text sat mid-row.
+          Flexible(
+            child: Align(
+              heightFactor: 1,
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                style: AtomText.money.copyWith(fontSize: 13, height: 1.3),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -842,9 +913,9 @@ class _Totals extends StatelessWidget {
       ),
       padding: EdgeInsets.fromLTRB(
         16,
-        12,
+        10,
         16,
-        12 + MediaQuery.paddingOf(context).bottom,
+        10 + MediaQuery.paddingOf(context).bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -864,28 +935,50 @@ class _Totals extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
-                  formatRs(t.total),
-                  style: AtomText.money.copyWith(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                // Expanded, so the total sits at the right edge (a loose
+                // Flexible left it mid-row).
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      formatRs(t.total),
+                      style: AtomText.money.copyWith(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          row(l.bulkUnitsSubtotal(t.units), formatRs(t.gross)),
-          row(
-            l.bulkDiscountDelivery,
-            '−${formatRs(t.discount)} · +${formatRs(t.delivery)}',
+          // The breakdown never takes more than a fifth of the screen: at
+          // large text it scrolls, and the buttons stay in view.
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * .2,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  row(l.bulkUnitsSubtotal(t.units), formatRs(t.gross)),
+                  row(
+                    l.bulkDiscountDelivery,
+                    '−${formatRs(t.discount)} · +${formatRs(t.delivery)}',
+                  ),
+                  row(
+                    t.advancePct == 0
+                        ? l.bulkAdvanceNone
+                        : l.bulkAdvanceRow(t.advancePct),
+                    formatRs(t.advance),
+                  ),
+                  row(l.bulkBalance, formatRs(t.balance)),
+                ],
+              ),
+            ),
           ),
-          row(
-            t.advancePct == 0
-                ? l.bulkAdvanceNone
-                : l.bulkAdvanceRow(t.advancePct),
-            formatRs(t.advance),
-          ),
-          row(l.bulkBalance, formatRs(t.balance)),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -895,6 +988,8 @@ class _Totals extends StatelessWidget {
                   label: l.bulkSaveDraft,
                   kind: AtomButtonKind.outline,
                   saving: busy == 'draft',
+                  oneLine: true,
+                  padding: 8,
                   onPressed: onDraft,
                 ),
               ),
@@ -906,6 +1001,8 @@ class _Totals extends StatelessWidget {
                   icon: AtomBrandIcons.whatsapp,
                   kind: AtomButtonKind.whatsapp,
                   saving: busy == 'send',
+                  oneLine: true,
+                  padding: 8,
                   onPressed: onSend,
                 ),
               ),

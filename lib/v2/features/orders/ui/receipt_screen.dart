@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/api/api_result.dart';
 import '../../../core/format/dates.dart';
 import '../../../core/format/ids.dart';
 import '../../../core/format/money.dart';
@@ -34,25 +32,32 @@ class ReceiptScreen extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AtomFlowBar(
-            title: l.ordersReceipt,
-            trailing: [
-              if (receipt.value case final r?)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: AtomPill(label: r.order.number),
-                ),
-            ],
+          // A white top bar with a hairline under it, on the grey page.
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              color: AtomColors.paper,
+              border: Border(bottom: BorderSide(color: AtomColors.line)),
+            ),
+            child: AtomFlowBar(
+              title: l.ordersReceipt,
+              trailing: [
+                if (receipt.value case final r?)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: AtomPill(label: r.order.number),
+                  ),
+              ],
+            ),
           ),
           Expanded(
             child: receipt.when(
               loading: () => const Center(child: AtomSpinner(size: 28)),
-              error: (e, _) => AtomErrorState(
-                message: e is ApiFailure ? sayOrderFailure(e, l) : null,
+              error: (e, _) => OrdersLoadError(
+                error: e,
                 onRetry: () => ref.invalidate(orderReceiptProvider(uuid)),
               ),
               data: (r) => ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                 children: [AtomReadableWidth(child: _Paper(receipt: r))],
               ),
             ),
@@ -73,110 +78,160 @@ class _Paper extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final r = receipt;
     final logo = ref.watch(sessionProvider.notifier).current?.brandLogo;
+    final issued = r.issuedAt;
     final date = r.date;
+    final small = AtomText.small.copyWith(color: AtomColors.muted);
+    final rows = <(String, String)>[
+      if (r.customer?.name case final n? when n.isNotEmpty)
+        (l.ordersCustomer, n),
+      (l.ordersItem, receiptItem(r)),
+      if (r.serial case final s? when s.isNotEmpty) (l.ordersSerial, s),
+      ...receiptPaymentLines(r, l),
+      (l.ordersLeftToPay, formatRs(r.left)),
+      if (r.deliveredBy case final d? when d.isNotEmpty)
+        (l.ordersDeliveredBy, d),
+    ];
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AtomDecor.raisedCard,
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+      decoration: BoxDecoration(
+        color: AtomColors.paper,
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F101828),
+            blurRadius: 30,
+            offset: Offset(0, 10),
+          ),
+          BoxShadow(color: AtomColors.line, spreadRadius: 1),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (logo != null && logo.isNotEmpty) ...[
-                ClipRRect(
-                  borderRadius: AtomRadius.brControl,
-                  child: AtomPhoto(
-                    logo,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 10),
-              ],
+              // The brand's logo, else its initials.
+              AtomInitials(
+                name: r.brand,
+                size: 32,
+                imageUrl: logo != null && logo.isNotEmpty ? logo : null,
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.brand, style: AtomText.listTitle),
+                    Text(
+                      r.brand,
+                      style: AtomText.listTitle.copyWith(fontSize: 16),
+                    ),
                     if ([?r.outlet, ?r.address].isNotEmpty)
-                      Text(
-                        [?r.outlet, ?r.address].join(' · '),
-                        style: AtomText.small,
-                      ),
+                      Text([?r.outlet, ?r.address].join(' · '), style: small),
                     if (r.phone case final p? when p.isNotEmpty)
-                      Text(p, style: AtomText.small),
+                      Text(p, style: small),
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
                     l.ordersCashReceipt,
-                    style: AtomText.body.copyWith(fontWeight: FontWeight.w700),
+                    style: AtomText.small.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AtomColors.ink,
+                    ),
                   ),
-                  Text(
-                    l.ordersOrderNumber(r.order.number),
-                    style: AtomText.small,
-                  ),
-                  if (date != null)
-                    Text(AtomDates.day(date), style: AtomText.small),
+                  Text(l.ordersOrderNumber(r.order.number), style: small),
+                  if (issued != null)
+                    Text(
+                      '${AtomDates.day(issued)}, ${AtomDates.time(issued)}',
+                      style: small,
+                    )
+                  else if (date != null)
+                    Text(AtomDates.day(date), style: small),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: const BoxDecoration(
-              color: AtomColors.surface,
-              borderRadius: AtomRadius.brControl,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(formatRs(r.order.total), style: AtomText.amount),
-                Text(receiptState(r, l), style: AtomText.secondary),
-              ],
+          const SizedBox(height: 12),
+          // `.big`: the amount centred between dashed rules.
+          CustomPaint(
+            painter: const _DashedRules(color: AtomColors.line2),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Column(
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      formatRs(r.order.total),
+                      style: AtomText.amount.copyWith(color: AtomColors.ink),
+                    ),
+                  ),
+                  Text(
+                    receiptState(r, l),
+                    textAlign: TextAlign.center,
+                    style: small,
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          if (r.customer?.name case final n? when n.isNotEmpty)
-            OrderLine(label: l.ordersCustomer, value: n),
-          OrderLine(label: l.ordersItem, value: receiptItem(r)),
-          if (r.serial case final s? when s.isNotEmpty)
-            OrderLine(label: l.ordersSerial, value: s),
-          for (final (k, v) in receiptPaymentLines(r, l))
-            OrderLine(label: k, value: v),
-          OrderLine(
-            label: l.ordersLeftToPay,
-            value: formatRs(r.left),
-            bold: true,
-          ),
-          if (r.note case final n? when n.trim().isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '“${n.trim()}”',
-              style: AtomText.secondary.copyWith(fontStyle: FontStyle.italic),
-            ),
+          const SizedBox(height: 6),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const Divider(height: 1, color: AtomColors.line),
+            OrderLine(label: rows[i].$1, value: rows[i].$2, compact: true),
           ],
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: AtomColors.line),
+          if (r.note case final n? when n.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('"${n.trim()}"', textAlign: TextAlign.center, style: small),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
               Image.asset('assets/brand/atomshop_logo.png', height: 18),
               const SizedBox(width: 8),
-              Text(l.ordersSoldOn, style: AtomText.small),
+              Expanded(
+                child: Text(
+                  l.ordersSoldOn,
+                  textAlign: TextAlign.end,
+                  style: AtomText.tag.copyWith(
+                    color: AtomColors.faint,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
   }
+}
+
+/// The dashed rules above and below the receipt's amount.
+class _DashedRules extends CustomPainter {
+  const _DashedRules({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    for (final y in [0.5, size.height - 0.5]) {
+      for (var x = 0.0; x < size.width; x += 6) {
+        canvas.drawLine(Offset(x, y), Offset(x + 3, y), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedRules old) => old.color != color;
 }
 
 class _ShareBar extends StatelessWidget {
@@ -225,10 +280,13 @@ class _ShareBar extends StatelessWidget {
           children: [
             if (phone != null && phone.isNotEmpty) ...[
               Expanded(
+                flex: 14,
                 child: AtomButton(
                   label: l.ordersWhatsApp,
                   kind: AtomButtonKind.whatsapp,
                   compact: true,
+                  oneLine: true,
+                  padding: 10,
                   onPressed: () => launchUrl(
                     whatsAppUri(
                       AtomIds.digits(phone),
@@ -241,20 +299,24 @@ class _ShareBar extends StatelessWidget {
               const SizedBox(width: 8),
             ],
             Expanded(
+              flex: 10,
               child: AtomButton(
                 label: l.ordersPdf,
                 kind: AtomButtonKind.outline,
-                icon: LucideIcons.fileText,
+                oneLine: true,
+                padding: 10,
                 compact: true,
                 onPressed: () => _pdf(context),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
+              flex: 10,
               child: AtomButton(
                 label: l.ordersPrint,
                 kind: AtomButtonKind.outline,
-                icon: LucideIcons.printer,
+                oneLine: true,
+                padding: 10,
                 compact: true,
                 onPressed: () => _print(context),
               ),

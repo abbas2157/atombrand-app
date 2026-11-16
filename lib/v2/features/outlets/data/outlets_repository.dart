@@ -88,7 +88,8 @@ class ApiOutletsRepository implements OutletsRepository {
   @override
   Future<ApiResult<List<OutletOrder>>> latestOrders(int outletId) => _api.get(
     'orders',
-    query: {'cash': 1, 'outlet_id': outletId},
+    // this month's (the page's "Orders this month"), newest first
+    query: {'cash': 1, 'outlet_id': outletId, 'from': _monthStart()},
     parse: (d) => ApiPage.fromJson(d, OutletOrder.fromJson).items,
   );
 }
@@ -156,3 +157,9 @@ void refreshOutlets(WidgetRef ref) => ref
   ..invalidate(outletListProvider)
   ..invalidate(outletProvider)
   ..invalidate(outletFormOptionsProvider);
+
+/// The first of this month as the server's `from` (yyyy-mm-dd).
+String _monthStart() {
+  final n = DateTime.now();
+  return '${n.year}-${n.month.toString().padLeft(2, '0')}-01';
+}

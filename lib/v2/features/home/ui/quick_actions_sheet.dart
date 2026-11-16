@@ -156,9 +156,9 @@ class _Choice extends StatelessWidget {
     final a = action;
     final (IconData icon, AtomTone tone) = switch (a.id) {
       'product' => (LucideIcons.tag, AtomTone.blue),
-      'stock' => (LucideIcons.packagePlus, AtomTone.green),
+      'stock' => (LucideIcons.package, AtomTone.green),
       'payment' => (LucideIcons.dollarSign, AtomTone.green),
-      'quote' => (LucideIcons.send, AtomTone.amber),
+      'quote' => (LucideIcons.fileText, AtomTone.amber),
       'handover' => (LucideIcons.creditCard, AtomTone.blue),
       _ => (LucideIcons.sparkle, AtomTone.blue),
     };

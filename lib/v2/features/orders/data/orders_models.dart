@@ -432,6 +432,8 @@ class OrderReceipt {
     this.customer,
     this.serial,
     this.deliveredAt,
+    this.deliveredBy,
+    this.issuedAt,
     this.payments = const [],
     this.note,
     this.webUrl,
@@ -447,6 +449,13 @@ class OrderReceipt {
   final OrderCustomer? customer;
   final String? serial;
   final DateTime? deliveredAt;
+
+  /// Who marked it delivered (`delivered_by`).
+  final String? deliveredBy;
+
+  /// When the receipt stands (`issued_at`): the last payment recorded,
+  /// else the delivery, else the order; with its time.
+  final DateTime? issuedAt;
 
   /// Newest first, as the server sends them.
   final List<OrderPaymentRow> payments;
@@ -479,6 +488,8 @@ class OrderReceipt {
       customer: OrderCustomer.fromJson(j['customer']),
       serial: Json.str(j['serial']),
       deliveredAt: AtomDates.parse(j['delivered_at']),
+      deliveredBy: Json.str(j['delivered_by']),
+      issuedAt: AtomDates.parse(j['issued_at']),
       payments: [
         for (final p in Json.list(j['payments'])) OrderPaymentRow.fromJson(p),
       ],

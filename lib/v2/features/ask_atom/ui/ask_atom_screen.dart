@@ -1,10 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -15,7 +15,6 @@ import '../../../core/api/api_result.dart';
 import '../../../core/format/dates.dart';
 import '../../../core/net/network_status.dart';
 import '../../../core/prefs/atom_language.dart';
-import '../../../core/services/local_storage_methods.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
@@ -58,6 +57,20 @@ void _openLink(BuildContext context, String url) {
   }
 }
 
+/// A row's own button (12.12): the order or bulk request it is about, else
+/// its portal link.
+void _openRowAction(BuildContext context, AtomRowAction a) {
+  if (a.orderUuid case final uuid?) {
+    context.push(V2Routes.orderOf(uuid));
+  } else if (a.bulkRequestId case final id?) {
+    context.push(
+      a.fromSeller ? V2Routes.sellerRequestOf(id) : V2Routes.bulkRequestOf(id),
+    );
+  } else if (a.url case final url?) {
+    _openLink(context, url);
+  }
+}
+
 /// A line of the chat: the person's question, Atom's answer, or a
 /// hand-over note.
 sealed class _Line {
@@ -78,45 +91,6 @@ final class _Sent extends _Line {
   const _Sent(this.code, this.whatsapp);
   final String code;
   final String? whatsapp;
-}
-
-/// A question asked on this phone, for "Recent".
-typedef _Recent = ({String q, DateTime at});
-
-/// The last questions asked on this phone (newest first), kept on the
-/// phone only.
-class _RecentStore {
-  static const _key = 'v2_atom_recent';
-
-  static Future<List<_Recent>> read() async {
-    try {
-      final raw = await LocalStorageMethods.instance.readData(_key);
-      if (raw == null) return const [];
-      return [
-        for (final e in jsonDecode(raw) as List)
-          if (e is Map && e['q'] is String && e['at'] is String)
-            (q: e['q'] as String, at: DateTime.parse(e['at'] as String)),
-      ];
-    } catch (_) {
-      return const [];
-    }
-  }
-
-  static Future<void> add(String q) async {
-    try {
-      final list = [
-        (q: q, at: AtomDates.now()),
-        for (final r in await read())
-          if (r.q != q) r,
-      ].take(5).toList();
-      await LocalStorageMethods.instance.writeData(
-        _key,
-        jsonEncode([
-          for (final r in list) {'q': r.q, 'at': r.at.toIso8601String()},
-        ]),
-      );
-    } catch (_) {}
-  }
 }
 
 /// Ask Atom (12.10–12.12, Ask Atom add-on): a greeting, what Atom noticed,
@@ -143,7 +117,9 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
   final _scroll = ScrollController();
   final _lines = <_Line>[];
   AtomContext? _context;
-  List<_Recent> _recent = const [];
+  List<AtomRecent> _recent = const [];
+  final _speech = SpeechToText();
+  bool _listening = false;
   bool _busy = false;
   String? _error;
   final _rated = <int>{};
@@ -157,9 +133,7 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
   void initState() {
     super.initState();
     _loadContext();
-    _RecentStore.read().then((r) {
-      if (mounted) setState(() => _recent = r);
-    });
+    _loadRecent();
     if (widget.question case final q? when q.trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _ask(q, error: widget.error),
@@ -169,6 +143,7 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
 
   @override
   void dispose() {
+    if (_listening) _speech.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -194,6 +169,77 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
     if (r case ApiOk(:final value)) setState(() => _context = value);
   }
 
+  Future<void> _loadRecent() async {
+    final r = await ref.read(askAtomRepositoryProvider).recent();
+    if (!mounted) return;
+    if (r case ApiOk(:final value)) setState(() => _recent = value);
+  }
+
+  /// The mic (12.10): the phone's speech recogniser writes into the box;
+  /// the person reads it and taps Send. Asked for the microphone only now;
+  /// a "no" or a phone without a recogniser says so and the box still
+  /// works.
+  Future<void> _mic() async {
+    final l = AppLocalizations.of(context);
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    var ready = false;
+    try {
+      ready = await _speech.initialize(
+        onStatus: (status) {
+          if (!mounted) return;
+          if (status == SpeechToText.doneStatus ||
+              status == SpeechToText.notListeningStatus) {
+            setState(() => _listening = false);
+          }
+        },
+        onError: (SpeechRecognitionError e) {
+          if (!mounted) return;
+          setState(() => _listening = false);
+          if (e.errorMsg == 'error_permission' ||
+              e.errorMsg == 'error_insufficient_permissions') {
+            showAtomToast(
+              context,
+              kind: AtomToastKind.bad,
+              message: l.askAtomMicDenied,
+            );
+          }
+        },
+      );
+    } catch (_) {
+      ready = false;
+    }
+    if (!mounted) return;
+    if (!ready) {
+      final allowed = await _speech.hasPermission.catchError((_) => false);
+      if (!mounted) return;
+      showAtomToast(
+        context,
+        kind: AtomToastKind.bad,
+        message: allowed ? l.askAtomMicUnavailable : l.askAtomMicDenied,
+      );
+      return;
+    }
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (r) {
+        if (!mounted) return;
+        _input.value = TextEditingValue(
+          text: r.recognizedWords,
+          selection: TextSelection.collapsed(offset: r.recognizedWords.length),
+        );
+      },
+      listenOptions: SpeechListenOptions(
+        partialResults: true,
+        cancelOnError: true,
+        listenMode: ListenMode.dictation,
+      ),
+    );
+  }
+
   void _toEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
     if (_scroll.hasClients) {
       _scroll.animateTo(
@@ -207,6 +253,10 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
   Future<void> _ask(String question, {String? shown, String? error}) async {
     final q = question.trim();
     if (q.isEmpty || _busy) return;
+    if (_listening) {
+      _speech.stop();
+      _listening = false;
+    }
     final l = AppLocalizations.of(context);
     final history = _history;
     setState(() {
@@ -215,7 +265,12 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
       _error = null;
       _input.clear();
     });
-    _RecentStore.add(shown ?? q);
+    final asked = shown ?? q;
+    _recent = [
+      (question: asked, at: AtomDates.now()),
+      for (final r in _recent)
+        if (r.question != asked) r,
+    ];
     _toEnd();
     final r = await ref
         .read(askAtomRepositoryProvider)
@@ -318,7 +373,8 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
     return name.isEmpty ? l.askAtomHello(part) : l.askAtomHelloName(part, name);
   }
 
-  String _when(DateTime at) {
+  String _when(DateTime? at) {
+    if (at == null) return '';
     final days = AtomDates.daysFrom(at, today: AtomDates.now());
     if (days == 0) return AtomDates.time(at);
     if (days == -1) return AppLocalizations.of(context).dateYesterday;
@@ -374,6 +430,9 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
                       _NoticeCard(
                         answer: n,
                         onHandover: () => _handover(notice: n),
+                        onAsk: online && n.ask != null
+                            ? () => _ask(n.ask!)
+                            : null,
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -402,7 +461,7 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
                     _RecentCard(
                       recent: _recent.take(3).toList(),
                       when: _when,
-                      onTap: online ? (q) => _ask(q) : null,
+                      onTap: online ? _ask : null,
                     ),
                   ],
                 ],
@@ -461,6 +520,8 @@ class _AskAtomScreenState extends ConsumerState<AskAtomScreen> {
             online: online,
             busy: _busy,
             onSend: _ask,
+            listening: _listening,
+            onMic: _mic,
           ),
         ],
       ),
@@ -547,16 +608,24 @@ class _Header extends StatelessWidget {
 
 /// `.nc`: something Atom noticed, with what to do about it.
 class _NoticeCard extends StatelessWidget {
-  const _NoticeCard({required this.answer, required this.onHandover});
+  const _NoticeCard({
+    required this.answer,
+    required this.onHandover,
+    required this.onAsk,
+  });
 
   final AtomAnswer answer;
   final VoidCallback onHandover;
+
+  /// "Show them": asks the notice's question in the chat; null offline.
+  final VoidCallback? onAsk;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final a = answer;
     final tone = a.kind == 'problem' ? AtomTone.rose : AtomTone.amber;
+    final quote = a.key == 'insight_quote_ending';
     // An insight comes as one text, "**2 orders waiting** · …\n…": its
     // first line is the title, the rest the line under it.
     final text = a.text ?? '';
@@ -586,6 +655,8 @@ class _NoticeCard extends StatelessWidget {
             child: Icon(
               a.kind == 'problem'
                   ? LucideIcons.triangleAlert
+                  : quote
+                  ? LucideIcons.funnel
                   : LucideIcons.clock,
               size: 16,
               color: tone.fg,
@@ -608,19 +679,31 @@ class _NoticeCard extends StatelessWidget {
                   const SizedBox(height: 1),
                   atomText(body, style: AtomText.secondary),
                 ],
-                if (a.actions.isNotEmpty || a.handover) ...[
+                if (a.ask != null || a.actions.isNotEmpty || a.handover) ...[
                   const SizedBox(height: 7),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      for (final (i, (name, url)) in a.actions.indexed)
+                      if (a.ask != null)
+                        AtomButton.small(
+                          label: a.askLabel ?? l.askAtomShowThem,
+                          kind: AtomButtonKind.primary,
+                          onPressed: onAsk,
+                        ),
+                      for (final (name, url) in a.actions)
                         AtomButton.small(
                           label: name,
-                          kind: i == 0
-                              ? AtomButtonKind.primary
-                              : AtomButtonKind.outline,
-                          onPressed: () => _openLink(context, url),
+                          onPressed: () => quote && a.bulkRequestId != null
+                              ? _openRowAction(
+                                  context,
+                                  AtomRowAction(
+                                    label: name,
+                                    bulkRequestId: a.bulkRequestId,
+                                    fromSeller: a.fromSeller,
+                                  ),
+                                )
+                              : _openLink(context, url),
                         ),
                       if (a.handover)
                         AtomButton.small(
@@ -674,8 +757,8 @@ class _RecentCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final List<_Recent> recent;
-  final String Function(DateTime at) when;
+  final List<AtomRecent> recent;
+  final String Function(DateTime? at) when;
   final ValueChanged<String>? onTap;
 
   @override
@@ -688,10 +771,10 @@ class _RecentCard extends StatelessWidget {
         for (final (i, r) in recent.indexed) ...[
           if (i > 0) const Divider(height: 1, color: AtomColors.line),
           AtomPressable(
-            onTap: onTap == null ? null : () => onTap!(r.q),
+            onTap: onTap == null ? null : () => onTap!(r.question),
             scaleOnPress: false,
             focusRadius: BorderRadius.zero,
-            semanticLabel: '${r.q}, ${when(r.at)}',
+            semanticLabel: '${r.question}, ${when(r.at)}',
             builder: (context, pressed) => Container(
               color: pressed ? AtomColors.head : AtomColors.paper,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -705,7 +788,7 @@ class _RecentCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      r.q,
+                      r.question,
                       style: AtomText.body.copyWith(color: AtomColors.text),
                     ),
                   ),
@@ -800,7 +883,7 @@ class _AtomBubble extends StatelessWidget {
       ],
       if (a.text != null && a.confirmToken == null)
         atomText(a.text!, style: text),
-      if (a.rows.isNotEmpty) _MiniTable(rows: a.rows),
+      if (a.rows.isNotEmpty) _MiniTable(rows: a.rows, actions: a.rowActions),
       if (a.steps.isNotEmpty) ...[
         if (a.kind == 'problem') label(l.askAtomHowFix),
         for (final (i, s) in a.steps.indexed)
@@ -860,7 +943,6 @@ class _AtomBubble extends StatelessWidget {
                 label: l.askAtomHelpful,
                 onTap: () => onRate(true),
               ),
-              const SizedBox(width: 4),
               _RateButton(
                 icon: LucideIcons.thumbsDown,
                 label: l.askAtomNotHelpful,
@@ -916,8 +998,11 @@ class _AtomBubble extends StatelessWidget {
 
 /// `.mt`: the rows of an answer (a name and its figure).
 class _MiniTable extends StatelessWidget {
-  const _MiniTable({required this.rows});
+  const _MiniTable({required this.rows, this.actions = const []});
   final List<(String, String)> rows;
+
+  /// Each row's own button (Confirm on an order), or null.
+  final List<AtomRowAction?> actions;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -931,50 +1016,137 @@ class _MiniTable extends StatelessWidget {
       children: [
         for (final (i, (name, value)) in rows.indexed) ...[
           if (i > 0) const Divider(height: 1, color: AtomColors.line),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: value.length > 18
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: AtomText.secondary.copyWith(
-                          color: AtomColors.text,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(value, style: AtomText.small),
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
+          if (i < actions.length && actions[i] != null)
+            _ActionRow(name: name, value: value, action: actions[i]!)
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: value.length > 18
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
                           name,
                           style: AtomText.secondary.copyWith(
                             color: AtomColors.text,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        value,
-                        textAlign: TextAlign.end,
-                        style: AtomText.secondary.copyWith(
-                          color: AtomColors.ink,
-                          fontWeight: FontWeight.w600,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                        const SizedBox(height: 2),
+                        Text(value, style: AtomText.small),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: AtomText.secondary.copyWith(
+                              color: AtomColors.text,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-          ),
+                        const SizedBox(width: 8),
+                        Text(
+                          value,
+                          textAlign: TextAlign.end,
+                          style: AtomText.secondary.copyWith(
+                            color: AtomColors.ink,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
         ],
       ],
     ),
   );
+}
+
+/// `.mt div` with its own button: the row, its amount and a small primary
+/// button (Confirm opens the order to confirm it). Narrow screens or large
+/// text put the amount and button under the name.
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.name,
+    required this.value,
+    required this.action,
+  });
+
+  final String name;
+  final String value;
+  final AtomRowAction action;
+
+  @override
+  Widget build(BuildContext context) {
+    final nameText = Text(
+      name,
+      style: AtomText.secondary.copyWith(color: AtomColors.text),
+    );
+    final amount = Text(
+      value,
+      style: AtomText.secondary.copyWith(
+        color: AtomColors.ink,
+        fontWeight: FontWeight.w700,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+    // `.mini.pri` at the board's `height: 28px; padding: 0 8px`, so the
+    // row's name keeps its room.
+    final button = AtomPressable(
+      onTap: () => _openRowAction(context, action),
+      semanticLabel: '${action.label}, $name',
+      builder: (context, pressed) => Container(
+        constraints: const BoxConstraints(minHeight: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: pressed ? AtomColors.primaryPressed : AtomColors.primary,
+          borderRadius: AtomRadius.brControl,
+        ),
+        child: Text(
+          action.label,
+          style: AtomText.smallButton.copyWith(color: Colors.white),
+        ),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final roomy =
+              box.maxWidth >= 260 &&
+              MediaQuery.textScalerOf(context).scale(1) <= 1.3;
+          if (roomy) {
+            return Row(
+              children: [
+                Expanded(child: nameText),
+                const SizedBox(width: 8),
+                amount,
+                const SizedBox(width: 8),
+                button,
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              nameText,
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [amount, button],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 
 /// `.confirm`: a change Atom will make only after Confirm.
@@ -1033,7 +1205,7 @@ class _ConfirmBox extends StatelessWidget {
   }
 }
 
-/// `.fb button`: 👍 or 👎, 28 square (48 to tap).
+/// `.fb button`: 👍 or 👎, 28 square.
 class _RateButton extends StatelessWidget {
   const _RateButton({
     required this.icon,
@@ -1048,9 +1220,10 @@ class _RateButton extends StatelessWidget {
   Widget build(BuildContext context) => AtomPressable(
     onTap: onTap,
     semanticLabel: label,
+    // 32 x 36 around the 28 square: `.fb`'s 4px gap between the two.
     builder: (context, pressed) => SizedBox(
-      width: AtomSize.tapTarget,
-      height: AtomSize.tapTarget,
+      width: 32,
+      height: 36,
       child: Center(
         child: Container(
           width: 28,
@@ -1074,12 +1247,16 @@ class _InputBar extends StatelessWidget {
     required this.online,
     required this.busy,
     required this.onSend,
+    required this.listening,
+    required this.onMic,
   });
 
   final TextEditingController controller;
   final bool online;
   final bool busy;
   final ValueChanged<String> onSend;
+  final bool listening;
+  final VoidCallback onMic;
 
   static const _round = OutlineInputBorder(
     borderRadius: BorderRadius.all(Radius.circular(24)),
@@ -1123,7 +1300,11 @@ class _InputBar extends StatelessWidget {
                 style: AtomText.input,
                 decoration: InputDecoration(
                   isDense: true,
-                  hintText: online ? l.askAtomHint : l.askAtomHintOffline,
+                  hintText: !online
+                      ? l.askAtomHintOffline
+                      : listening
+                      ? l.askAtomListening
+                      : l.askAtomHint,
                   hintStyle: AtomText.input.copyWith(
                     color: AtomColors.placeholder,
                   ),
@@ -1140,6 +1321,37 @@ class _InputBar extends StatelessWidget {
                     borderSide: const BorderSide(color: AtomColors.primary),
                   ),
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          AtomPressable(
+            onTap: online ? onMic : null,
+            semanticLabel: listening ? l.askAtomMicStop : l.askAtomMic,
+            builder: (context, pressed) => Container(
+              width: AtomSize.atomInput,
+              height: AtomSize.atomInput,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: !online
+                    ? AtomColors.disabledFill
+                    : listening
+                    ? AtomColors.primarySoft
+                    : pressed
+                    ? AtomColors.line
+                    : AtomColors.surface,
+                border: listening
+                    ? Border.all(color: AtomColors.primary, width: 1.5)
+                    : null,
+              ),
+              child: Icon(
+                listening ? LucideIcons.square : LucideIcons.mic,
+                size: 20,
+                color: !online
+                    ? AtomColors.disabledText
+                    : listening
+                    ? AtomColors.primary
+                    : AtomColors.ink,
               ),
             ),
           ),

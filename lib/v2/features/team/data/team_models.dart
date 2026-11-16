@@ -59,6 +59,11 @@ class TeamMember {
     this.lastActiveAt,
     this.switchedOffAt,
     this.createdAt,
+    this.ordersMonth = 0,
+    this.confirmedMonth = 0,
+    this.deliveredMonth = 0,
+    this.paymentsMonth = 0,
+    this.paidMonth = 0,
   });
 
   final int id;
@@ -82,6 +87,17 @@ class TeamMember {
   final DateTime? switchedOffAt;
   final DateTime? createdAt;
 
+  /// Orders they confirmed or delivered this month (`orders_month`).
+  final int ordersMonth;
+
+  /// Of [ordersMonth]: confirmed, and delivered or completed.
+  final int confirmedMonth;
+  final int deliveredMonth;
+
+  /// Payments they recorded this month (`payments_month`), and the rupees.
+  final int paymentsMonth;
+  final int paidMonth;
+
   bool get isOff => status == MemberStatus.off;
 
   String get firstName => name.trim().split(RegExp(r'\s+')).first;
@@ -102,11 +118,22 @@ class TeamMember {
           if (Json.integer(Json.map(o)['id']) case final id?)
             (id, Json.str(Json.map(o)['name']) ?? ''),
       ],
-      status: MemberStatus.parse(j['status']),
+      // Never signed in yet counts as waiting, like the temporary password:
+      // the board's amber "Waiting to sign in".
+      status: switch (MemberStatus.parse(j['status'])) {
+        MemberStatus.active when j['last_active_at'] == null =>
+          MemberStatus.waiting,
+        final s => s,
+      },
       mustChangePassword: Json.flag(j['must_change_password']),
       lastActiveAt: AtomDates.parse(j['last_active_at']),
       switchedOffAt: AtomDates.parse(j['switched_off_at']),
       createdAt: AtomDates.parse(j['created_at']),
+      ordersMonth: Json.integer(j['orders_month']) ?? 0,
+      confirmedMonth: Json.integer(j['orders_confirmed_month']) ?? 0,
+      deliveredMonth: Json.integer(j['orders_delivered_month']) ?? 0,
+      paymentsMonth: Json.integer(j['payments_month']) ?? 0,
+      paidMonth: Json.integer(j['payments_amount_month']) ?? 0,
     );
   }
 }
@@ -115,10 +142,18 @@ class TeamMember {
 /// only on a single-outlet account).
 @immutable
 class TeamList {
-  const TeamList({required this.members, this.scopes = const ['all']});
+  const TeamList({
+    required this.members,
+    this.scopes = const ['all'],
+    this.ordersMonth,
+  });
 
   final List<TeamMember> members;
   final List<String> scopes;
+
+  /// Orders the team, owner included, confirmed or delivered this month;
+  /// null from an older server.
+  final int? ordersMonth;
 
   factory TeamList.fromJson(Object? data) {
     final d = Json.map(data);
@@ -128,6 +163,7 @@ class TeamList {
         for (final m in Json.list(d['members'])) TeamMember.fromJson(m),
       ],
       scopes: scopes.isEmpty ? const ['all'] : scopes,
+      ordersMonth: Json.integer(d['orders_month']),
     );
   }
 }

@@ -304,6 +304,8 @@ class _ShopSettingsScreenState extends ConsumerState<ShopSettingsScreen> {
           padding: const EdgeInsets.fromLTRB(2, 6, 2, 0),
           child: Text(l.acctShopCashAlways, style: AtomText.small),
         ),
+        // The board's `.lbl` sits 18 below the note above it.
+        const SizedBox(height: 12),
         AccountLabel(l.acctShopOrdersPortal),
         Text(l.acctShopConfirmWithin, style: AtomText.fieldLabel),
         const SizedBox(height: 6),
@@ -333,39 +335,36 @@ class _ShopSettingsScreenState extends ConsumerState<ShopSettingsScreen> {
           padding: const EdgeInsets.fromLTRB(2, 6, 2, 0),
           child: Text(l.acctShopIdleNote, style: AtomText.small),
         ),
+        // Running low at and Atom language: side by side as on 18.2; a
+        // narrow phone or large text stacks them, so the label and its
+        // "0–100 units" note never squeeze into a half-width column.
         if (inventory || atom) ...[
           const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          _PairOrStack(
             children: [
               if (inventory)
-                Expanded(
-                  child: AtomTextField(
-                    label: l.acctShopLowAt,
-                    labelNote: l.acctShopLowAtNote,
-                    controller: _lowStock,
-                    error: _error('low_stock_at'),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
-                  ),
+                AtomTextField(
+                  label: l.acctShopLowAt,
+                  labelNote: l.acctShopLowAtNote,
+                  controller: _lowStock,
+                  error: _error('low_stock_at'),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(3),
+                  ],
                 ),
-              if (inventory && atom) const SizedBox(width: 10),
               if (atom)
-                Expanded(
-                  child: AtomSelectField<String>(
-                    label: l.acctShopAtomLanguage,
-                    value: s.atomLanguage,
-                    valueLabel: _language(l, s.atomLanguage),
-                    sheetTitle: l.acctShopAtomAnswersIn,
-                    options: [
-                      for (final code in ShopSettings.languages)
-                        AtomOption(value: code, label: _language(l, code)),
-                    ],
-                    onChanged: (code) => _set(s.copyWith(atomLanguage: code)),
-                  ),
+                AtomSelectField<String>(
+                  label: l.acctShopAtomLanguage,
+                  value: s.atomLanguage,
+                  valueLabel: _language(l, s.atomLanguage),
+                  sheetTitle: l.acctShopAtomAnswersIn,
+                  options: [
+                    for (final code in ShopSettings.languages)
+                      AtomOption(value: code, label: _language(l, code)),
+                  ],
+                  onChanged: (code) => _set(s.copyWith(atomLanguage: code)),
                 ),
             ],
           ),
@@ -381,6 +380,43 @@ class _ShopSettingsScreenState extends ConsumerState<ShopSettingsScreen> {
           inputFormatters: [LengthLimitingTextInputFormatter(200)],
         ),
       ],
+    );
+  }
+}
+
+/// Two fields side by side (18.2's `.two`) from 340 wide at normal text
+/// size (a 390 phone and up), else one
+/// under the other, 12 apart.
+class _PairOrStack extends StatelessWidget {
+  const _PairOrStack({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final big = MediaQuery.textScalerOf(context).scale(10) > 12;
+    return LayoutBuilder(
+      builder: (context, box) {
+        if (children.length < 2 || box.maxWidth < 340 || big) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                children[i],
+              ],
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: children[0]),
+            const SizedBox(width: 10),
+            Expanded(child: children[1]),
+          ],
+        );
+      },
     );
   }
 }

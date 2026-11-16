@@ -9,19 +9,66 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../core/api/api_result.dart';
 import '../../../core/format/dates.dart';
 import '../../../core/format/ids.dart';
+import '../../../core/format/money.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
+import '../../states/ui/state_screens.dart' show NoInternetBody, NotInRoleBody;
 import '../data/order_rules.dart';
 
 /// Pieces the order and AtomPay screens share: the step pill, the navy
 /// header's figures, the next-step card, the stepper, cards and lines, the
 /// form page and its bottom bar, choice buttons and the photo box.
 
-/// A failure as one sentence: no signal, else the server's words.
+/// A failure as one sentence: no signal, the role's refusal, else the
+/// server's words (a crash's text never reaches here: `classifyFailure`
+/// drops it), else "That didn't save".
 String sayOrderFailure(ApiFailure f, AppLocalizations l) => switch (f.kind) {
   ApiFailureKind.offline || ApiFailureKind.timeout => l.ordersNoSignal,
-  _ => f.message ?? l.ordersSomethingWrong,
+  ApiFailureKind.notInRole || ApiFailureKind.ownerOnly => l.notInRoleTitle,
+  ApiFailureKind.server => l.ordersSaveErrorBody,
+  _ => f.message ?? l.ordersSaveErrorBody,
 };
+
+/// A list or page that didn't load (13.7 / 13.3 / 11.9): no signal shows
+/// No internet; a 403 the role's refusal; anything else the board's
+/// "That didn't load" with the server's reference when it sent one, and
+/// Try again. Never the server's own text.
+class OrdersLoadError extends StatelessWidget {
+  const OrdersLoadError({
+    super.key,
+    required this.error,
+    required this.onRetry,
+  });
+
+  final Object error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final e = error;
+    if (e is! ApiFailure) return AtomErrorState(onRetry: onRetry);
+    switch (e.kind) {
+      case ApiFailureKind.offline || ApiFailureKind.timeout:
+        return NoInternetBody(onRetry: onRetry);
+      case ApiFailureKind.notInRole || ApiFailureKind.ownerOnly:
+        return NotInRoleBody(failure: e);
+      default:
+        final ref = e.body?['ref'];
+        return AtomMessageState(
+          icon: LucideIcons.circleAlert,
+          tone: AtomTone.rose,
+          art: false,
+          title: l.ordersLoadErrorTitle,
+          body: ref is String && ref.isNotEmpty
+              ? [l.ordersLoadErrorBody, l.ordersErrorRef(ref)].join('\n')
+              : l.ordersLoadErrorBody,
+          actionLabel: l.commonTryAgain,
+          onAction: onRetry,
+        );
+    }
+  }
+}
 
 /// The tone of a cash order's step (the boards' `.stage` colours).
 AtomTone stageTone(OrderStage s) => switch (s) {
@@ -60,18 +107,22 @@ class StageTag extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     constraints: const BoxConstraints(minHeight: 22),
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-    alignment: Alignment.center,
     decoration: BoxDecoration(
       color: tone.bg,
       borderRadius: AtomRadius.brControl,
     ),
-    child: Text(
-      label,
-      maxLines: 1,
-      style: AtomText.small.copyWith(
-        color: tone.fg,
-        fontWeight: FontWeight.w700,
-        height: 1.2,
+    // As wide as the label: a centred Container fills a Wrap's row.
+    child: Align(
+      widthFactor: 1,
+      heightFactor: 1,
+      child: Text(
+        label,
+        maxLines: 1,
+        style: AtomText.small.copyWith(
+          color: tone.fg,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+        ),
       ),
     ),
   );
@@ -148,19 +199,26 @@ class CardTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
-    child: Row(
-      children: [
-        Expanded(
-          child: Semantics(
+    // `.sec-h`: title left, pill right; with no room (large text) the pill
+    // drops under the title instead of squeezing it.
+    child: SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          Semantics(
             header: true,
             child: Text(
               text,
               style: AtomText.listTitle.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
-        ),
-        ?trailing,
-      ],
+          ?trailing,
+        ],
+      ),
     ),
   );
 }
@@ -172,6 +230,7 @@ class OrderLine extends StatelessWidget {
     required this.label,
     required this.value,
     this.bold = false,
+    this.compact = false,
   });
 
   final String label;
@@ -180,36 +239,56 @@ class OrderLine extends StatelessWidget {
   /// The total line.
   final bool bold;
 
+  /// The receipt's tighter lines (`.paper .line`: 13px, 6 above and below).
+  final bool compact;
+
+  /// Amounts, phones and dates: tabular figures. Words keep proportional
+  /// ones, or a hyphen gets a figure's width ("demo - buyer").
+  static final _numeric = RegExp(r'^(Rs\s?)?[\d\s,.:+×\-]+$');
+
+  /// Keeps "demo-buyer-3@zenvo.test" or "ZR14-2610-00482" from breaking
+  /// at a hyphen: a word joiner after each one.
+  static String unbroken(String s) => s.replaceAll('-', '-⁠');
+
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 9),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: AtomText.body.copyWith(
-              color: bold ? AtomColors.ink : AtomColors.muted,
-              fontWeight: bold ? FontWeight.w600 : null,
-              height: AtomText.normalHeight,
+    padding: EdgeInsets.symmetric(vertical: compact ? 6 : 11),
+    // `.line`: space-between, the value hugging the right edge; a long
+    // value takes up to 62% and wraps right-aligned, the label the rest.
+    child: LayoutBuilder(
+      builder: (context, box) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: AtomText.body.copyWith(
+                fontSize: compact ? 13 : null,
+                color: bold ? AtomColors.ink : AtomColors.muted,
+                fontWeight: bold ? FontWeight.w600 : null,
+                height: AtomText.normalHeight,
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: AtomText.body.copyWith(
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
-              color: AtomColors.ink,
-              height: AtomText.normalHeight,
-              fontFeatures: const [FontFeature.tabularFigures()],
+          const SizedBox(width: 10),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: box.maxWidth * .62),
+            child: Text(
+              unbroken(value),
+              textAlign: TextAlign.end,
+              style: AtomText.body.copyWith(
+                fontSize: compact ? 13 : null,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                color: AtomColors.ink,
+                height: AtomText.normalHeight,
+                fontFeatures: _numeric.hasMatch(value)
+                    ? const [FontFeature.tabularFigures()]
+                    : null,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -954,6 +1033,154 @@ class ChoiceButtons<T> extends StatelessWidget {
   }
 }
 
+/// Pill chips in a wrap, one picked (`.chips`: "Paid by"): 36 high,
+/// 14 in, 13px; the picked one blue on blue-soft with a 2px line. Labels
+/// never wrap inside a chip.
+class PillChoices<T> extends StatelessWidget {
+  const PillChoices({
+    super.key,
+    required this.choices,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<(T, String)> choices;
+  final T? selected;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: [
+      for (final (value, label) in choices)
+        AtomPressable(
+          onTap: () => onChanged(value),
+          selected: value == selected,
+          focusRadius: AtomRadius.brPill,
+          semanticLabel: label,
+          builder: (context, pressed) {
+            final on = value == selected;
+            return Container(
+              constraints: const BoxConstraints(minHeight: 36),
+              padding: EdgeInsets.symmetric(horizontal: on ? 13 : 14),
+              decoration: BoxDecoration(
+                color: on
+                    ? AtomColors.primarySoft
+                    : pressed
+                    ? AtomColors.surface
+                    : AtomColors.paper,
+                borderRadius: AtomRadius.brPill,
+                border: Border.all(
+                  color: on ? AtomColors.primary : AtomColors.line2,
+                  width: on ? 2 : 1,
+                ),
+              ),
+              child: Align(
+                // As wide as the label: a centred Container would fill the
+                // row, and the pills stacked full-width.
+                widthFactor: 1,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: AtomText.smallButton.copyWith(
+                    color: on ? AtomColors.primary : AtomColors.text,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+    ],
+  );
+}
+
+/// The big amount (`.amt`, 6.4 / 6.10): "Rs" 20/700 grey beside a 44/800
+/// borderless number, the pair centred. The field is as wide as what is
+/// typed, so the number stays in the middle at any text size.
+class BigAmountField extends StatelessWidget {
+  const BigAmountField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = AtomText.keypadAmount.copyWith(
+      color: AtomColors.ink,
+      letterSpacing: -1,
+      height: 1.1,
+    );
+    final rs = AtomText.heading.copyWith(
+      fontSize: 20,
+      fontWeight: FontWeight.w700,
+      color: AtomColors.muted,
+    );
+    final scaler = MediaQuery.textScalerOf(context);
+    return LayoutBuilder(
+      builder: (context, box) {
+        final text = controller.text.isEmpty ? '0' : controller.text;
+        final painter = TextPainter(
+          text: TextSpan(text: '${text}0', style: style),
+          textDirection: TextDirection.ltr,
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout();
+        final rsWidth = (TextPainter(
+          text: TextSpan(text: 'Rs', style: rs),
+          textDirection: TextDirection.ltr,
+          textScaler: scaler,
+        )..layout()).width;
+        final width = painter.width.clamp(
+          60.0,
+          (box.maxWidth - rsWidth - 10).clamp(60.0, double.infinity),
+        );
+        painter.dispose();
+        return Semantics(
+          label: label,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              ExcludeSemantics(child: Text('Rs', style: rs)),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: width,
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: const [RupeesInputFormatter()],
+                  style: style,
+                  cursorColor: AtomColors.primary,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: '0',
+                    hintStyle: style.copyWith(color: AtomColors.placeholder),
+                  ),
+                  onChanged: onChanged,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// The dashed photo box (`.photo`): green with a tick once taken.
 class PhotoBox extends StatelessWidget {
   const PhotoBox({
@@ -1321,8 +1548,10 @@ class CountChips<T> extends StatelessWidget {
   );
 }
 
-/// The list's search box (`.input` with a search icon), no label above.
-class OrdersSearchBox extends StatelessWidget {
+/// The list's search box (`.input` with a search icon), no label above:
+/// one border (the field inside draws none), blue with a ring on focus,
+/// and a clear button once something is typed.
+class OrdersSearchBox extends StatefulWidget {
   const OrdersSearchBox({
     super.key,
     required this.controller,
@@ -1335,39 +1564,94 @@ class OrdersSearchBox extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-    child: Container(
-      constraints: const BoxConstraints(minHeight: 44),
-      padding: const EdgeInsets.symmetric(horizontal: AtomSpace.inset),
-      decoration: atomInputBox(focused: false, error: false, disabled: false),
-      child: Row(
-        children: [
-          const Icon(
-            LucideIcons.search,
-            size: AtomIcon.row,
-            color: AtomColors.faint,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              textInputAction: TextInputAction.search,
-              style: AtomText.input.copyWith(fontSize: 15),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: placeholder,
-                hintStyle: AtomText.input.copyWith(
-                  fontSize: 15,
-                  color: AtomColors.placeholder,
+  State<OrdersSearchBox> createState() => _OrdersSearchBoxState();
+}
+
+class _OrdersSearchBoxState extends State<OrdersSearchBox> {
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_redraw);
+    widget.controller.addListener(_redraw);
+  }
+
+  @override
+  void didUpdateWidget(OrdersSearchBox old) {
+    super.didUpdateWidget(old);
+    if (old.controller != widget.controller) {
+      old.controller.removeListener(_redraw);
+      widget.controller.addListener(_redraw);
+    }
+  }
+
+  void _redraw() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_redraw);
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const none = InputBorder.none;
+    final style = AtomText.input.copyWith(fontSize: 16);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.only(left: AtomSpace.inset, right: 4),
+        decoration: atomInputBox(
+          focused: _focus.hasFocus,
+          error: false,
+          disabled: false,
+        ),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.search, size: 18, color: AtomColors.faint),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focus,
+                onChanged: widget.onChanged,
+                textInputAction: TextInputAction.search,
+                style: style,
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: false,
+                  border: none,
+                  enabledBorder: none,
+                  focusedBorder: none,
+                  disabledBorder: none,
+                  errorBorder: none,
+                  focusedErrorBorder: none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                  hintText: widget.placeholder,
+                  hintMaxLines: 1,
+                  hintStyle: style.copyWith(color: AtomColors.placeholder),
                 ),
               ),
             ),
-          ),
-        ],
+            if (widget.controller.text.isNotEmpty)
+              AtomIconButton(
+                icon: LucideIcons.x,
+                label: AppLocalizations.of(context).ordersClearSearch,
+                onTap: () {
+                  widget.controller.clear();
+                  widget.onChanged('');
+                },
+              )
+            else
+              const SizedBox(width: 10),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -154,7 +155,10 @@ class _Header extends ConsumerWidget {
       );
     } else {
       final role = who.roleName ?? '';
-      final outlet = session?.outletName;
+      // 5.2: the outlet over "Zenvo Appliances · Order handler". A member
+      // who works in every outlet of a brand with several sees All outlets.
+      final outlet =
+          agentOutletName(session) ?? (multi ? l.homeAllOutlets : null);
       brandButton = BrandHeaderButton(
         title: outlet ?? brand,
         subtitle: [
@@ -206,7 +210,8 @@ class _Header extends ConsumerWidget {
                   ? '${greetingFor(now, l)}, ${session?.firstName ?? ''}'
                   : l.homeSalam(session?.firstName ?? ''),
             ),
-          if (mode == HomeMode.full && access.has(Addon.askAtom))
+          // The Ask Atom bar is on the owner's Home (5.1), not 5.2.
+          if (mode == HomeMode.full && who.isOwner && access.has(Addon.askAtom))
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: AskAtomBar(
@@ -400,7 +405,7 @@ class _OwnerHero extends ConsumerWidget {
         ),
     ];
     return HomeHeroCard(
-      label: '${l.homeToday} · ${AtomDates.weekday(now)}',
+      label: '${l.homeToday} · ${DateFormat('EEE, d MMM').format(now)}',
       labelEnd: read == null ? null : l.homeUpdated(AtomDates.time(read)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -464,7 +469,7 @@ class _OwnerHero extends ConsumerWidget {
 }
 
 /// A team member's hero (5.2): their outlet's counts as lines, and
-/// Confirm orders when the role confirms orders.
+/// "Confirm orders".
 class _AgentHero extends ConsumerWidget {
   const _AgentHero({required this.home});
   final HomeDashboard home;
@@ -473,7 +478,6 @@ class _AgentHero extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final session = ref.watch(sessionProvider.notifier).current;
-    final who = session?.who;
     final h = home.hero;
     final lines = <Widget>[
       if (h.ordersToConfirm case final n?)
@@ -495,18 +499,18 @@ class _AgentHero extends ConsumerWidget {
           onTap: () => context.go(V2Routes.bulk),
         ),
     ];
-    final canConfirm =
-        (who?.can(BrandPermission.ordersStatus) ?? false) &&
-        h.ordersToConfirm != null;
+    // 5.2: one light "Confirm orders" under the lines (`.acts`, 1fr).
     return HomeHeroCard(
       label: l.homeDashboard,
-      labelEnd: session?.outletName,
+      labelEnd:
+          agentOutletName(session) ??
+          ((session?.multiOutlet ?? false) ? l.homeAllOutlets : null),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 6),
           ...lines,
-          if (canConfirm) ...[
+          if (h.ordersToConfirm != null) ...[
             const SizedBox(height: 12),
             HeroButton(
               label: l.homeConfirmOrders,
@@ -519,6 +523,20 @@ class _AgentHero extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The outlet a team member works in, for 5.2's header and hero: the one
+/// chosen, else their only outlet (`who.outletIds`), else the brand's only
+/// one. Null when they work across several and chose All outlets.
+String? agentOutletName(BrandSession? session) {
+  if (session == null) return null;
+  if (session.outletName case final name? when name.isNotEmpty) return name;
+  final ids = session.who.outletIds;
+  final mine = [
+    for (final o in session.outlets)
+      if (ids == null || ids.contains(o.id)) o,
+  ];
+  return mine.length == 1 ? mine.first.name : null;
 }
 
 /// The offline hero (5.3): the copy's counts, as of the last sync.

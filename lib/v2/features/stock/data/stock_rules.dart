@@ -450,3 +450,8 @@ String? prefixProblem(AppLocalizations l, String prefix) {
   }
   return null;
 }
+
+/// Listed on atomshop.pk: live there, or listed as out of stock (the
+/// catalogue product's `Published` or `Out of Stock`), as Products shows.
+bool listedOnWebsite(String? websiteStatus) =>
+    websiteStatus == 'Published' || websiteStatus == 'Out of Stock';

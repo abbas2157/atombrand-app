@@ -30,6 +30,8 @@ class OutletStatusPill extends StatelessWidget {
       OutletStatus.paused => AtomTone.amber,
       OutletStatus.closed => AtomTone.grey,
     },
+    // `.pill` at `height: 22px`, as on 11.7
+    compact: true,
   );
 }
 

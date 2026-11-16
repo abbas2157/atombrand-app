@@ -20,6 +20,7 @@ import '../design/design.dart';
 import 'router.dart';
 import '../core/api/atom_server.dart';
 import 'splash_hold.dart';
+import 'status_strip.dart';
 
 /// The v2 app.
 ///
@@ -29,17 +30,28 @@ class BrandPartnerApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'Brand Partner',
       debugShowCheckedModeBanner: false,
       theme: AtomTheme.light,
       themeMode: ThemeMode.light,
-      routerConfig: ref.watch(routerProvider),
+      routerConfig: router,
       restorationScopeId: 'app',
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
-        final app = _RefreshOnResume(child: child!);
+        // Dark status-bar icons unless a screen says otherwise: a screen
+        // with no app bar (Sign in, the offline-gate screens) otherwise
+        // keeps the light icons of the navy screen before it, white on
+        // white. Navy screens set their own light region over this.
+        final app = AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.dark,
+          child: StatusStrip(
+            router: router,
+            child: _RefreshOnResume(child: child!),
+          ),
+        );
         // A build against a local server says so in the corner, so a
         // tester never mistakes it for the real shop's data.
         return _PhonesStayUpright(

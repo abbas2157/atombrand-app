@@ -38,7 +38,15 @@ class AtomInitials extends StatelessWidget {
   ];
 
   static String initialsOf(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    // Words only: "Lahore · Gulberg" is LG, not "L·".
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where(
+          (p) =>
+              p.isNotEmpty &&
+              RegExp(r'^[\p{L}\p{N}]', unicode: true).hasMatch(p),
+        );
     return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
 
@@ -504,7 +512,11 @@ class AtomInfoLine extends StatelessWidget {
       height: AtomText.normalHeight,
       // `.line b`: b is 600 on the boards; the total stays 700.
       fontWeight: total ? FontWeight.w700 : FontWeight.w600,
-      fontFeatures: const [FontFeature.tabularFigures()],
+      // Tabular figures for amounts, phones and dates only: in words a
+      // hyphen takes a figure's width ("demo - buyer", "QT - 0001").
+      fontFeatures: RegExp(r'^(Rs\s?)?[\d\s,.:+×/\-]+$').hasMatch(value)
+          ? const [FontFeature.tabularFigures()]
+          : null,
       color: valueColor ?? (onDark ? Colors.white : AtomColors.ink),
     );
     final lw = atomTextWidth(context, label, labelStyle);

@@ -24,13 +24,16 @@ const kPermissionNeeds = {
 };
 
 /// Short chips for role rows, in this order (`BrandRole::CHIPS`).
+// As the board words them: "Orders" is working orders (confirming and
+// delivering), not only seeing them (the Accountant sees orders but shows
+// Payments only); "Products" is seeing the catalogue.
 Map<String, String> roleChipWords(AppLocalizations l) => {
-  BrandPermission.ordersView: l.teamChipOrders,
+  BrandPermission.ordersStatus: l.teamChipOrders,
   BrandPermission.ordersPayment: l.teamChipPayments,
   BrandPermission.atompayView: l.teamChipAtompay,
   BrandPermission.bulkView: l.teamChipBulk,
   BrandPermission.bulkQuote: l.teamChipQuotes,
-  BrandPermission.catalogueEdit: l.teamChipProducts,
+  BrandPermission.catalogueView: l.teamChipProducts,
   BrandPermission.pageEdit: l.teamChipPage,
   BrandPermission.stockView: l.teamChipSeeStock,
   BrandPermission.stockChange: l.teamChipStockChanges,
@@ -92,6 +95,24 @@ List<String> roleChips(
           (grantable == null || grantable.contains(e.key)))
         e.value,
   ];
+}
+
+/// What a ready-made role covers, as the board words it; for any other
+/// role, [roleSummary].
+String roleBlurb(AppLocalizations l, TeamRole r) {
+  if (r.readyMade) {
+    final words = switch (r.key) {
+      'manager' => l.teamBlurbManager,
+      'orders' => l.teamBlurbOrders,
+      'bulk' => l.teamBlurbBulk,
+      'stock' => l.teamBlurbStock,
+      'marketing' => l.teamBlurbMarketing,
+      'accountant' => l.teamBlurbAccountant,
+      _ => null,
+    };
+    if (words != null) return words;
+  }
+  return roleSummary(r);
 }
 
 /// What a role covers in one line: its description, or its groups

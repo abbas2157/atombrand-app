@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../core/access/access.dart';
+import '../../../core/access/access_controller.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../design/design.dart';
@@ -36,40 +38,62 @@ class _ChooseOutletScreenState extends ConsumerState<ChooseOutletScreen> {
     ref.watch(sessionProvider);
     final session = ref.read(sessionProvider.notifier).current;
     final who = session?.who;
-    final outlets = [
+    final offlineAddon = ref.watch(
+      accessProvider.select((a) => a.has(Addon.offline)),
+    );
+    // Every outlet this person works in. A paused one is listed (as on the
+    // board) but can't be picked: its team is signed out until it reopens.
+    final mine = [
       for (final o in session?.outlets ?? const <Outlet>[])
-        if (o.active && (who?.worksIn(o.id) ?? true)) o,
+        if ((o.active || o.paused) && (who?.worksIn(o.id) ?? true)) o,
     ];
-    if (!_pickedSet && outlets.isNotEmpty) {
+    final open = [
+      for (final o in mine)
+        if (o.active) o,
+    ];
+    if (!_pickedSet && open.isNotEmpty) {
       _pickedSet = true;
+      // The board starts on the main outlet; else the one chosen before.
       _picked =
           session?.outletId ??
-          (who?.outletIds == null ? null : outlets.first.id);
+          (open.where((o) => o.isMain).firstOrNull ?? open.first).id;
     }
     final canAll = who?.outletIds == null;
-    final picked = outlets.where((o) => o.id == _picked).firstOrNull;
+    final picked = open.where((o) => o.id == _picked).firstOrNull;
     final padding = MediaQuery.paddingOf(context);
 
     Widget row({
       required String title,
+      required IconData icon,
+      required AtomTone tone,
       String? subtitle,
       Widget? tag,
       required bool on,
-      required VoidCallback onTap,
+      required VoidCallback? onTap,
     }) => Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: AtomOptionCard(
-        leading: AtomIconTile(
-          icon: LucideIcons.store,
-          tone: on ? AtomTone.blue : AtomTone.grey,
-        ),
+        leading: AtomIconTile(icon: icon, tone: tone),
         title: title,
         subtitle: subtitle,
-        trailing: tag,
+        titleTag: tag,
         selected: on,
         onTap: onTap,
       ),
     );
+
+    String? line(Outlet o) {
+      if (o.paused) {
+        return who?.isOwner ?? false
+            ? l.authOutletPausedByYou
+            : l.authOutletPausedByOwner;
+      }
+      if (o.serves.isEmpty) return o.city;
+      final serves = o.serves.join(', ');
+      return o.city == null
+          ? l.authOutletServesOnly(serves)
+          : l.authOutletServes(o.city!, serves);
+    }
 
     return PopScope(
       canPop: false,
@@ -97,40 +121,88 @@ class _ChooseOutletScreenState extends ConsumerState<ChooseOutletScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(l.outletBody, style: AuthText.sub),
-                  const SizedBox(height: 20),
-                  if (outlets.isEmpty)
+                  const SizedBox(height: 22),
+                  if (open.isEmpty)
                     AtomNote(kind: AtomNoteKind.info, message: l.outletNone),
-                  if (canAll && outlets.isNotEmpty)
+                  if (canAll && open.isNotEmpty)
                     row(
                       title: l.outletAll,
-                      subtitle: l.outletAllSub,
+                      icon: LucideIcons.layoutGrid,
+                      tone: AtomTone.grey,
+                      subtitle: l.authOutletAllSub(open.length),
                       on: _picked == null,
                       onTap: () => setState(() => _picked = null),
                     ),
-                  for (final o in outlets)
+                  for (final o in mine)
                     row(
                       title: o.name,
-                      subtitle: o.city,
-                      tag: o.isMain
+                      icon: LucideIcons.store,
+                      tone: o.paused ? AtomTone.amber : AtomTone.blue,
+                      subtitle: line(o),
+                      tag: o.paused
+                          ? AtomPill(
+                              label: l.homePausedPill,
+                              tone: AtomTone.amber,
+                            )
+                          : o.isMain
                           ? AtomPill(label: l.outletMain, tone: AtomTone.blue)
                           : null,
                       on: _picked == o.id,
-                      onTap: () => setState(() => _picked = o.id),
+                      onTap: o.paused
+                          ? null
+                          : () => setState(() => _picked = o.id),
                     ),
                 ],
               ),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, padding.bottom + 16),
-              child: AtomButton(
-                label: l.outletContinue(picked?.name ?? l.outletAll),
-                onPressed: () {
-                  // Getting ready (2.7) follows, with the Offline add-on.
-                  ref.read(gettingReadyDueProvider.notifier).arm();
-                  ref
-                      .read(sessionProvider.notifier)
-                      .selectOutlet(picked?.id, picked?.name);
-                },
+              padding: EdgeInsets.fromLTRB(20, 8, 20, padding.bottom + 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // With the Offline add-on the copy follows the outlet
+                  // chosen (sync/snapshot is scoped by X-Outlet), so the
+                  // line says what is really kept; it isn't a switch.
+                  if (offlineAddon && open.isNotEmpty) ...[
+                    MergeSemantics(
+                      child: Semantics(
+                        checked: true,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 1),
+                              child: AtomCheckbox(on: true),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                picked == null
+                                    ? l.authOutletKeepAll
+                                    : l.authOutletKeepOne(picked.name),
+                                style: AtomText.body.copyWith(
+                                  color: AtomColors.text,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  AtomButton(
+                    label: l.outletContinue(picked?.name ?? l.outletAll),
+                    onPressed: () {
+                      // Getting ready (2.7) follows, with the Offline
+                      // add-on.
+                      ref.read(gettingReadyDueProvider.notifier).arm();
+                      ref
+                          .read(sessionProvider.notifier)
+                          .selectOutlet(picked?.id, picked?.name);
+                    },
+                  ),
+                ],
               ),
             ),
           ],

@@ -379,7 +379,43 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
           allCities.where((c) => c.id == e.key).firstOrNull?.title,
           e.value,
         ),
-    ].where((t) => t.$2 != null).take(6);
+    ].where((t) => t.$2 != null).take(6).toList();
+    // Then free cities to tap (the board's row of city chips), the big
+    // ones first, up to six chips in all; "All cities" has the rest.
+    const big = [
+      'lahore',
+      'karachi',
+      'islamabad',
+      'rawalpindi',
+      'faisalabad',
+      'multan',
+      'peshawar',
+      'hyderabad',
+      'gujranwala',
+      'sialkot',
+      'quetta',
+    ];
+    int rank(City c) {
+      final i = big.indexOf(c.title.trim().toLowerCase());
+      return i < 0 ? big.length : i;
+    }
+
+    final shown =
+        _cities.length + (suggested == null ? 0 : 1) + takenShown.length;
+    final freeShown =
+        (allCities
+                .where(
+                  (c) =>
+                      !_cities.containsKey(c.id) &&
+                      !taken.containsKey(c.id) &&
+                      c.id != suggested?.id,
+                )
+                .toList()
+              ..sort((a, b) {
+                final r = rank(a).compareTo(rank(b));
+                return r != 0 ? r : a.title.compareTo(b.title);
+              }))
+            .take((6 - shown).clamp(0, 6));
 
     return TeamFormFrame(
       title: _isNew ? l.outletsAddOutlet : l.outletsEditOutlet,
@@ -437,6 +473,15 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                 on: false,
                 onTap: () {
                   _cities = {..._cities, suggested.id: suggested.title};
+                  _changed('city_ids');
+                },
+              ),
+            for (final c in freeShown)
+              TeamToggleChip(
+                label: c.title,
+                on: false,
+                onTap: () {
+                  _cities = {..._cities, c.id: c.title};
                   _changed('city_ids');
                 },
               ),

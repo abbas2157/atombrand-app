@@ -74,13 +74,14 @@ class Notice {
 
 /// The chip a notification type belongs to (`BrandNotificationService`).
 NoticeKind noticeKindOf(String type) => switch (type) {
-  'brand_new_order' => NoticeKind.orders,
+  'brand_new_order' || 'brand_orders_waiting' => NoticeKind.orders,
   'brand_atompay_assigned' => NoticeKind.atompay,
   'brand_new_bulk_request' ||
   'brand_quote_accepted' ||
   'brand_quote_declined' ||
   'brand_quote_change' ||
-  'brand_sourcing_received' => NoticeKind.bulk,
+  'brand_sourcing_received' ||
+  'brand_quote_expiring' => NoticeKind.bulk,
   'brand_stock_low' || 'stock_low' => NoticeKind.stock,
   'brand_product_reviewed' => NoticeKind.products,
   _ => NoticeKind.account,
@@ -348,4 +349,24 @@ final unreadNoticesProvider = Provider.autoDispose<int?>((ref) {
   if (count == null) return null;
   final here = ref.watch(noticesReadHereProvider).length;
   return count - here < 0 ? 0 : count - here;
+});
+
+/// Whether the owner's morning message is on (`GET settings/daily-summary`
+/// → `daily_summary.on`), for Notification settings' "Morning summary" row
+/// (15.4). Null when it can't be read (offline, a team member).
+final morningSummaryOnProvider = FutureProvider.autoDispose<bool?>((ref) async {
+  _who(ref);
+  final r = await ref
+      .read(apiClientProvider)
+      .get(
+        'settings/daily-summary',
+        parse: (data) {
+          final on = Json.map(Json.map(data)['daily_summary'])['on'];
+          return on == null ? true : Json.flag(on);
+        },
+      );
+  return switch (r) {
+    ApiOk(:final value) => value,
+    ApiErr() => null,
+  };
 });

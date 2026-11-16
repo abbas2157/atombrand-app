@@ -384,14 +384,15 @@ class SyncStepRow extends StatelessWidget {
         ),
         child: const Icon(LucideIcons.check, size: 13, color: Colors.white),
       ),
-      SyncStepState.running => const SizedBox(
+      SyncStepState.running => SizedBox(
         width: 20,
         height: 20,
         child: Padding(
-          padding: EdgeInsets.all(2),
+          padding: const EdgeInsets.all(2),
           child: CircularProgressIndicator(
             strokeWidth: 2.4,
-            color: AtomColors.primary,
+            // White on navy (2.7's `.dark .st.run`).
+            color: dark ? Colors.white : AtomColors.primary,
           ),
         ),
       ),
@@ -459,7 +460,15 @@ class SyncScaffold extends StatelessWidget {
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AtomFlowBar(title: title),
+        // `.pagehead`: white, with a line under it.
+        AtomPageHeader(
+          title: title,
+          leading: AtomIconButton(
+            icon: LucideIcons.chevronLeft,
+            label: AppLocalizations.of(context).commonBack,
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+        ),
         Expanded(child: child),
         ?bottom,
       ],

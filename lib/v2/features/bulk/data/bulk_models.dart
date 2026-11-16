@@ -287,6 +287,8 @@ class BulkCounts {
     this.count = 0,
     this.sellerRequests = 0,
     this.seller = const SellerCounts(),
+    this.website,
+    this.deals,
   });
 
   /// New requests, buyers and sellers.
@@ -294,12 +296,19 @@ class BulkCounts {
   final int sellerRequests;
   final SellerCounts seller;
 
+  /// Every website request and every deal: the neutral counts on the
+  /// Website and Deals tabs (null from an older server).
+  final int? website;
+  final int? deals;
+
   factory BulkCounts.fromJson(Object? data) {
     final j = Json.map(data);
     return BulkCounts(
       count: _int(j['count']),
       sellerRequests: _int(j['seller_requests']),
       seller: SellerCounts.fromJson(j['seller_counts']),
+      website: Json.integer(j['website']),
+      deals: Json.integer(j['deals']),
     );
   }
 }
@@ -354,9 +363,14 @@ class BulkRequestsPage {
     required this.page,
     this.counts = const {},
     this.allCount,
+    this.changeAskedCount = 0,
     this.sellerCounts = const SellerCounts(),
     this.tiles,
   });
+
+  /// Seller requests owing a new revision (`change_asked_count`), under
+  /// the list's received filter.
+  final int changeAskedCount;
 
   final ApiPage<BulkRequest> page;
 
@@ -380,6 +394,7 @@ class BulkRequestsPage {
       page: page,
       counts: {for (final s in RequestStatus.values) s: _int(counts[s.key])},
       allCount: Json.integer(page.extra['all_count']),
+      changeAskedCount: _int(page.extra['change_asked_count']),
       sellerCounts: SellerCounts.fromJson(page.extra['seller_counts']),
       tiles: BulkTiles.fromJson(page.extra['tiles']),
     );
@@ -937,11 +952,15 @@ class DealItem {
     this.productId,
     this.deliveredQty = 0,
     this.remainingQty,
+    this.colour,
   });
 
   final int id;
   final int? productId;
   final String title;
+
+  /// The colour it was sold in, by name.
+  final String? colour;
   final int qty;
   final int unitPrice;
   final int lineTotal;
@@ -963,6 +982,7 @@ class DealItem {
       lineTotal: _int(j['line_total']),
       deliveredQty: _int(j['delivered_qty']),
       remainingQty: Json.integer(j['remaining']),
+      colour: Json.str(j['color']),
     );
   }
 }
@@ -1001,10 +1021,16 @@ class Delivery {
     this.photo,
     this.sellerConfirmedAt,
     this.items = const [],
+    this.createdAt,
+    this.recordedBy,
   });
 
   final int id;
   final String number;
+
+  /// When it was saved, and by whom (the history).
+  final DateTime? createdAt;
+  final String? recordedBy;
   final DateTime? deliveredOn;
   final String? receivedBy;
   final String? note;
@@ -1027,6 +1053,8 @@ class Delivery {
       photo: Json.str(j['photo']),
       sellerConfirmedAt: AtomDates.parse(j['seller_confirmed_at']),
       items: [for (final i in Json.list(j['items'])) DeliveryLine.fromJson(i)],
+      createdAt: AtomDates.parse(j['created_at']),
+      recordedBy: Json.str(j['recorded_by']),
     );
   }
 }
@@ -1042,10 +1070,12 @@ class DealPayment {
     this.receipt,
     this.paidOn,
     this.recordedBy,
+    this.createdAt,
   });
 
   final int id;
   final int amount;
+  final DateTime? createdAt;
   final String? method;
   final String? methodLabel;
   final String? reference;
@@ -1064,6 +1094,7 @@ class DealPayment {
       receipt: Json.str(j['receipt']),
       paidOn: AtomDates.parse(j['paid_on']),
       recordedBy: Json.str(j['recorded_by']) ?? Json.str(j['recorded_by_name']),
+      createdAt: AtomDates.parse(j['created_at']),
     );
   }
 }
@@ -1102,11 +1133,23 @@ class Deal {
     this.deliveries = const [],
     this.payments = const [],
     this.stockWarning = const [],
+    this.itemTitles = const [],
+    this.deliverTo,
+    this.createdBy,
   });
 
   final int id;
   final String number;
   final DealStatus status;
+
+  /// What was sold, in order (`item_titles`, the list line).
+  final List<String> itemTitles;
+
+  /// Where the goods go: address, area, city.
+  final String? deliverTo;
+
+  /// Who made the deal.
+  final String? createdBy;
   final String? statusLabel;
   final String? buyerName;
   final String? buyerPhone;
@@ -1153,6 +1196,12 @@ class Deal {
     final total = _int(j['total']);
     final paid = _int(j['paid']);
     final items = [for (final i in Json.list(j['items'])) DealItem.fromJson(i)];
+    final to = Json.map(j['deliver_to']);
+    final deliverTo = [
+      ?Json.str(to['address']),
+      ?Json.str(to['area']),
+      ?Json.str(to['city']),
+    ].join(', ');
     return Deal(
       id: _int(j['id']),
       number: Json.str(j['number']) ?? '',
@@ -1192,6 +1241,13 @@ class Deal {
       payments: [
         for (final p in Json.list(j['payments'])) DealPayment.fromJson(p),
       ],
+      itemTitles: [
+        for (final t in Json.list(j['item_titles'])) ?Json.str(t),
+        if (j['item_titles'] == null)
+          for (final i in items) i.title,
+      ],
+      deliverTo: deliverTo.isEmpty ? null : deliverTo,
+      createdBy: Json.str(j['created_by']),
       stockWarning: [
         for (final w in Json.list(j['stock_warning']))
           if (w is Map)

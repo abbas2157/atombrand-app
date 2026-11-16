@@ -24,6 +24,7 @@ class MyProfile {
     this.brandName,
     this.brandSlug,
     this.brandUrl,
+    this.brandStatus,
   });
 
   final String name;
@@ -41,6 +42,10 @@ class MyProfile {
   /// The brand page on atomshop.pk (`brand.public_url`).
   final String? brandUrl;
 
+  /// The brand's status on Atomshop (`brand.status`); `active` means the
+  /// brand page is live on atomshop.pk.
+  final String? brandStatus;
+
   factory MyProfile.fromJson(Object? data) {
     final d = Json.map(data);
     final u = Json.map(d['user']);
@@ -53,6 +58,7 @@ class MyProfile {
       brandName: Json.str(b['title']),
       brandSlug: Json.str(b['slug']),
       brandUrl: Json.str(b['public_url']),
+      brandStatus: Json.str(b['status']),
     );
   }
 
@@ -64,6 +70,7 @@ class MyProfile {
     brandName: brandName,
     brandSlug: brandSlug,
     brandUrl: brandUrl,
+    brandStatus: brandStatus,
   );
 }
 
@@ -144,6 +151,10 @@ abstract interface class SettingsRepository {
     String? phone,
   });
 
+  /// A team member's own name: `POST me/name` (16.1). Their mobile is
+  /// their sign-in, so only the owner changes it.
+  Future<ApiResult<void>> updateMyName(String name);
+
   /// The owner's password: `POST profile/password` with the current one.
   /// The server signs out every other phone.
   Future<ApiResult<void>> changeOwnerPassword({
@@ -200,6 +211,10 @@ class ApiSettingsRepository implements SettingsRepository {
     body: {'name': name, 'email': email, 'phone': phone},
     parse: (_) {},
   );
+
+  @override
+  Future<ApiResult<void>> updateMyName(String name) =>
+      _api.post('me/name', body: {'name': name}, parse: (_) {});
 
   @override
   Future<ApiResult<void>> changeOwnerPassword({

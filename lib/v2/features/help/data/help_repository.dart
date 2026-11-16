@@ -115,7 +115,7 @@ class SupportRequest {
   }
 }
 
-/// One help answer (`GET help/faqs`): Ask Atom's seller answers, in the
+/// One help answer (`GET help/faqs`): Ask Atom's brand answers, in the
 /// app's wording. [answer] keeps the server's `**bold**` and numbered steps.
 @immutable
 class HelpFaq {

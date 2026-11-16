@@ -275,8 +275,7 @@ class _DeliverFormState extends ConsumerState<_DeliverForm> {
             if (cod > 0) ...[
               gap,
               FieldLabel(l.ordersPaidBy),
-              ChoiceButtons<String>(
-                columns: 2,
+              PillChoices<String>(
                 choices: [for (final m in methods) (m, labelOfMethod(m, l))],
                 selected: _method,
                 onChanged: (v) => setState(() => _method = v),

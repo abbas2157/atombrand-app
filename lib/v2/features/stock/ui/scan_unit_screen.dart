@@ -8,7 +8,7 @@ import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
 import '../data/stock_repository.dart';
 import 'inventory_home_screen.dart' show UnitFoundCard;
-import 'scanner.dart' show ScanFrame;
+import 'scanner.dart' show CameraProblem, ScanFrame;
 import 'stock_parts.dart';
 
 /// 9.8 Scan a serial or IMEI: the camera, and what the number is — in
@@ -112,6 +112,11 @@ class _ScanUnitScreenState extends ConsumerState<ScanUnitScreen> {
                 children: [
                   MobileScanner(
                     controller: _camera,
+                    errorBuilder: (context, error) => CameraProblem(
+                      error: error,
+                      controller: _camera,
+                      onType: _type,
+                    ),
                     onDetect: (capture) {
                       for (final b in capture.barcodes) {
                         final raw = b.rawValue;
@@ -122,7 +127,13 @@ class _ScanUnitScreenState extends ConsumerState<ScanUnitScreen> {
                       }
                     },
                   ),
-                  const Center(child: ScanFrame()),
+                  // No frame over the camera-problem panel.
+                  ValueListenableBuilder<MobileScannerState>(
+                    valueListenable: _camera,
+                    builder: (context, state, _) => state.error == null
+                        ? const Center(child: ScanFrame())
+                        : const SizedBox.shrink(),
+                  ),
                 ],
               ),
             ),

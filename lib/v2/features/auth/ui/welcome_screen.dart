@@ -97,7 +97,7 @@ class _Preview extends StatelessWidget {
                           borderRadius: AtomRadius.brControl,
                         ),
                         child: const Icon(
-                          LucideIcons.banknote,
+                          LucideIcons.chartLine,
                           size: AtomIcon.row,
                           color: AtomColors.toastOkIcon,
                         ),
@@ -109,7 +109,7 @@ class _Preview extends StatelessWidget {
                           children: [
                             _dimLabel(l.welcomeCollectedToday),
                             Text(
-                              'Rs 48,500',
+                              'Rs 486,500',
                               style: AtomText.heading.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -261,56 +261,46 @@ class _Sheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget feature(
-      IconData icon,
-      AtomTone tone,
-      String bold,
-      String rest, {
-      CustomPainter? painter,
-    }) => Padding(
-      padding: const EdgeInsets.only(top: AtomSpace.s3),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: tone.bg,
-              borderRadius: AtomRadius.brControl,
-            ),
-            alignment: Alignment.center,
-            child: painter == null
-                ? Icon(icon, size: AtomIcon.row, color: tone.fg)
-                : CustomPaint(
-                    size: const Size.square(AtomIcon.row),
-                    painter: painter,
-                  ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                style: AtomText.body.copyWith(
-                  fontSize: 15,
-                  height: AtomText.normalHeight,
-                  color: AtomColors.text,
+    Widget feature(IconData icon, AtomTone tone, String bold, String rest) =>
+        Padding(
+          padding: const EdgeInsets.only(top: AtomSpace.s3),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: tone.bg,
+                  borderRadius: AtomRadius.brControl,
                 ),
-                children: [
-                  TextSpan(
-                    text: bold,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AtomColors.ink,
-                    ),
-                  ),
-                  TextSpan(text: rest),
-                ],
+                alignment: Alignment.center,
+                child: Icon(icon, size: AtomIcon.row, color: tone.fg),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: AtomText.body.copyWith(
+                      fontSize: 15,
+                      height: AtomText.normalHeight,
+                      color: AtomColors.text,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: bold,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AtomColors.ink,
+                        ),
+                      ),
+                      TextSpan(text: rest),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
 
     return Container(
       decoration: const BoxDecoration(
@@ -347,11 +337,10 @@ class _Sheet extends StatelessWidget {
           ),
           const SizedBox(height: 18 - AtomSpace.s3),
           feature(
-            LucideIcons.shoppingBag,
+            LucideIcons.truck,
             AtomTone.blue,
             l.welcomeFeaturePaymentsBold,
             l.welcomeFeaturePaymentsRest,
-            painter: _BagPainter(AtomTone.blue.fg),
           ),
           feature(
             LucideIcons.funnel,
@@ -360,7 +349,7 @@ class _Sheet extends StatelessWidget {
             l.welcomeFeatureOfflineRest,
           ),
           feature(
-            LucideIcons.users,
+            LucideIcons.package,
             AtomTone.green,
             l.welcomeFeatureTeamBold,
             l.welcomeFeatureTeamRest,
@@ -381,34 +370,4 @@ class _Sheet extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The board's first Welcome glyph (no Lucide match): a bag with a strap
-/// line, `M12 2v6` and `M5 8h14l-1 12H6z` on a 24 grid.
-class _BagPainter extends CustomPainter {
-  _BagPainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.scale(size.width / 24);
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final bag = Path()
-      ..moveTo(5, 8)
-      ..lineTo(19, 8)
-      ..lineTo(18, 20)
-      ..lineTo(6, 20)
-      ..close();
-    canvas
-      ..drawLine(const Offset(12, 2), const Offset(12, 8), paint)
-      ..drawPath(bag, paint);
-  }
-
-  @override
-  bool shouldRepaint(_BagPainter old) => old.color != color;
 }

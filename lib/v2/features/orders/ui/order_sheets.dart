@@ -192,6 +192,8 @@ class _CancelOrderFormState extends ConsumerState<CancelOrderForm> {
             ],
             const SizedBox(height: 16),
             AtomButtonPair(
+              firstFlex: 10,
+              secondFlex: 13,
               first: AtomButton(
                 label: l.ordersKeepOrder,
                 kind: AtomButtonKind.outline,
@@ -300,7 +302,7 @@ class _MoveOrderFormState extends ConsumerState<MoveOrderForm> {
                     child: Container(
                       color: _picked == x.id
                           ? AtomColors.primarySoft
-                          : pressed
+                          : pressed || x.id == now
                           ? AtomColors.head
                           : AtomColors.paper,
                       padding: const EdgeInsets.symmetric(
@@ -320,13 +322,14 @@ class _MoveOrderFormState extends ConsumerState<MoveOrderForm> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(x.name, style: AtomText.listTitle),
-                                Text(
-                                  [
-                                    ?x.city,
-                                    if (x.id == now) l.ordersWhereNow,
-                                  ].join(' · '),
-                                  style: AtomText.secondary,
-                                ),
+                                if ([
+                                      if (x.city case final c?
+                                          when c.isNotEmpty)
+                                        c,
+                                      if (x.id == now) l.ordersWhereNow,
+                                    ].join(' · ')
+                                    case final sub when sub.isNotEmpty)
+                                  Text(sub, style: AtomText.secondary),
                               ],
                             ),
                           ),
@@ -350,6 +353,8 @@ class _MoveOrderFormState extends ConsumerState<MoveOrderForm> {
           ],
           const SizedBox(height: 16),
           AtomButtonPair(
+            firstFlex: 10,
+            secondFlex: 13,
             first: AtomButton(
               label: l.commonCancel,
               kind: AtomButtonKind.outline,
@@ -388,8 +393,8 @@ class OrderSheetPage extends ConsumerWidget {
           Expanded(
             child: order.when(
               loading: () => const Center(child: AtomSpinner(size: 28)),
-              error: (e, _) => AtomErrorState(
-                message: e is ApiFailure ? sayOrderFailure(e, l) : null,
+              error: (e, _) => OrdersLoadError(
+                error: e,
                 onRetry: () => ref.invalidate(orderDetailProvider(uuid)),
               ),
               data: (o) {

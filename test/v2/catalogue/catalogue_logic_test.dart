@@ -84,6 +84,21 @@ void main() {
       expect(a, isNot(contains(ProductAction.markOut)));
     });
 
+    test('Order handler (see stock, no catalogue edit)', () {
+      List<ProductAction> of(String s, {bool canStock = true}) =>
+          productActions(
+            row(s),
+            canEdit: false,
+            canStock: canStock,
+            inventoryOn: true,
+          );
+      // Only Stock and serials, never edit, feature, AtomPay or delete.
+      expect(of(ProductStatus.published), [ProductAction.stock]);
+      // Nothing allowed: the list hides the More actions button.
+      expect(of(ProductStatus.pending), isEmpty);
+      expect(of(ProductStatus.published, canStock: false), isEmpty);
+    });
+
     test('add-ons not known yet: no stock actions', () {
       final a = productActions(
         row(ProductStatus.published),

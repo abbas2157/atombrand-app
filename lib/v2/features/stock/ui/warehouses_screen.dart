@@ -37,11 +37,15 @@ class WarehousesScreen extends ConsumerWidget {
             ),
             actions: [
               if (manage)
-                AtomButton.small(
-                  label: l.stockAdd,
-                  icon: LucideIcons.plus,
-                  kind: AtomButtonKind.primary,
-                  onPressed: () => showWarehouseSheet(context, book: book),
+                Padding(
+                  // with the header's 8: the 16px gutter
+                  padding: const EdgeInsets.only(right: 8),
+                  child: AtomButton.small(
+                    label: l.stockAdd,
+                    icon: LucideIcons.plus,
+                    kind: AtomButtonKind.primary,
+                    onPressed: () => showWarehouseSheet(context, book: book),
+                  ),
                 ),
             ],
           ),
@@ -182,8 +186,8 @@ class _Label extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(2, 18, 2, 8),
-    child: Text(text, style: AtomText.section),
+    padding: const EdgeInsets.fromLTRB(2, 14, 2, 8),
+    child: Text(text.toUpperCase(), style: AtomText.section),
   );
 }
 
@@ -198,7 +202,7 @@ class _WarehouseCard extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final w = warehouse;
     return StockCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 8,
@@ -211,7 +215,14 @@ class _WarehouseCard extends StatelessWidget {
                 size: 36,
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(w.name, style: AtomText.listTitle)),
+              Expanded(
+                child: Text(
+                  w.name,
+                  style: AtomText.listTitle.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
               if (onEdit != null)
                 AtomButton.small(label: l.stockEdit, onPressed: onEdit),
             ],
@@ -220,13 +231,10 @@ class _WarehouseCard extends StatelessWidget {
             spacing: 6,
             runSpacing: 6,
             children: [
-              StockTag(
-                label: warehouseTypeLabel(l, w.type),
-                tone: AtomTone.grey,
-              ),
+              _WhTag(label: warehouseTypeLabel(l, w.type), tone: AtomTone.grey),
               if (w.isDefault)
-                StockTag(label: l.stockDefault, tone: AtomTone.blue),
-              StockTag(
+                _WhTag(label: l.stockDefault, tone: AtomTone.blue),
+              _WhTag(
                 label: w.sellsOnline
                     ? l.stockSellsOnAtomshopTag
                     : l.stockNotOnAtomshopTag,
@@ -240,7 +248,7 @@ class _WarehouseCard extends StatelessWidget {
               if (w.held > 0) l.stockHeldN(w.held),
               l.stockInChargeOf(w.inCharge?.name ?? l.stockNobodyYet),
             ].join(' · '),
-            style: AtomText.small,
+            style: AtomText.secondary,
           ),
           if (w.address != null)
             Text(
@@ -251,6 +259,31 @@ class _WarehouseCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A warehouse card's tag (`.wh .tags span`): 22 high, 12px.
+class _WhTag extends StatelessWidget {
+  const _WhTag({required this.label, required this.tone});
+
+  final String label;
+  final AtomTone tone;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(minHeight: 22),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: tone == AtomTone.grey ? AtomColors.surface : tone.bg,
+      borderRadius: AtomRadius.brTag,
+    ),
+    child: Text(
+      label,
+      style: AtomText.small.copyWith(
+        fontWeight: FontWeight.w600,
+        color: tone == AtomTone.grey ? AtomColors.text : tone.fg,
+      ),
+    ),
+  );
 }
 
 /// Add a warehouse ([warehouse] null) or edit one.

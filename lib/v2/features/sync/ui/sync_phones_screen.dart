@@ -10,6 +10,7 @@ import '../../../core/session/session_controller.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
 import '../data/sync_models.dart';
+import '../data/sync_providers.dart';
 import '../data/sync_repository.dart';
 import 'sync_parts.dart';
 
@@ -67,6 +68,12 @@ class _List extends ConsumerWidget {
         for (final d in t.devices)
           if (d.signedIn) (t.name, d),
     ];
+    // Team members with no phone signed in still show (the owner sees the
+    // whole team), without a Sign out button.
+    final noPhone = [
+      for (final t in phones.team)
+        if (!t.devices.any((d) => d.signedIn)) t.name,
+    ];
     final others = mine.where((d) => !d.thisDevice).length + team.length;
     final online = ref.watch(onlineProvider).value ?? true;
     return ListView(
@@ -88,12 +95,35 @@ class _List extends ConsumerWidget {
               ),
           ],
         ),
-        if (team.isNotEmpty) ...[
+        if (team.isNotEmpty || noPhone.isNotEmpty) ...[
           const SizedBox(height: 14),
           AtomSectionLabel(l.syncYourTeam, page: false),
           SyncCard(
             children: [
               for (final (name, d) in team) _PhoneRow(device: d, owner: name),
+              for (final name in noPhone)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      AtomInitials(name: name, size: 36),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(name, style: AtomText.listTitle),
+                            const SizedBox(height: 2),
+                            Text(l.syncNoTeamPhone, style: AtomText.secondary),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ],
@@ -164,7 +194,16 @@ class _PhoneRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final d = device;
+    // This phone: its own last sync when that is newer than the server's
+    // (a phone with nothing to send may not have told the server yet).
+    final local = device.thisDevice
+        ? ref.watch(syncStatusProvider.select((s) => s.lastSyncAt))
+        : null;
+    final d =
+        local != null &&
+            (device.lastSyncAt == null || local.isAfter(device.lastSyncAt!))
+        ? device.copyWith(lastSyncAt: local)
+        : device;
     final name = d.name ?? l.syncUnknownPhone;
     final title = d.thisDevice
         ? l.devicesThisPhone(name)

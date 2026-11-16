@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/routes.dart';
@@ -147,10 +146,7 @@ class _StockInScreenState extends ConsumerState<StockInScreen> {
         backgroundColor: AtomColors.surface,
         body: Column(
           children: [
-            AtomFlowBar(
-              leading: AtomFlowLeading.close,
-              title: AppLocalizations.of(context).stockIn,
-            ),
+            StockFormBar(title: AppLocalizations.of(context).stockIn),
             const OfflineBar(),
             Expanded(
               child: options.when(
@@ -236,19 +232,25 @@ class _StockInScreenState extends ConsumerState<StockInScreen> {
                 }
               },
             ),
-            StockDayBox(
-              label: l.stockReceivedOn,
-              day: _receivedOn,
-              onChanged: (d) => setState(() => _receivedOn = d),
+            // Received on and Reference side by side (`.two`), the hint
+            // under both; stacked at large text.
+            StockTwoUp(
+              first: StockDayBox(
+                label: l.stockReceivedOn,
+                day: _receivedOn,
+                onChanged: (d) => setState(() => _receivedOn = d),
+              ),
+              second: AtomTextField(
+                label: l.stockReference,
+                controller: _reference,
+                placeholder: l.stockRefPlaceholder,
+                inputFormatters: [LengthLimitingTextInputFormatter(40)],
+                onChanged: (_) => setState(() {}),
+              ),
             ),
-            AtomTextField(
-              label: l.stockReference,
-              labelNote: l.stockOptional,
-              controller: _reference,
-              placeholder: l.stockRefPlaceholder,
-              hint: l.stockRefHint,
-              inputFormatters: [LengthLimitingTextInputFormatter(40)],
-              onChanged: (_) => setState(() {}),
+            Text(
+              l.stockRefHint,
+              style: AtomText.secondary.copyWith(color: AtomColors.faint),
             ),
           ],
         ),
@@ -356,7 +358,7 @@ class _StockInScreenState extends ConsumerState<StockInScreen> {
         _FormCard(
           title: l.stockSummary,
           children: [
-            Column(
+            StockLines(
               children: [
                 StockLine(
                   label: l.stockInto,
@@ -387,11 +389,7 @@ class _StockInScreenState extends ConsumerState<StockInScreen> {
               : null,
         ),
         const SizedBox(height: 10),
-        AtomButton(
-          label: l.commonCancel,
-          kind: AtomButtonKind.outline,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        StockCancelButton(label: l.commonCancel),
         const SizedBox(height: 16),
         const _RecentStockIn(),
       ],
@@ -429,35 +427,37 @@ class _ScanStrip extends StatelessWidget {
   Widget build(BuildContext context) => AtomPressable(
     onTap: onTap,
     semanticLabel: AppLocalizations.of(context).stockScanNext,
+    // `.strip`: 96 high, a 130×50 frame with the amber line, two lines.
     builder: (context, pressed) => Container(
+      constraints: const BoxConstraints(minHeight: 96),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: pressed ? AtomColors.nav2 : AtomColors.nav,
         borderRadius: AtomRadius.brCard,
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 56,
-            height: 40,
+            width: 130,
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AtomColors.scanFrame, width: 1.5),
+              borderRadius: AtomRadius.brControl,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.85),
+                width: 2,
+              ),
             ),
-            child: Container(height: 2, width: 40, color: AtomColors.amber),
+            child: Container(height: 2, color: AtomColors.amber),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          const SizedBox(width: 14),
+          Flexible(
             child: Text(
               AppLocalizations.of(context).stockScanStrip,
-              style: AtomText.secondary.copyWith(color: Colors.white),
+              style: AtomText.secondary.copyWith(color: AtomColors.navText),
             ),
-          ),
-          const Icon(
-            LucideIcons.scanLine,
-            color: Colors.white,
-            size: AtomIcon.row,
           ),
         ],
       ),
@@ -524,8 +524,10 @@ class _RecentStockIn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rows = ref.watch(stockHistoryProvider(_q)).value?.items;
-    if (rows == null || rows.isEmpty) return const SizedBox.shrink();
+    final data = ref.watch(stockHistoryProvider(_q));
+    final rows = data.value?.items;
+    // Hidden while loading or when it can't be read; empty, it says so.
+    if (rows == null) return const SizedBox.shrink();
     final l = AppLocalizations.of(context);
     return StockBlock(
       title: l.stockRecentIn,
@@ -534,7 +536,13 @@ class _RecentStockIn extends ConsumerWidget {
         onTap: () => context.push(V2Routes.stockHistory),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (rows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+              child: Text(l.stockNoRecentIn, style: AtomText.small),
+            ),
           for (final m in rows.take(3))
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

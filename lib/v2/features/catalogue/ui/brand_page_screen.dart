@@ -41,6 +41,7 @@ class BrandPageScreen extends ConsumerWidget {
           message: e is ApiFailure
               ? sayFailure(AppLocalizations.of(context), e)
               : null,
+          error: e,
           onRetry: () => ref.invalidate(brandPageProvider),
         ),
       ),
@@ -72,11 +73,29 @@ class _Frame extends StatelessWidget {
               title: l.catBrandPageTitle,
               oneLine: true,
               trailing: [
-                if (viewUrl != null)
+                // At large text the label can't share the bar: the icon
+                // alone, with its name for screen readers.
+                if (viewUrl != null &&
+                    MediaQuery.textScalerOf(context).scale(10) > 13 &&
+                    MediaQuery.sizeOf(context).width < 400)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: 4),
+                    child: AtomIconButton(
+                      icon: LucideIcons.externalLink,
+                      label: l.catViewOnAtomshop,
+                      onTap: () => launchUrl(
+                        Uri.parse(viewUrl!),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                    ),
+                  )
+                else if (viewUrl != null)
+                  Padding(
+                    // 12 here and the bar's 4: the 16px gutter.
+                    padding: const EdgeInsets.only(right: 12, left: 8),
                     child: AtomButton.small(
                       label: l.catViewOnAtomshop,
+                      icon: LucideIcons.externalLink,
                       onPressed: () => launchUrl(
                         Uri.parse(viewUrl!),
                         mode: LaunchMode.externalApplication,
@@ -367,13 +386,17 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
     children: [
       Column(
         children: [
+          // `.line` has a line above each row.
+          const Divider(height: 1, color: AtomColors.line),
           AtomInfoLine(
             label: l.catAddress,
             value: shortAddress(d.publicUrl).isEmpty
                 ? '–'
                 : shortAddress(d.publicUrl),
           ),
+          const Divider(height: 1, color: AtomColors.line),
           AtomInfoLine(label: l.catLiveProducts, value: '${d.publishedCount}'),
+          const Divider(height: 1, color: AtomColors.line),
           AtomInfoLine(
             label: l.catFeatured,
             value: l.catFeaturedOf(
@@ -393,7 +416,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
         ? Image.file(_banner!, fit: BoxFit.cover)
         : d.banner != null
         ? AtomPhoto(d.banner!, fit: BoxFit.cover)
-        : const ColoredBox(color: AtomColors.nav2);
+        : const ColoredBox(color: AtomColors.nav);
     final Widget logo = _logo != null
         ? Image.file(_logo!, fit: BoxFit.cover)
         : d.logo != null
@@ -415,7 +438,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
       title: l.catLogoAndBanner,
       children: [
         Container(
-          height: 140,
+          height: 120,
           clipBehavior: Clip.antiAlias,
           decoration: const BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -424,9 +447,10 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
             fit: StackFit.expand,
             children: [
               banner,
+              // The logo sits top-left on the banner (`.banner .lg`).
               Positioned(
-                left: 12,
-                bottom: 12,
+                left: 14,
+                top: 14,
                 child: Container(
                   width: 56,
                   height: 56,
@@ -435,26 +459,33 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
                     color: AtomColors.paper,
                     borderRadius: AtomRadius.brCard,
                     border: Border.all(color: AtomColors.paper, width: 2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x40000000),
+                        blurRadius: 14,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: logo,
                 ),
               ),
               if (caption != null)
+                // `.banner .cap`: plain 12px light text, bottom right.
                 Positioned(
-                  right: 10,
-                  bottom: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AtomColors.ink.withValues(alpha: 0.6),
-                      borderRadius: AtomRadius.brTag,
-                    ),
-                    child: Text(
-                      caption,
-                      style: AtomText.tag.copyWith(color: AtomColors.paper),
+                  left: 84,
+                  right: 12,
+                  bottom: 12,
+                  child: Text(
+                    caption,
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AtomText.small.copyWith(
+                      color: AtomColors.navText,
+                      shadows: d.banner != null || _banner != null
+                          ? const [Shadow(blurRadius: 4)]
+                          : null,
                     ),
                   ),
                 ),
@@ -468,6 +499,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
                 label: l.catChangeLogo,
                 kind: AtomButtonKind.outline,
                 compact: true,
+                fontSize: 14,
                 onPressed: () => _pick(logo: true),
               ),
             ),
@@ -477,6 +509,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
                 label: l.catChangeBanner,
                 kind: AtomButtonKind.outline,
                 compact: true,
+                fontSize: 14,
                 onPressed: () => _pick(logo: false),
               ),
             ),
@@ -538,7 +571,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AtomColors.head,
-            borderRadius: const BorderRadius.all(Radius.circular(12)),
+            borderRadius: AtomRadius.brControl,
             border: Border.all(color: AtomColors.line),
           ),
           child: Column(
@@ -554,9 +587,9 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
                       ),
                     ),
                   ),
-                  AtomButton.small(
+                  _MiniButton(
                     label: l.catRemove,
-                    onPressed: () => setState(() {
+                    onTap: () => setState(() {
                       _slides.removeAt(i);
                       for (final c in s.all) {
                         c.dispose();
@@ -570,6 +603,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
               AtomTextField(
                 label: l.catSmallLabel,
                 controller: s.tag,
+                boxHeight: 44,
                 error: _err('slides.$i.tag'),
                 inputFormatters: [LengthLimitingTextInputFormatter(40)],
               ),
@@ -577,6 +611,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
               AtomTextField(
                 label: l.catHeadline,
                 controller: s.heading,
+                boxHeight: 44,
                 error: _err('slides.$i.heading'),
                 hint: s.heading.text.trim().isEmpty
                     ? l.catSlideNoHeadline
@@ -587,6 +622,7 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
               AtomTextField(
                 label: l.catSupportingLine,
                 controller: s.text,
+                boxHeight: 44,
                 error: _err('slides.$i.text'),
                 inputFormatters: [LengthLimitingTextInputFormatter(160)],
               ),
@@ -704,4 +740,41 @@ class _BrandPageFormState extends ConsumerState<_BrandPageForm> {
     final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
     return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
+}
+
+/// The slide's Remove (`.mini` at 30 tall, 12px), with a 48 tap area.
+class _MiniButton extends StatelessWidget {
+  const _MiniButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => AtomPressable(
+    onTap: onTap,
+    semanticLabel: label,
+    builder: (context, pressed) => ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: Center(
+        widthFactor: 1,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: pressed ? AtomColors.head : AtomColors.paper,
+            borderRadius: AtomRadius.brControl,
+            border: Border.all(color: AtomColors.line2),
+          ),
+          child: Text(
+            label,
+            style: AtomText.small.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AtomColors.ink,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

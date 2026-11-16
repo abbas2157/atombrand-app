@@ -1,5 +1,6 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/db/sync_store.dart';
+import '../../../core/format/dates.dart';
 import 'bulk_models.dart';
 
 /// Bulk requests and deals read from the phone's own copy (the Offline
@@ -40,14 +41,22 @@ class BulkCopy {
     required String from,
     String? status,
     String? search,
+    DateTime? since,
+    DateTime? until,
   }) async {
     final rows = await store.rows('bulk_requests', shopId: shopId);
     final items = <Map<String, dynamic>>[];
     final counts = <String, int>{};
+    DateTime? day(DateTime? d) =>
+        d == null ? null : DateTime(d.year, d.month, d.day);
+    final from0 = day(since), to0 = day(until);
     for (final r in rows) {
       final st = Json.str(r['status']) ?? 'New Lead';
       final f = Json.str(r['from']) ?? 'buyers';
       if (f != from) continue;
+      final made = day(AtomDates.parse(r['created_at'])?.toLocal());
+      if (from0 != null && (made == null || made.isBefore(from0))) continue;
+      if (to0 != null && (made == null || made.isAfter(to0))) continue;
       counts[st] = (counts[st] ?? 0) + 1;
       if (status != null && st != status) continue;
       if (!_matches(r, search, ['full_name', 'phone', 'product_title'])) {

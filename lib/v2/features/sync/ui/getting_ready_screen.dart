@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/routes.dart';
@@ -50,14 +54,85 @@ class GettingReadyScreen extends ConsumerStatefulWidget {
 }
 
 class _GettingReadyState extends ConsumerState<GettingReadyScreen> {
-  /// Rows written per table, as the run reports them.
-  final _rows = <String, int>{};
+  /// The table the copy is on, as the run reports it.
   String? _table;
-  int _seen = 0;
+
+  /// Rows the copy holds per step, by the step's index in [_steps].
+  final _counts = <int, int>{};
+  (SyncPhase, String?)? _countedAt;
+
+  /// The stock step counts units ("1,436 units").
+  static const _stockStep = 3;
+
+  /// The tables each step's count is read from.
+  static const _countTables = [
+    ['orders'],
+    ['bulk_requests', 'deals'],
+    ['products'],
+    ['stock_units'],
+    ['atompay_orders'],
+  ];
+
+  Future<void> _loadCounts() async {
+    if (!mounted) return;
+    final store = ref.read(syncStoreProvider);
+    final shopId = ref.read(syncShopIdProvider) ?? 0;
+    try {
+      final next = <int, int>{};
+      for (final (i, tables) in _countTables.indexed) {
+        var n = 0;
+        for (final t in tables) {
+          n += await store.count(t, shopId: shopId);
+        }
+        next[i] = n;
+      }
+      if (!mounted) return;
+      setState(
+        () => _counts
+          ..clear()
+          ..addAll(next),
+      );
+    } catch (_) {
+      // The copy is shut or not there yet: the counts stay blank.
+    }
+  }
+
+  /// When the copy started moving, for "About N seconds left".
+  final _clock = Stopwatch();
+
+  /// The phone is on Wi-Fi: the pill says "Online · Wi-Fi" (2.7).
+  bool _wifi = false;
+  StreamSubscription<List<ConnectivityResult>>? _net;
+
+  void _onNet(List<ConnectivityResult> r) {
+    final wifi = r.contains(ConnectivityResult.wifi);
+    if (mounted && wifi != _wifi) setState(() => _wifi = wifi);
+  }
+
+  @override
+  void dispose() {
+    _net?.cancel();
+    super.dispose();
+  }
+
+  /// "About 25 seconds left", from how fast the copy has gone so far. Null
+  /// until there is enough to tell, and once it is done.
+  String? _left(AppLocalizations l, int pct) {
+    if (pct <= 0 || pct >= 100) return null;
+    if (!_clock.isRunning) _clock.start();
+    final spent = _clock.elapsedMilliseconds / 1000;
+    if (pct < 5 || spent < 2) return null;
+    final secs = (spent * (100 - pct) / pct).round();
+    if (secs >= 90) return l.authReadyMinutesLeft((secs / 60).round());
+    return l.authReadySecondsLeft(secs < 5 ? 5 : (secs / 5).round() * 5);
+  }
 
   @override
   void initState() {
     super.initState();
+    final net = Connectivity();
+    net.checkConnectivity().then(_onNet, onError: (_) {});
+    _net = net.onConnectivityChanged.listen(_onNet, onError: (_) {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !ref.read(syncStatusProvider).running) {
         ref.read(syncStatusProvider.notifier).syncNow();
@@ -67,9 +142,6 @@ class _GettingReadyState extends ConsumerState<GettingReadyScreen> {
 
   void _track(SyncProgress p) {
     if (p.phase != SyncPhase.downloading) return;
-    final t = _table;
-    if (t != null) _rows[t] = (_rows[t] ?? 0) + (p.rows - _seen);
-    _seen = p.rows;
     if (p.table != null) _table = p.table;
   }
 
@@ -122,9 +194,16 @@ class _GettingReadyState extends ConsumerState<GettingReadyScreen> {
       return last < at ? SyncStepState.done : SyncStepState.waiting;
     }
 
-    String count(List<String> group) {
-      final n = group.fold<int>(0, (s, t) => s + (_rows[t] ?? 0));
-      return n == 0 ? '' : groupDigits(n);
+    // What the copy holds per step, read from the phone as the copy moves
+    // ("1,184", "1,436 units").
+    if (_countedAt != (p.phase, _table)) {
+      _countedAt = (p.phase, _table);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadCounts());
+    }
+    String count(int i) {
+      final n = _counts[i] ?? 0;
+      if (n == 0) return '';
+      return i == _stockStep ? l.syncCopyUnits(n) : groupDigits(n);
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -132,104 +211,283 @@ class _GettingReadyState extends ConsumerState<GettingReadyScreen> {
       child: Scaffold(
         backgroundColor: AtomColors.nav,
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-            children: [
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AtomPill(
-                  label: online ? l.syncOnlineTag : l.syncOffBar,
-                  tone: online ? AtomTone.green : AtomTone.amber,
-                  dot: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Semantics(
-                header: true,
-                child: Text(
-                  l.syncReadyTitle(where),
-                  style: AtomText.successTitle.copyWith(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                l.syncReadyBody,
-                style: AtomText.body.copyWith(color: AtomColors.navText),
-              ),
-              const SizedBox(height: 26),
-              Text(
-                '$pct%',
-                style: AtomText.amountLg.copyWith(
-                  color: Colors.white,
-                  fontSize: 34,
-                ),
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: AtomRadius.brPill,
-                child: LinearProgressIndicator(
-                  value: pct / 100,
-                  minHeight: 8,
-                  backgroundColor: AtomColors.navLine,
-                  valueColor: const AlwaysStoppedAnimation(
-                    AtomColors.darkGreen,
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _DarkPill(
+                          label: online
+                              ? (_wifi
+                                    ? l.authReadyOnlineWifi
+                                    : l.syncOnlineTag)
+                              : l.syncOffBar,
+                          online: online,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          l.syncReadyTitle(where),
+                          style: AtomText.successTitle.copyWith(
+                            color: Colors.white,
+                            height: 1.2,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // `.dark .sub`: 15, line 1.5.
+                      Text(
+                        l.syncReadyBody,
+                        style: AtomText.body.copyWith(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: AtomColors.navText,
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '$pct%',
+                            style: AtomText.amountLg.copyWith(
+                              color: Colors.white,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _left(l, pct) ?? '',
+                              textAlign: TextAlign.end,
+                              style: AtomText.secondary.copyWith(
+                                color: AtomColors.navMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // `.dark .prog`: a white fill on the navy track.
+                      ClipRRect(
+                        borderRadius: AtomRadius.brPill,
+                        child: LinearProgressIndicator(
+                          value: pct / 100,
+                          minHeight: 8,
+                          backgroundColor: AtomColors.nav2,
+                          valueColor: const AlwaysStoppedAnimation(
+                            Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AtomColors.nav2,
+                          borderRadius: AtomRadius.brCard,
+                          border: Border.all(color: AtomColors.navLine),
+                        ),
+                        child: Column(
+                          children: [
+                            for (final (i, (label, group)) in _steps(l).indexed)
+                              _Step(
+                                first: i == 0,
+                                state: stateOf(group),
+                                label: label,
+                                count: count(i),
+                              ),
+                            _Step(
+                              first: false,
+                              state: p.phase == SyncPhase.done || pct == 100
+                                  ? SyncStepState.done
+                                  : p.phase == SyncPhase.photos
+                                  ? SyncStepState.running
+                                  : SyncStepState.waiting,
+                              label: l.syncReadyPhotos,
+                              count: '',
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (p.phase == SyncPhase.failed) ...[
+                        const SizedBox(height: 14),
+                        AtomNote(
+                          kind: AtomNoteKind.warning,
+                          message: l.syncReadyFailed,
+                        ),
+                      ] else if (pct == 100) ...[
+                        const SizedBox(height: 14),
+                        AtomNote(
+                          kind: AtomNoteKind.success,
+                          message: l.syncReadyDone,
+                        ),
+                      ],
+                      const Spacer(),
+                      const SizedBox(height: 28),
+                      AtomButton(
+                        label: l.syncStartNow,
+                        kind: AtomButtonKind.light,
+                        onPressed: _start,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        l.syncReadyNote,
+                        textAlign: TextAlign.center,
+                        style: AtomText.secondary.copyWith(
+                          color: AtomColors.navMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 22),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                decoration: BoxDecoration(
-                  color: AtomColors.nav2,
-                  borderRadius: AtomRadius.brCard,
-                  border: Border.all(color: AtomColors.navLine),
-                ),
-                child: Column(
-                  children: [
-                    for (final (label, group) in _steps(l))
-                      SyncStepRow(
-                        dark: true,
-                        state: stateOf(group),
-                        label: label,
-                        trailing: count(group),
-                      ),
-                    SyncStepRow(
-                      dark: true,
-                      state: p.phase == SyncPhase.done || pct == 100
-                          ? SyncStepState.done
-                          : p.phase == SyncPhase.photos
-                          ? SyncStepState.running
-                          : SyncStepState.waiting,
-                      label: l.syncReadyPhotos,
-                    ),
-                  ],
-                ),
-              ),
-              if (p.phase == SyncPhase.failed) ...[
-                const SizedBox(height: 14),
-                AtomNote(
-                  kind: AtomNoteKind.warning,
-                  message: status.message ?? l.syncReadyFailed,
-                ),
-              ] else if (pct == 100) ...[
-                const SizedBox(height: 14),
-                AtomNote(kind: AtomNoteKind.success, message: l.syncReadyDone),
-              ],
-              const SizedBox(height: 28),
-              AtomButton(
-                label: l.syncStartNow,
-                kind: AtomButtonKind.light,
-                onPressed: _start,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                l.syncReadyNote,
-                textAlign: TextAlign.center,
-                style: AtomText.small.copyWith(color: AtomColors.navMuted),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// `.dark .pill.on` / `.dark .pill.off`: "Online · Wi-Fi" on navy.
+class _DarkPill extends StatelessWidget {
+  const _DarkPill({required this.label, required this.online});
+
+  final String label;
+  final bool online;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = online ? AtomColors.darkGreen : AtomColors.darkAmber;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        // `.dark .pill.off`: rgba(247,169,40,.16) fill, .3 line.
+        color: online ? AtomColors.darkGreenFill : const Color(0x29F7A928),
+        borderRadius: AtomRadius.brPill,
+        border: Border.all(
+          color: online ? AtomColors.darkGreenLine : const Color(0x4DF7A928),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              style: AtomText.small.copyWith(
+                color: fg,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One step of the copy (`.step`): 52 tall, a line between steps, the mark
+/// (`.st.ok` / `.st.run` / `.st.wait`), the name and what came down.
+class _Step extends StatelessWidget {
+  const _Step({
+    required this.first,
+    required this.state,
+    required this.label,
+    required this.count,
+  });
+
+  final bool first;
+  final SyncStepState state;
+  final String label;
+  final String count;
+
+  @override
+  Widget build(BuildContext context) {
+    final mark = switch (state) {
+      // `.st.ok`: rgba(15,117,82,.25) disc, #7BE3B9 tick.
+      SyncStepState.done => Container(
+        width: 28,
+        height: 28,
+        decoration: const BoxDecoration(
+          color: Color(0x400F7552),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          LucideIcons.check,
+          size: 16,
+          color: AtomColors.darkGreen,
+        ),
+      ),
+      SyncStepState.running => const SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+      ),
+      SyncStepState.waiting => Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: AtomColors.darkDot, width: 2),
+        ),
+      ),
+    };
+    return Container(
+      constraints: const BoxConstraints(minHeight: 52),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: first
+          ? null
+          : const BoxDecoration(
+              border: Border(top: BorderSide(color: AtomColors.navLine)),
+            ),
+      child: Row(
+        children: [
+          mark,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: AtomText.body.copyWith(
+                fontSize: 15,
+                height: 1.3,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          if (count.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            Text(
+              count,
+              style: AtomText.secondary.copyWith(
+                color: AtomColors.navMuted,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

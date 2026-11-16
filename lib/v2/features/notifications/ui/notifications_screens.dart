@@ -14,6 +14,7 @@ import '../../../core/access/access_controller.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_result.dart';
 import '../../../core/format/dates.dart';
+import '../../../core/session/session.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
@@ -24,8 +25,17 @@ import '../data/notifications_repository.dart';
 
 /// Where a notification leads (`data.screen`, docs/BRAND_APP.md §8.10).
 /// Null when it has no screen of its own: the message itself is shown.
-({String path, bool tab})? noticeTarget(Map<String, dynamic> data) {
+({String path, bool tab})? noticeTarget(
+  Map<String, dynamic> data, {
+  String? type,
+}) {
   final orderUuid = Json.str(data['order_uuid']);
+  final kind = type ?? Json.str(data['type']) ?? '';
+  // An Atomshop seller's request (sourcing) opens 7.2, a website buyer's 7.3.
+  final fromSeller =
+      Json.str(data['from']) == 'seller' ||
+      kind.startsWith('brand_quote_') ||
+      kind == 'brand_sourcing_received';
   final bulkId = Json.integer(data['bulk_request_id']);
   final productId = Json.integer(data['product_id']);
   final dealId = Json.integer(data['deal_id']);
@@ -39,13 +49,19 @@ import '../data/notifications_repository.dart';
           : V2Routes.orderOf(orderUuid),
       tab: false,
     ),
+    'orders' when Json.str(data['status']) != null => (
+      path: V2Routes.ordersWith(status: Json.str(data['status'])),
+      tab: true,
+    ),
     'order' || 'orders' => (path: V2Routes.orders, tab: true),
-    'atompay' when orderUuid != null => (
+    'atompay' || 'atompay_order' when orderUuid != null => (
       path: V2Routes.atompayOf(orderUuid),
       tab: false,
     ),
     'bulk_request' when bulkId != null => (
-      path: V2Routes.bulkRequestOf(bulkId),
+      path: fromSeller
+          ? V2Routes.sellerRequestOf(bulkId)
+          : V2Routes.bulkRequestOf(bulkId),
       tab: false,
     ),
     'sourcing' when sourcingId != null => (
@@ -54,6 +70,7 @@ import '../data/notifications_repository.dart';
     ),
     'deal' when dealId != null => (path: V2Routes.dealOf(dealId), tab: false),
     'bulk_request' || 'sourcing' || 'deal' => (path: V2Routes.bulk, tab: true),
+    'atompay' || 'atompay_order' => (path: V2Routes.atompayOrders, tab: true),
     'product' when productId != null => (
       path: V2Routes.productEditOf(productId),
       tab: false,
@@ -61,6 +78,7 @@ import '../data/notifications_repository.dart';
     'product' => (path: V2Routes.products, tab: true),
     'stock' || 'inventory' => (path: V2Routes.stock, tab: false),
     'billing' => (path: V2Routes.plan, tab: false),
+    'reports' => (path: V2Routes.reports, tab: false),
     'support' => (path: V2Routes.support, tab: false),
     'dashboard' => (path: V2Routes.home, tab: true),
     'profile' => (path: V2Routes.profile, tab: false),
@@ -70,7 +88,7 @@ import '../data/notifications_repository.dart';
 
 /// Opens what [n] is about: its screen, or the message.
 void openNotice(BuildContext context, Notice n) {
-  final t = n.fromAtomshop ? null : noticeTarget(n.data);
+  final t = n.fromAtomshop ? null : noticeTarget(n.data, type: n.type);
   if (t == null) {
     context.push(V2Routes.notificationMessage, extra: n);
   } else if (t.tab) {
@@ -96,15 +114,24 @@ const _greyTile = AtomTone(
     return (LucideIcons.messageCircle, AtomTone.blue);
   }
   return switch (type) {
-    'brand_new_order' => (LucideIcons.fileText, AtomTone.blue),
-    'brand_atompay_assigned' => (LucideIcons.handCoins, AtomTone.purple),
-    'brand_new_bulk_request' ||
-    'brand_sourcing_received' => (LucideIcons.funnel, AtomTone.amber),
-    'brand_quote_accepted' => (LucideIcons.check, AtomTone.green),
+    'brand_new_order' => (LucideIcons.package, AtomTone.blue),
+    'brand_orders_waiting' => (LucideIcons.triangleAlert, AtomTone.rose),
+    'brand_quote_expiring' => (LucideIcons.clock, AtomTone.amber),
+    'brand_weekly_summary' ||
+    'brand_daily_summary' => (LucideIcons.chartColumn, AtomTone.blue),
+    'brand_atompay_assigned' => (LucideIcons.creditCard, AtomTone.amber),
+    'brand_new_bulk_request' => (LucideIcons.funnel, AtomTone.blue),
+    'brand_quote_accepted' ||
+    'brand_sourcing_received' => (LucideIcons.check, AtomTone.green),
     'brand_quote_declined' => (LucideIcons.x, AtomTone.rose),
-    'brand_quote_change' => (LucideIcons.pencil, AtomTone.amber),
+    'brand_quote_change' => (LucideIcons.messageCircle, AtomTone.amber),
+    'brand_product_reviewed'
+        when Json.str(data['status']) == 'On hold' ||
+            Json.str(data['status']) == 'Closed' =>
+      (LucideIcons.triangleAlert, AtomTone.rose),
     'brand_product_reviewed' => (LucideIcons.tag, AtomTone.green),
-    'brand_stock_low' || 'stock_low' => (LucideIcons.box, AtomTone.amber),
+    'brand_stock_low' ||
+    'stock_low' => (LucideIcons.layoutGrid, AtomTone.amber),
     'brand_support_reply' => (LucideIcons.messageCircle, AtomTone.blue),
     'brand_billing' when Json.str(data['receipt']) != null => (
       LucideIcons.check,
@@ -124,14 +151,63 @@ const _greyTile = AtomTone(
   BuildContext context,
   AppLocalizations l,
   Notice n, {
-  required bool owner,
+  required Who? who,
+  required bool inventory,
 }) {
+  final owner = who?.isOwner ?? false;
+  bool can(String p) => who != null && who.can(p);
+  final target = noticeTarget(n.data, type: n.type);
+  ({String label, VoidCallback onTap}) go(String label, String path) =>
+      (label: label, onTap: () => context.push(path));
+  ({String label, VoidCallback onTap})? open(String label) => target == null
+      ? null
+      : (
+          label: label,
+          onTap: () =>
+              target.tab ? context.go(target.path) : context.push(target.path),
+        );
+  final orderUuid = Json.str(n.data['order_uuid']);
+  final bulkId = Json.integer(n.data['bulk_request_id']);
+  final productId = Json.integer(n.data['product_id']);
+  final status = Json.str(n.data['status']);
   return switch (n.type) {
     'brand_billing' when owner && Json.str(n.data['invoice']) != null => (
       label: l.bannerPay,
       onTap: () =>
           context.push(V2Routes.paidOf(bill: Json.str(n.data['invoice']))),
     ),
+    'brand_new_order' || 'brand_orders_waiting'
+        when can(BrandPermission.ordersStatus) =>
+      open(l.notifActConfirm),
+    'brand_atompay_assigned'
+        when orderUuid != null && can(BrandPermission.atompayView) =>
+      go(l.notifActHandOver, V2Routes.atompayHandoverOf(orderUuid)),
+    'brand_new_bulk_request'
+        when bulkId != null &&
+            Json.str(n.data['from']) == 'seller' &&
+            can(BrandPermission.bulkQuote) =>
+      go(l.notifActSendQuote, V2Routes.sellerRequestQuoteOf(bulkId)),
+    'brand_new_bulk_request' when can(BrandPermission.bulkView) => open(
+      l.notifActReply,
+    ),
+    'brand_quote_change' when can(BrandPermission.bulkQuote) => open(
+      l.notifActAnswer,
+    ),
+    'brand_quote_expiring' when can(BrandPermission.bulkView) => open(
+      l.notifActFollowUp,
+    ),
+    'brand_quote_accepted' when can(BrandPermission.bulkView) => open(
+      l.notifActOpenDeal,
+    ),
+    'brand_stock_low' when inventory && can(BrandPermission.stockChange) => go(
+      l.notifActStockIn,
+      V2Routes.stockIn(),
+    ),
+    'brand_product_reviewed'
+        when status == 'On hold' &&
+            productId != null &&
+            can(BrandPermission.catalogueEdit) =>
+      go(l.notifActFix, V2Routes.productEditOf(productId)),
     _ => null,
   };
 }
@@ -164,7 +240,6 @@ class _KindChip extends StatelessWidget {
       builder: (context, pressed) => Container(
         constraints: const BoxConstraints(minHeight: AtomSize.small),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: on
               ? AtomColors.primarySoft
@@ -177,10 +252,15 @@ class _KindChip extends StatelessWidget {
             width: on ? 2 : 1,
           ),
         ),
-        child: Text(
-          label,
-          style: AtomText.smallButton.copyWith(
-            color: on ? AtomColors.primary : AtomColors.text,
+        // In a Wrap: hug the label (a plain `alignment` fills the row).
+        child: Align(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: Text(
+            label,
+            style: AtomText.smallButton.copyWith(
+              color: on ? AtomColors.primary : AtomColors.text,
+            ),
           ),
         ),
       ),
@@ -350,6 +430,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final readHere = ref.watch(noticesReadHereProvider);
     final who = ref.watch(sessionProvider.notifier).current?.who;
     final agent = who != null && !who.isOwner;
+    final inventory = ref.watch(accessProvider).has(Addon.inventory);
     final empty = data.value?.$1.isEmpty ?? false;
     return Scaffold(
       body: Column(
@@ -372,7 +453,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 child: AtomLoadingRows(),
               ),
               error: (e, _) => AtomErrorState(
-                message: e is ApiFailure ? e.message : null,
+                message: e is ApiFailure ? sayFailure(l, e) : null,
+                error: e,
                 onRetry: () => ref.invalidate(noticesProvider),
               ),
               data: (d) {
@@ -396,7 +478,19 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         )
                       : const NoticesEmpty();
                 }
-                final kinds = {for (final n in all) n.kind};
+                final kinds = <NoticeKind>[
+                  if (who == null || who.can(BrandPermission.ordersView))
+                    NoticeKind.orders,
+                  if (who == null || who.can(BrandPermission.atompayView))
+                    NoticeKind.atompay,
+                  if (who == null || who.can(BrandPermission.bulkView))
+                    NoticeKind.bulk,
+                  if (inventory &&
+                      (who == null || who.can(BrandPermission.stockView)))
+                    NoticeKind.stock,
+                  if (who == null || who.can(BrandPermission.catalogueView))
+                    NoticeKind.products,
+                ];
                 final shown = all
                     .where((n) => _kind == null || n.kind == _kind)
                     .where((n) => !_unread || !n.read)
@@ -435,10 +529,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       SliverList.list(
                         children: [
                           if (!widget.recommendations)
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
+                            Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: Row(
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
                                   _KindChip(
                                     label: l.noticesAll,
@@ -448,7 +543,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                       _unread = false;
                                     }),
                                   ),
-                                  const SizedBox(width: 8),
                                   _KindChip(
                                     label: l.dpDcUnread,
                                     on: _unread,
@@ -456,17 +550,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                       _unread = !_unread;
                                     }),
                                   ),
-                                  for (final k in NoticeKind.values)
-                                    if (kinds.contains(k)) ...[
-                                      const SizedBox(width: 8),
-                                      _KindChip(
-                                        label: _kindName(l, k, agent: agent),
-                                        on: _kind == k,
-                                        onTap: () => setState(
-                                          () => _kind = _kind == k ? null : k,
-                                        ),
+                                  for (final k in kinds)
+                                    _KindChip(
+                                      label: _kindName(l, k, agent: agent),
+                                      on: _kind == k,
+                                      onTap: () => setState(
+                                        () => _kind = _kind == k ? null : k,
                                       ),
-                                    ],
+                                    ),
                                 ],
                               ),
                             ),
@@ -489,7 +580,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             itemCount: list.length,
                             itemBuilder: (context, i) {
                               final n = list[i];
-                              final act = _action(context, l, n, owner: !agent);
+                              final act = _action(
+                                context,
+                                l,
+                                n,
+                                who: who,
+                                inventory: inventory,
+                              );
                               return NoticeRow(
                                 notice: n,
                                 actionLabel: act?.label,
@@ -740,12 +837,14 @@ class NoticeRow extends StatelessWidget {
 }
 
 /// All caught up (16.7).
-class NoticesEmpty extends StatelessWidget {
+class NoticesEmpty extends ConsumerWidget {
   const NoticesEmpty({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final who = ref.watch(sessionProvider.notifier).current?.who;
+    final orders = who == null || who.can(BrandPermission.ordersView);
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(32, 24, 32, 60),
@@ -811,9 +910,10 @@ class NoticesEmpty extends StatelessWidget {
             const SizedBox(height: 12),
             IntrinsicWidth(
               child: AtomButton(
-                label: l.noticesEmptyAction,
+                label: orders ? l.noticesEmptyAction : l.notifEmptyHome,
                 expand: false,
-                onPressed: () => context.go(V2Routes.home),
+                onPressed: () =>
+                    context.go(orders ? V2Routes.orders : V2Routes.home),
               ),
             ),
           ],
@@ -1228,7 +1328,8 @@ class _NotificationSettingsScreenState
             child: loaded.when(
               loading: () => const AtomLoadingRows(),
               error: (e, _) => AtomErrorState(
-                message: e is ApiFailure ? e.message : null,
+                message: e is ApiFailure ? sayFailure(l, e) : null,
+                error: e,
                 onRetry: () => ref.invalidate(noticeSettingsProvider),
               ),
               data: (first) {
@@ -1308,6 +1409,18 @@ class _NotificationSettingsScreenState
                           ),
                           onTap: () => _quiet(s),
                         ),
+                        if (owner)
+                          _SettingRow(
+                            title: l.notifMorningTitle,
+                            sub: l.notifMorningSub,
+                            trailing: _Value(switch (ref.watch(
+                              morningSummaryOnProvider,
+                            )) {
+                              AsyncData(value: false) => l.dpDcOff,
+                              _ => l.notifMorningAt,
+                            }),
+                            onTap: () => context.push(V2Routes.dailySummary),
+                          ),
                         _SettingRow(
                           title: l.dpDcSound,
                           sub: l.dpDcPhoneSettings,
@@ -1444,7 +1557,14 @@ class _SettingRow extends StatelessWidget {
     );
   }
   final (icon, tone) = noticeLook(type, data);
-  return (icon: icon, tone: tone, cta: l.bannerOpen);
+  final cta = switch (type) {
+    'brand_new_order' || 'brand_orders_waiting' => l.notifActConfirm,
+    'brand_new_bulk_request' => l.notifActReply,
+    'brand_atompay_assigned' => l.notifActHandOver,
+    'brand_quote_expiring' => l.notifActFollowUp,
+    _ => l.bannerOpen,
+  };
+  return (icon: icon, tone: tone, cta: cta);
 }
 
 /// A push that arrives while the app is open (16.6): it drops from the top

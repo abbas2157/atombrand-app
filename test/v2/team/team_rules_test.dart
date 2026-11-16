@@ -115,16 +115,16 @@ void main() {
     test(
       'role chips keep the server order and drop what the brand can’t give',
       () {
-        expect(roleChips(l, ['stock.view', 'orders.view', 'orders.payment']), [
-          'Orders',
-          'Payments',
-          'See stock',
-        ]);
+        // "Orders" is working orders (orders.status), as the board words it.
+        expect(
+          roleChips(l, ['stock.view', 'orders.status', 'orders.payment']),
+          ['Orders', 'Payments', 'See stock'],
+        );
         expect(
           roleChips(
             l,
-            ['stock.view', 'orders.view'],
-            grantable: {'orders.view'},
+            ['stock.view', 'orders.status'],
+            grantable: {'orders.status'},
           ),
           ['Orders'],
         );

@@ -214,11 +214,32 @@ class AtomPageHeader extends StatelessWidget {
     this.selectedTab = 0,
     this.onTab,
     this.leading,
+    this.fitTabs = false,
+    this.divider = true,
+    this.tabsTrailing,
+    this.subtitle,
   });
 
   final String title;
   final List<Widget> actions;
   final List<AtomHeaderTab>? tabs;
+
+  /// A grey line under the title row, inside the white header (the
+  /// board's `p.tiny` with `margin: -8px 16px 12px`, e.g. Products' count).
+  final String? subtitle;
+
+  /// Something after the tabs in their row, 6 from the last one: Team &
+  /// roles' outlined "Roles 6" button (11.1).
+  final Widget? tabsTrailing;
+
+  /// False when the caller adds more header content below (a toggle) and
+  /// draws the bottom line itself.
+  final bool divider;
+
+  /// Shrinks the tab row to keep every tab in view (the board's
+  /// `overflow: hidden` row) rather than scrolling; it still scrolls at
+  /// large text.
+  final bool fitTabs;
   final int selectedTab;
   final ValueChanged<int>? onTab;
 
@@ -230,9 +251,11 @@ class AtomPageHeader extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AtomColors.paper,
-          border: Border(bottom: BorderSide(color: AtomColors.line)),
+          border: divider
+              ? const Border(bottom: BorderSide(color: AtomColors.line))
+              : null,
         ),
         padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
         child: Column(
@@ -259,20 +282,55 @@ class AtomPageHeader extends StatelessWidget {
                 ),
               ),
             ),
-            if (tabs != null)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AtomSpace.s3),
-                child: Row(
-                  children: [
-                    for (var i = 0; i < tabs!.length; i++)
-                      _HeaderTab(
-                        tab: tabs![i],
-                        on: i == selectedTab,
-                        onTap: onTab == null ? null : () => onTab!(i),
-                      ),
-                  ],
+            if (subtitle != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AtomSpace.gutter, 0, 16, 4),
+                child: Transform.translate(
+                  offset: const Offset(0, -8),
+                  child: Text(
+                    subtitle!,
+                    style: AtomText.small.copyWith(color: AtomColors.faint),
+                  ),
                 ),
+              ),
+            if (tabs != null)
+              Builder(
+                builder: (context) {
+                  final row = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < tabs!.length; i++)
+                        _HeaderTab(
+                          tab: tabs![i],
+                          on: i == selectedTab,
+                          onTap: onTab == null ? null : () => onTab!(i),
+                        ),
+                      if (tabsTrailing != null) ...[
+                        const SizedBox(width: 6),
+                        tabsTrailing!,
+                      ],
+                    ],
+                  );
+                  final big = MediaQuery.textScalerOf(context).scale(10) > 13;
+                  if (fitTabs && !big) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AtomSpace.s3,
+                      ),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: FittedBox(fit: BoxFit.scaleDown, child: row),
+                      ),
+                    );
+                  }
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AtomSpace.s3,
+                    ),
+                    child: row,
+                  );
+                },
               ),
           ],
         ),
@@ -376,10 +434,15 @@ class AtomFlowBar extends StatelessWidget {
     this.onLeading,
     this.oneLine = false,
     this.subtitleBold,
+    this.middle,
   });
 
   final AtomFlowLeading leading;
   final String? title;
+
+  /// A widget in the title's place when there is no [title] (a detail
+  /// screen's eyebrow beside its status).
+  final Widget? middle;
   final String? subtitle;
 
   /// A part of [subtitle] in bold, as the board's `<b>` ("this month
@@ -421,7 +484,7 @@ class AtomFlowBar extends StatelessWidget {
                   const SizedBox(width: 12),
                 Expanded(
                   child: title == null
-                      ? const SizedBox.shrink()
+                      ? (middle ?? const SizedBox.shrink())
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,

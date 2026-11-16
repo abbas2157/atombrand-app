@@ -32,10 +32,12 @@ void main() {
     });
 
     test('repeats, bad IMEIs and numbers in stock are flagged', () {
-      final lines = checkSerials(_l,
-        ['490154203237518', '490154203237519', '12345', '490154203237518'],
-        Tracking.imei,
-      );
+      final lines = checkSerials(_l, [
+        '490154203237518',
+        '490154203237519',
+        '12345',
+        '490154203237518',
+      ], Tracking.imei);
       expect(lines.map((l) => l.problem).toList(), [
         null,
         'Last digit doesn’t match',
@@ -46,7 +48,8 @@ void main() {
     });
 
     test('a serial already in stock is flagged, case-blind', () {
-      final lines = checkSerials(_l,
+      final lines = checkSerials(
+        _l,
         ['zn-1', 'ZN-2', 'x'],
         Tracking.serial,
         inStock: {'ZN-1'},
@@ -65,35 +68,84 @@ void main() {
   group('stock in', () {
     test('needs a warehouse, a product and units', () {
       expect(
-        stockInProblem(_l, warehouse: null, variant: _serialVariant, serials: const [], autoQty: 0, max: 200),
+        stockInProblem(
+          _l,
+          warehouse: null,
+          variant: _serialVariant,
+          serials: const [],
+          autoQty: 0,
+          max: 200,
+        ),
         'Choose the warehouse',
       );
       expect(
-        stockInProblem(_l, warehouse: _wh, variant: null, serials: const [], autoQty: 0, max: 200),
+        stockInProblem(
+          _l,
+          warehouse: _wh,
+          variant: null,
+          serials: const [],
+          autoQty: 0,
+          max: 200,
+        ),
         'Choose the product',
       );
       expect(
-        stockInProblem(_l, warehouse: _wh, variant: _serialVariant, serials: const [], autoQty: 0, max: 200),
+        stockInProblem(
+          _l,
+          warehouse: _wh,
+          variant: _serialVariant,
+          serials: const [],
+          autoQty: 0,
+          max: 200,
+        ),
         'Scan or type each unit’s serial number',
       );
       final good = checkSerials(_l, ['SN-001'], Tracking.serial);
       expect(
-        stockInProblem(_l, warehouse: _wh, variant: _serialVariant, serials: good, autoQty: 0, max: 200),
+        stockInProblem(
+          _l,
+          warehouse: _wh,
+          variant: _serialVariant,
+          serials: good,
+          autoQty: 0,
+          max: 200,
+        ),
         isNull,
       );
     });
 
     test('auto numbered products take a count within the limit', () {
       expect(
-        stockInProblem(_l, warehouse: _wh, variant: _autoVariant, serials: const [], autoQty: 0, max: 200),
+        stockInProblem(
+          _l,
+          warehouse: _wh,
+          variant: _autoVariant,
+          serials: const [],
+          autoQty: 0,
+          max: 200,
+        ),
         'Enter how many units arrived',
       );
       expect(
-        stockInProblem(_l, warehouse: _wh, variant: _autoVariant, serials: const [], autoQty: 201, max: 200),
+        stockInProblem(
+          _l,
+          warehouse: _wh,
+          variant: _autoVariant,
+          serials: const [],
+          autoQty: 201,
+          max: 200,
+        ),
         'Add up to 200 units at a time',
       );
       expect(
-        stockInProblem(_l, warehouse: _wh, variant: _autoVariant, serials: const [], autoQty: 3, max: 200),
+        stockInProblem(
+          _l,
+          warehouse: _wh,
+          variant: _autoVariant,
+          serials: const [],
+          autoQty: 3,
+          max: 200,
+        ),
         isNull,
       );
     });
@@ -101,7 +153,10 @@ void main() {
     test('previews the auto numbers from the next one', () {
       expect(autoNumbersPreview(_l, 'ZNVAC-0042', 1), 'ZNVAC-0042');
       expect(autoNumbersPreview(_l, 'ZNVAC-0042', 2), 'ZNVAC-0042, ZNVAC-0043');
-      expect(autoNumbersPreview(_l, 'ZNVAC-0098', 3), 'ZNVAC-0098 to ZNVAC-0100');
+      expect(
+        autoNumbersPreview(_l, 'ZNVAC-0098', 3),
+        'ZNVAC-0098 to ZNVAC-0100',
+      );
       expect(autoNumbersPreview(_l, null, 3), isNull);
     });
   });
@@ -172,7 +227,10 @@ void main() {
     test('day headings', () {
       final today = DateTime(2026, 11, 13, 15);
       expect(historyDay(_l, DateTime(2026, 11, 13), today), 'Today');
-      expect(historyDay(_l, DateTime(2026, 11, 12), today), 'Yesterday · 12 Nov');
+      expect(
+        historyDay(_l, DateTime(2026, 11, 12), today),
+        'Yesterday · 12 Nov',
+      );
       expect(historyDay(_l, DateTime(2026, 11, 10), today), 'Tue 10 Nov');
       expect(historyDay(_l, DateTime(2025, 11, 10), today), '10 Nov 2025');
     });
@@ -201,10 +259,14 @@ void main() {
     );
 
     test('in stock wins, with its stock-in row', () {
-      final found = lookUnit('znv-1', [unit], [
-        _move('transfer_in', serial: 'ZNV-1'),
-        _move('stock_in', serial: 'ZNV-1'),
-      ]);
+      final found = lookUnit(
+        'znv-1',
+        [unit],
+        [
+          _move('transfer_in', serial: 'ZNV-1'),
+          _move('stock_in', serial: 'ZNV-1'),
+        ],
+      );
       expect(found.found, UnitFound.inStock);
       expect(found.unit, unit);
       expect(found.cameIn?.type, 'stock_in');
@@ -212,20 +274,30 @@ void main() {
 
     test('the latest row says delivered or removed', () {
       expect(
-        lookUnit('ZNV-2', [unit], [
-          _move('sale_out', serial: 'ZNV-2'),
-          _move('stock_in', serial: 'ZNV-2'),
-        ]).found,
+        lookUnit(
+          'ZNV-2',
+          [unit],
+          [
+            _move('sale_out', serial: 'ZNV-2'),
+            _move('stock_in', serial: 'ZNV-2'),
+          ],
+        ).found,
         UnitFound.delivered,
       );
       expect(
-        lookUnit('ZNV-2', const [], [_move('adjust_out', serial: 'ZNV-2')]).found,
+        lookUnit('ZNV-2', const [], [
+          _move('adjust_out', serial: 'ZNV-2'),
+        ]).found,
         UnitFound.removed,
       );
     });
 
     test('rows for other serials are ignored; nothing is not found', () {
-      final found = lookUnit('ZNV-3', [unit], [_move('sale_out', serial: 'ZNV-30')]);
+      final found = lookUnit(
+        'ZNV-3',
+        [unit],
+        [_move('sale_out', serial: 'ZNV-30')],
+      );
       expect(found.found, UnitFound.notFound);
       expect(found.serial, 'ZNV-3');
     });
@@ -233,16 +305,20 @@ void main() {
 
   group('adjust, move and warehouses', () {
     test('adjust out needs a unit, a reason and a note', () {
-      String? out({UnitOption? unit, String? reason = 'Damaged', String note = 'x'}) =>
-          adjustProblem(_l,
-            out: true,
-            unit: unit,
-            variant: null,
-            warehouse: null,
-            serial: '',
-            reason: reason,
-            note: note,
-          );
+      String? out({
+        UnitOption? unit,
+        String? reason = 'Damaged',
+        String note = 'x',
+      }) => adjustProblem(
+        _l,
+        out: true,
+        unit: unit,
+        variant: null,
+        warehouse: null,
+        serial: '',
+        reason: reason,
+        note: note,
+      );
       const u = UnitOption(id: 1, serial: 'A');
       expect(out(), 'Choose the unit to remove');
       expect(out(unit: u, reason: null), 'Choose a reason');
@@ -251,7 +327,8 @@ void main() {
     });
 
     test('adjust in needs a serial unless numbered for you', () {
-      String? inn(VariantOption v, String serial) => adjustProblem(_l,
+      String? inn(VariantOption v, String serial) => adjustProblem(
+        _l,
         out: false,
         unit: null,
         variant: v,
@@ -263,22 +340,43 @@ void main() {
       expect(inn(_serialVariant, ''), 'Enter the serial number');
       expect(inn(_serialVariant, 'SN-9'), isNull);
       expect(inn(_autoVariant, ''), isNull);
-      const imei = VariantOption(id: 7, productId: 1, product: 'P', variant: '', tracking: Tracking.imei);
+      const imei = VariantOption(
+        id: 7,
+        productId: 1,
+        product: 'P',
+        variant: '',
+        tracking: Tracking.imei,
+      );
       expect(inn(imei, '123'), 'Check the IMEI: 15 digits');
       expect(inn(imei, '490154203237518'), isNull);
     });
 
     test('move needs two different places and ticked units', () {
       const other = StockWarehouse(id: 2, name: 'Godown');
-      expect(moveProblem(_l, from: _wh, to: null, picked: 1), 'Choose where it goes');
-      expect(moveProblem(_l, from: _wh, to: _wh, picked: 1), 'Choose a different warehouse');
-      expect(moveProblem(_l, from: _wh, to: other, picked: 0), 'Tick the units to move');
+      expect(
+        moveProblem(_l, from: _wh, to: null, picked: 1),
+        'Choose where it goes',
+      );
+      expect(
+        moveProblem(_l, from: _wh, to: _wh, picked: 1),
+        'Choose a different warehouse',
+      );
+      expect(
+        moveProblem(_l, from: _wh, to: other, picked: 0),
+        'Tick the units to move',
+      );
       expect(moveProblem(_l, from: _wh, to: other, picked: 3), isNull);
     });
 
     test('warehouse and prefix checks', () {
-      expect(warehouseProblem(_l, name: ' ', outletId: 1), 'Give the warehouse a name');
-      expect(warehouseProblem(_l, name: 'Godown', outletId: null), 'Choose the outlet');
+      expect(
+        warehouseProblem(_l, name: ' ', outletId: 1),
+        'Give the warehouse a name',
+      );
+      expect(
+        warehouseProblem(_l, name: 'Godown', outletId: null),
+        'Choose the outlet',
+      );
       expect(warehouseProblem(_l, name: 'Godown', outletId: 1), isNull);
       expect(prefixProblem(_l, 'Z'), isNotNull);
       expect(prefixProblem(_l, 'ZNV-TV'), isNotNull);

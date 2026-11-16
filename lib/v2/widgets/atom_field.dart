@@ -45,10 +45,14 @@ class AtomField extends StatelessWidget {
     this.hint,
     this.error,
     this.labelNoteInline = false,
+    this.countHint = false,
   });
 
   final String label;
   final Widget child;
+
+  /// [hint] is a character count (`.count`): 12px and flush right.
+  final bool countHint;
 
   /// Grey text at the end of the label row.
   final String? labelNote;
@@ -156,7 +160,9 @@ class AtomField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(padding: const EdgeInsets.only(bottom: 6), child: labelRow),
+        // An empty label (a search box with a placeholder only) has no row.
+        if (label.isNotEmpty)
+          Padding(padding: const EdgeInsets.only(bottom: 6), child: labelRow),
         child,
         if (below != null)
           Padding(
@@ -166,8 +172,10 @@ class AtomField extends StatelessWidget {
               child: error == null
                   ? Text(
                       below,
+                      textAlign: countHint ? TextAlign.end : TextAlign.start,
                       style: AtomText.secondary.copyWith(
                         color: AtomColors.faint,
+                        fontSize: countHint ? 12 : null,
                       ),
                     )
                   : AtomFieldError(below),
@@ -231,10 +239,14 @@ class AtomTextField extends StatefulWidget {
     this.minLines,
     this.boxHeight = AtomSize.control,
     this.labelNoteInline = false,
+    this.countHint = false,
   });
 
   /// [labelNote] right after the label, as [AtomField.labelNoteInline].
   final bool labelNoteInline;
+
+  /// [hint] is a character count, as [AtomField.countHint].
+  final bool countHint;
 
   /// A text area (`.ta`): at least this many lines, growing as typed.
   /// Null is one line.
@@ -311,6 +323,7 @@ class _AtomTextFieldState extends State<AtomTextField> {
       labelNote: widget.labelNote,
       labelNoteInline: widget.labelNoteInline,
       hint: widget.hint,
+      countHint: widget.countHint,
       error: widget.error,
       child: Container(
         constraints: BoxConstraints(minHeight: widget.boxHeight),

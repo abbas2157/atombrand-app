@@ -48,9 +48,12 @@ enum TagTone { green, amber, rose }
   return (l.catAvailableUnits(a.units), TagTone.green);
 }
 
-/// "PR-10421 · Air conditioners"; "New" for a product without a number.
-String productCodeLine(ProductRow p, AppLocalizations l) =>
-    [p.prNumber ?? l.catNewCode, ?p.categoryTitle].join(' · ');
+/// "PR-10421 · Air conditioners"; "New" for a product without a number
+/// or a first submission still in review.
+String productCodeLine(ProductRow p, AppLocalizations l) => [
+  p.isNew || p.prNumber == null ? l.catNewCode : p.prNumber!,
+  ?p.categoryTitle,
+].join(' · ');
 
 /// The variants tag, or null for a product with one version.
 String? variantsTag(ProductRow p) {

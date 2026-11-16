@@ -16,12 +16,10 @@ String receiptState(OrderReceipt r, AppLocalizations l) {
   return l.ordersReceiptPartLeft(formatRs(r.left));
 }
 
-/// "Zenvo Refrigerator 14 cft · Silver · 1".
-String receiptItem(OrderReceipt r) => [
-  r.order.productTitle,
-  if (r.order.variant case final v? when v.isNotEmpty) v,
-  '${r.order.quantity}',
-].join(' · ');
+/// "Zenvo Refrigerator 14 cft · Silver × 1".
+String receiptItem(OrderReceipt r) =>
+    '${[r.order.productTitle, if (r.order.variant case final v? when v.isNotEmpty) v].join(' · ')}'
+    ' × ${r.order.quantity}';
 
 /// The payments oldest first, as (label, amount): "4 Nov · Cash on delivery".
 List<(String, String)> receiptPaymentLines(

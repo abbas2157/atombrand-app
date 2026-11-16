@@ -135,8 +135,8 @@ class _OutletScreenState extends ConsumerState<OutletScreen> {
                   [?o.address, ?o.city?.title].join(', '),
                   if (o.openedOn case final opened?)
                     l.outletsOpenedDay(AtomDates.day(opened)),
-                  if (o.managerName case final manager?)
-                    l.outletsRunBy(manager),
+                  if (o.runBy ?? o.managerName case final runner?)
+                    l.outletsRunBy(runner),
                 ].where((s) => s.isNotEmpty).join(' · '),
                 style: AtomText.secondary,
               ),
@@ -262,15 +262,21 @@ class _OutletScreenState extends ConsumerState<OutletScreen> {
                             lines: [
                               AtomInfoLine(
                                 label: l.outletsCitiesServes,
-                                value: cityNames.isEmpty
-                                    ? '–'
-                                    : cityNames.join(', '),
+                                // none picked: it serves the city it is in
+                                value: cityNames.isNotEmpty
+                                    ? cityNames.join(', ')
+                                    : o.city?.title ?? '–',
                               ),
                               AtomInfoLine(
                                 label: l.outletsStaff,
-                                value: f.staffAll > 0
-                                    ? l.outletsStaffAll(f.staff, f.staffAll)
-                                    : l.outletsStaffHere(f.staff),
+                                value: switch (o.staffNames) {
+                                  final names? when names.isNotEmpty =>
+                                    names.join(', '),
+                                  _ =>
+                                    f.staffAll > 0
+                                        ? l.outletsStaffAll(f.staff, f.staffAll)
+                                        : l.outletsStaffHere(f.staff),
+                                },
                               ),
                               if (f.units != null)
                                 AtomInfoLine(
@@ -310,6 +316,7 @@ class _OutletScreenState extends ConsumerState<OutletScreen> {
                             kind: noteKindOf(plan.tone),
                             message: plan.note,
                             iconless: true,
+                            compact: true,
                           ),
                         ],
                       ),
@@ -395,26 +402,51 @@ class _Orders extends StatelessWidget {
                     vertical: 10,
                   ),
                   child: ExcludeSemantics(
-                    child: Row(
-                      children: [
-                        Text(
+                    child: Builder(
+                      builder: (context) {
+                        final id = Text(
                           '#${order.id}',
                           style: AtomText.smallButton.copyWith(
                             color: AtomColors.ink,
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            what,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AtomText.secondary,
-                          ),
-                        ),
-                        const SizedBox(width: AtomSpace.s2),
-                        AtomPill(label: label, tone: tone),
-                      ],
+                        );
+                        final text = Text(
+                          what,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AtomText.secondary,
+                        );
+                        final pill = AtomPill(
+                          label: label,
+                          tone: tone,
+                          compact: true,
+                        );
+                        // Large text: number and status above, the
+                        // product under them.
+                        if (MediaQuery.textScalerOf(context).scale(10) >= 15) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: AtomSpace.s2,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [id, pill],
+                              ),
+                              text,
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            id,
+                            const SizedBox(width: 10),
+                            Expanded(child: text),
+                            const SizedBox(width: AtomSpace.s2),
+                            pill,
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),

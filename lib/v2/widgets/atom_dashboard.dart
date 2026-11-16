@@ -137,10 +137,20 @@ class AtomHeroCard extends StatelessWidget {
     this.legendStart,
     this.legendEnd,
     this.actions = const [],
+    this.amountSize,
+    this.labelFlex = 1,
   });
 
   final String label;
   final String? labelEnd;
+
+  /// The big amount's size when a board sets it (Outlets: `font-size:
+  /// 24px`); the default is [AtomText.amountLg].
+  final double? amountSize;
+
+  /// The label's share of the top row against [labelEnd]'s 1: 2 for a
+  /// long label beside a short end ("2 of 5 outlets").
+  final int labelFlex;
 
   /// Already formatted (`Rs 52,300`).
   final String amount;
@@ -178,7 +188,10 @@ class AtomHeroCard extends StatelessWidget {
             // The date sits at the right edge, as on the board.
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: Text(label, style: dim)),
+              Flexible(
+                flex: labelFlex,
+                child: Text(label, style: dim),
+              ),
               if (labelEnd != null) ...[
                 const SizedBox(width: 8),
                 // Large text: the date wraps rather than run off.
@@ -194,7 +207,10 @@ class AtomHeroCard extends StatelessWidget {
             alignment: AlignmentDirectional.centerStart,
             child: Text(
               amount,
-              style: AtomText.amountLg.copyWith(color: Colors.white),
+              style: AtomText.amountLg.copyWith(
+                color: Colors.white,
+                fontSize: amountSize,
+              ),
             ),
           ),
           if (meta != null) ...[
@@ -318,26 +334,39 @@ class AtomKpi {
     this.note,
     this.trend,
     this.valueColour,
+    this.progress,
+    this.progressColour,
+    this.valueSize,
   });
 
   final String label;
   final String value;
   final String? note;
 
+  /// The figure's size when a board overrides `.kpi .v` (12.6 uses 16).
+  final double? valueSize;
+
   /// The figure's colour when it isn't ink (an overdue amount is rose).
   final Color? valueColour;
 
   /// Up (green, ↗), down (rose, ↘) or none.
   final AtomTrend? trend;
+
+  /// A thin bar under the figure, 0 to 1 (the boards' `.kpi .prog`).
+  final double? progress;
+  final Color? progressColour;
 }
 
 enum AtomTrend { up, down }
 
 /// KPI tiles, two per row.
 class AtomKpiGrid extends StatelessWidget {
-  const AtomKpiGrid({super.key, required this.kpis});
+  const AtomKpiGrid({super.key, required this.kpis, this.dense = false});
 
   final List<AtomKpi> kpis;
+
+  /// The boards' `.kstrip`: 8 between tiles and 10/12 inside them.
+  final bool dense;
 
   /// One tile on its own (15.1 puts four in a row).
   static Widget tile(AtomKpi kpi) => _KpiTile(kpi: kpi);
@@ -348,16 +377,18 @@ class AtomKpiGrid extends StatelessWidget {
     for (var i = 0; i < kpis.length; i += 2) {
       rows.add(
         Padding(
-          padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
+          padding: EdgeInsets.only(top: i == 0 ? 0 : (dense ? 8 : 10)),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(child: _KpiTile(kpi: kpis[i])),
-                const SizedBox(width: 10),
+                Expanded(
+                  child: _KpiTile(kpi: kpis[i], dense: dense),
+                ),
+                SizedBox(width: dense ? 8 : 10),
                 Expanded(
                   child: i + 1 < kpis.length
-                      ? _KpiTile(kpi: kpis[i + 1])
+                      ? _KpiTile(kpi: kpis[i + 1], dense: dense)
                       : const SizedBox.shrink(),
                 ),
               ],
@@ -371,8 +402,9 @@ class AtomKpiGrid extends StatelessWidget {
 }
 
 class _KpiTile extends StatelessWidget {
-  const _KpiTile({required this.kpi});
+  const _KpiTile({required this.kpi, this.dense = false});
   final AtomKpi kpi;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +418,9 @@ class _KpiTile extends StatelessWidget {
       label: [kpi.label, kpi.value, ?kpi.note].join(', '),
       child: ExcludeSemantics(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: dense
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+              : const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: AtomDecor.card,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,6 +441,7 @@ class _KpiTile extends StatelessWidget {
                   style: AtomText.pageTitle.copyWith(
                     height: AtomText.normalHeight,
                     color: kpi.valueColour,
+                    fontSize: kpi.valueSize,
                     letterSpacing: -0.2,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -433,6 +468,13 @@ class _KpiTile extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ],
+              if (kpi.progress != null) ...[
+                const SizedBox(height: 6),
+                AtomProgressBar(
+                  value: kpi.progress!.clamp(0.0, 1.0),
+                  colour: kpi.progressColour ?? AtomColors.green,
                 ),
               ],
             ],

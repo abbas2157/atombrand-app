@@ -82,6 +82,20 @@ class SyncDevice {
   final int unsent;
   final DateTime? revokedAt;
 
+  SyncDevice copyWith({DateTime? lastSyncAt}) => SyncDevice(
+    id: id,
+    name: name,
+    platform: platform,
+    appVersion: appVersion,
+    thisDevice: thisDevice,
+    signedIn: signedIn,
+    lastSeenAt: lastSeenAt,
+    lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+    offlineUntil: offlineUntil,
+    unsent: unsent,
+    revokedAt: revokedAt,
+  );
+
   factory SyncDevice.fromJson(Object? raw) {
     final j = Json.map(raw);
     return SyncDevice(

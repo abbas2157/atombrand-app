@@ -47,6 +47,27 @@ void main() {
     ]);
   });
 
+  test('an answer keeps each row own button and a notice its question', () {
+    final a = AtomAnswer.fromJson({
+      'kind': 'numbers',
+      'rows': [
+        ['#21 · TV · 6h', 'Rs. 1'],
+        ['#20 · AC · 5h', 'Rs. 2'],
+      ],
+      'row_actions': [
+        {'label': 'Confirm', 'url': 'x', 'order_uuid': 'u-21'},
+        null,
+      ],
+      'ask': 'Which orders are waiting to be confirmed?',
+      'ask_label': 'Show them',
+    });
+    expect(a.rowActions, hasLength(2));
+    expect(a.rowActions.first?.orderUuid, 'u-21');
+    expect(a.rowActions.last, isNull);
+    expect(a.ask, 'Which orders are waiting to be confirmed?');
+    expect(a.askLabel, 'Show them');
+  });
+
   test('history keeps the last 12 turns', () {
     final turns = [for (var i = 0; i < 15; i++) (mine: i.isEven, text: '$i')];
     final h = ApiAskAtomRepository.history(turns);
@@ -63,7 +84,7 @@ void main() {
         'Which quotes run out this week?',
         'What is running low?',
         'Sales this month',
-        'Which seller requests are new?',
+        'Is mahine kitni AtomPay sales hui?',
       ]);
     });
 

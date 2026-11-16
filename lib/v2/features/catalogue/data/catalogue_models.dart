@@ -75,6 +75,7 @@ class ProductRow {
     required this.status,
     this.uuid,
     this.prNumber,
+    this.isNew = false,
     this.picture,
     this.price = 0,
     this.minAdvance = 0,
@@ -97,6 +98,10 @@ class ProductRow {
   final int id;
   final String? uuid;
   final String? prNumber;
+
+  /// A first submission still waiting for its first review (`is_new`): the
+  /// row says "New" rather than its PR number.
+  final bool isNew;
   final String title;
   final String? picture;
   final int price;
@@ -145,6 +150,7 @@ class ProductRow {
       id: Json.integer(m['id']) ?? 0,
       uuid: Json.str(m['uuid']),
       prNumber: Json.str(m['pr_number']),
+      isNew: Json.flag(m['is_new']),
       title: Json.str(m['title']) ?? '',
       picture: Json.str(m['picture']),
       price: Json.integer(m['price']) ?? 0,
@@ -179,6 +185,7 @@ class ProductRow {
     id: id,
     uuid: uuid,
     prNumber: prNumber,
+    isNew: isNew,
     title: title,
     picture: picture,
     price: price,
@@ -237,10 +244,18 @@ class ProductsPage {
 /// An id and a name from the form's dropdowns.
 @immutable
 class NamedOption {
-  const NamedOption(this.id, this.title, {this.categoryIds = const []});
+  const NamedOption(
+    this.id,
+    this.title, {
+    this.categoryIds = const [],
+    this.code,
+  });
 
   final int id;
   final String title;
+
+  /// For a colour: its swatch (`colors.code`, e.g. `#101828`), when set.
+  final String? code;
 
   /// For a brand: the categories it already sells in.
   final List<int> categoryIds;
@@ -256,6 +271,7 @@ class NamedOption {
       categoryIds: [
         for (final c in Json.list(m['category_ids'])) ?Json.integer(c),
       ],
+      code: Json.str(m['code']),
     );
   }
 }

@@ -114,6 +114,8 @@ class MemberStatusPill extends StatelessWidget {
       MemberStatus.waiting => AtomTone.amber,
       MemberStatus.off => AtomTone.grey,
     },
+    // `.pill` at `height: 22px` in the rows of 11.1
+    compact: true,
   );
 }
 

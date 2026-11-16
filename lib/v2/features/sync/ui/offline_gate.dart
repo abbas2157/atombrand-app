@@ -100,44 +100,62 @@ class _Screen extends StatelessWidget {
   final Widget? top;
   final bool centre;
 
+  // These screens stand in for the whole app (above the router), so they
+  // set their own status bar (dark icons on paper: the bar was white on
+  // white) and start a fresh semantics subtree. The body is one sliver
+  // that fills the screen, the buttons at its foot inside the same
+  // scroll view: the old scroll view plus a separate button row gave the
+  // button accessibility bounds far above where it is drawn.
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AtomColors.paper,
-    body: SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ?top,
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, box) => SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: box.maxHeight),
-                  child: Column(
-                    mainAxisAlignment: centre
-                        ? MainAxisAlignment.center
-                        : MainAxisAlignment.start,
-                    crossAxisAlignment: centre
-                        ? CrossAxisAlignment.center
-                        : CrossAxisAlignment.start,
-                    children: [
-                      if (!centre) const SizedBox(height: 30),
-                      ...content,
-                    ],
-                  ),
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+    value: SystemUiOverlayStyle.dark.copyWith(
+      statusBarColor: Colors.transparent,
+    ),
+    child: Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: Scaffold(
+        backgroundColor: AtomColors.paper,
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ?top,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisAlignment: centre
+                              ? MainAxisAlignment.center
+                              : MainAxisAlignment.start,
+                          crossAxisAlignment: centre
+                              ? CrossAxisAlignment.center
+                              : CrossAxisAlignment.start,
+                          children: [
+                            if (!centre) const SizedBox(height: 30),
+                            ...content,
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: buttons,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: buttons,
-            ),
-          ),
-        ],
+        ),
       ),
     ),
   );

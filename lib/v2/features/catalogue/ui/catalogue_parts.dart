@@ -127,7 +127,15 @@ class FormCard extends StatelessWidget {
                   ),
                 ),
               ),
-              ?trailing,
+              // Shares the row without pushing the title off it.
+              if (trailing case final t?)
+                Flexible(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    widthFactor: 1,
+                    child: t,
+                  ),
+                ),
             ],
           ),
           for (final c in children) ...[const SizedBox(height: 14), c],

@@ -15,6 +15,15 @@ String _ago(Duration d) {
   return '${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}:00';
 }
 
+/// Noon yesterday: 'a day and an hour ago' falls two days back when the
+/// test runs just after midnight.
+String _yesterdayNoon() {
+  final now = DateTime.now();
+  final t = DateTime(now.year, now.month, now.day - 1, 12);
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${t.year}-${two(t.month)}-${two(t.day)} 12:00:00';
+}
+
 class _FakeRepo implements NotificationsRepository {
   final read = <int>[];
   final items = [
@@ -24,7 +33,7 @@ class _FakeRepo implements NotificationsRepository {
     }),
     AppNotification.fromJson({
       'id': 2, 'type': 'brand_new_bulk_request', 'screen': 'bulk_request', 'title': 'New bulk request',
-      'body': "Saeed Trader wants 80 × 'OXY 6518G'.", 'is_read': true, 'created_at': _ago(const Duration(days: 1, hours: 1)),
+      'body': "Saeed Trader wants 80 × 'OXY 6518G'.", 'is_read': true, 'created_at': _yesterdayNoon(),
     }),
     AppNotification.fromJson({
       'id': 3, 'type': 'brand_product_reviewed', 'screen': 'product', 'title': 'Product put on hold',

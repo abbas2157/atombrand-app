@@ -36,7 +36,8 @@ class _InventoryHomeScreenState extends ConsumerState<InventoryHomeScreen> {
   final _serial = TextEditingController();
   String? _looking;
 
-  StockQuery get _query => (show: _level, search: '', outletId: _outletId);
+  StockQuery get _query =>
+      (show: _level, search: '', outletId: _outletId, categoryId: null);
 
   @override
   void dispose() {
@@ -446,23 +447,25 @@ class _Header extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 8,
-                  children: [
-                    _Box(label: l.stockHeldForOrders, value: '${t.held}'),
-                    _Box(
-                      label: l.stockLiveOn,
-                      value: page!.fromCopy
-                          ? '–'
-                          : l.stockLiveOf(t.live, t.listed),
-                    ),
-                    _Box(
-                      label: l.stockLowOrOut,
-                      value: l.stockLowOutValue(t.low + t.out, t.out),
-                      warn: t.low + t.out > 0,
-                    ),
-                  ],
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 8,
+                    children: [
+                      _Box(label: l.stockHeldForOrders, value: '${t.held}'),
+                      _Box(
+                        label: l.stockLiveOn,
+                        value: page!.fromCopy
+                            ? '–'
+                            : l.stockLiveOf(t.live, t.listed),
+                      ),
+                      _Box(
+                        label: l.stockLowOrOut,
+                        value: l.stockLowOutValue(t.low + t.out, t.out),
+                        warn: t.low + t.out > 0,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -518,45 +521,47 @@ class _Actions extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final on = !page.access.readOnly;
     void go(String r) => context.push(r);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
-      children: [
-        if (canChange) ...[
-          Expanded(
-            child: StockActionTile(
-              icon: LucideIcons.arrowDownToLine,
-              tone: AtomTone.green,
-              label: l.stockIn,
-              onTap: on ? () => go(V2Routes.stockIn()) : null,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 8,
+        children: [
+          if (canChange) ...[
+            Expanded(
+              child: StockActionTile(
+                icon: LucideIcons.arrowDownToLine,
+                tone: AtomTone.green,
+                label: l.stockIn,
+                onTap: on ? () => go(V2Routes.stockIn()) : null,
+              ),
             ),
-          ),
-          Expanded(
-            child: StockActionTile(
-              icon: LucideIcons.arrowLeftRight,
-              tone: AtomTone.amber,
-              label: l.stockMove,
-              onTap: on ? () => go(V2Routes.stockMove) : null,
+            Expanded(
+              child: StockActionTile(
+                icon: LucideIcons.arrowLeftRight,
+                tone: AtomTone.amber,
+                label: l.stockMove,
+                onTap: on ? () => go(V2Routes.stockMove) : null,
+              ),
             ),
-          ),
+            Expanded(
+              child: StockActionTile(
+                icon: LucideIcons.slidersHorizontal,
+                tone: AtomTone.rose,
+                label: l.stockAdjust,
+                onTap: on ? () => go(V2Routes.stockAdjust) : null,
+              ),
+            ),
+          ],
           Expanded(
             child: StockActionTile(
-              icon: LucideIcons.slidersHorizontal,
-              tone: AtomTone.rose,
-              label: l.stockAdjust,
-              onTap: on ? () => go(V2Routes.stockAdjust) : null,
+              icon: LucideIcons.clock,
+              tone: AtomTone.grey,
+              label: l.stockHistory,
+              onTap: () => go(V2Routes.stockHistory),
             ),
           ),
         ],
-        Expanded(
-          child: StockActionTile(
-            icon: LucideIcons.clock,
-            tone: AtomTone.grey,
-            label: l.stockHistory,
-            onTap: () => go(V2Routes.stockHistory),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

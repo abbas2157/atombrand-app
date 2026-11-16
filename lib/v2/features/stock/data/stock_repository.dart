@@ -84,6 +84,7 @@ class StockRepository {
     String show = 'all',
     String query = '',
     int? outletId,
+    int? categoryId,
     int page = 1,
   }) => _orCopy(
     () => _api.get(
@@ -92,6 +93,7 @@ class StockRepository {
         if (show != 'all') 'show': show,
         if (query.trim().isNotEmpty) 'q': query.trim(),
         'outlet_id': ?outletId,
+        'category_id': ?categoryId,
         'page': page,
         'per_page': 20,
       },
@@ -351,9 +353,19 @@ T _value<T>(ApiResult<T> r) => switch (r) {
 };
 
 /// The stock list's filters as one key.
-typedef StockQuery = ({String show, String search, int? outletId});
+typedef StockQuery = ({
+  String show,
+  String search,
+  int? outletId,
+  int? categoryId,
+});
 
-const allStock = (show: 'all', search: '', outletId: null);
+const StockQuery allStock = (
+  show: 'all',
+  search: '',
+  outletId: null,
+  categoryId: null,
+);
 
 /// The first page of `GET stock` for [StockQuery]; later pages are read by
 /// the list itself.
@@ -363,7 +375,12 @@ final stockOverviewProvider = FutureProvider.autoDispose
       return _value(
         await ref
             .read(stockRepositoryProvider)
-            .overview(show: q.show, query: q.search, outletId: q.outletId),
+            .overview(
+              show: q.show,
+              query: q.search,
+              outletId: q.outletId,
+              categoryId: q.categoryId,
+            ),
       );
     });
 

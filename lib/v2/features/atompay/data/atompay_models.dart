@@ -122,6 +122,7 @@ class AtompayOrder {
     this.outlet,
     this.seller,
     this.createdAt,
+    this.quantity = 1,
   });
 
   final String uuid;
@@ -137,6 +138,9 @@ class AtompayOrder {
   final OrderOutlet? outlet;
   final AtompaySeller? seller;
   final DateTime? createdAt;
+
+  /// Units ordered (`quantity`; 1 when the server sends none).
+  final int quantity;
 
   /// "#A-20931", as the board numbers AtomPay orders.
   String get number => '#A-$id';
@@ -178,6 +182,7 @@ class AtompayOrder {
                   code: Json.str(j['seller_code']),
                 )),
       createdAt: AtomDates.parse(j['created_at']),
+      quantity: Json.integer(j['quantity']) ?? 1,
     );
   }
 }

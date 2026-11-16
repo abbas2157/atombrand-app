@@ -98,41 +98,31 @@ class SecurityScreen extends ConsumerWidget {
               chevron: true,
               onTap: () => context.push(V2Routes.settingsStep('pin')),
             ),
-            if (p.hasPin && bio)
-              SetItem(
-                icon: LucideIcons.fingerprint,
-                tone: AtomTone.blue,
-                title: l.bioTitle,
-                subtitle: l.auth3BioSub,
-                subWraps: true,
-                trailing: AtomSwitch(
-                  value: p.biometric,
-                  semanticLabel: l.bioTitle,
-                  onChanged: flipBio,
-                ),
-                onTap: () => flipBio(!p.biometric),
+            // Always shown (18.2). It unlocks the PIN screen, so it needs a
+            // PIN, and a fingerprint or face set up on the phone; until
+            // then it says what is missing and stays off.
+            SetItem(
+              icon: LucideIcons.fingerprint,
+              tone: AtomTone.blue,
+              title: l.bioTitle,
+              subtitle: !bio
+                  ? l.settingsBioNoneSub
+                  : !p.hasPin
+                  ? l.settingsBioPinFirst
+                  : l.auth3BioSub,
+              subWraps: true,
+              dim: !bio || !p.hasPin,
+              trailing: AtomSwitch(
+                value: bio && p.hasPin && p.biometric,
+                semanticLabel: l.bioTitle,
+                onChanged: bio && p.hasPin ? flipBio : null,
               ),
-            // Last in the group and red (RULES §4): the PIN is optional,
-            // so it can be taken off again.
-            if (p.hasPin)
-              SetItem(
-                icon: LucideIcons.trash2,
-                title: l.pinRemove,
-                subtitle: l.pinRemoveSub,
-                subWraps: true,
-                danger: true,
-                onTap: () async {
-                  final yes = await showAtomConfirm(
-                    context,
-                    title: l.pinRemoveTitle,
-                    body: l.pinRemoveBody,
-                    confirmLabel: l.pinRemove,
-                    destructive: true,
-                    sideBySide: true,
-                  );
-                  if (yes) await ctl.removePin();
-                },
-              ),
+              onTap: !bio
+                  ? null
+                  : !p.hasPin
+                  ? () => context.push(V2Routes.settingsStep('pin'))
+                  : () => flipBio(!p.biometric),
+            ),
           ],
         ),
         AtomSectionLabel(l.securityThisPhone),
@@ -148,9 +138,7 @@ class SecurityScreen extends ConsumerWidget {
                 chevron: true,
                 onTap: pickLock,
               ),
-            if (ref.watch(noticeSettingsProvider).value?.hideAmountsKept ??
-                false)
-              const _HideAmountsItem(),
+            const _HideAmountsItem(),
             SetItem(
               icon: LucideIcons.image,
               title: l.secBlockShots,

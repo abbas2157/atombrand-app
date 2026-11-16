@@ -41,6 +41,7 @@ class AtomButton extends StatelessWidget {
     this.compact = false,
     this.padding,
     this.oneLine = false,
+    this.fontSize,
   });
 
   const AtomButton.small({
@@ -56,7 +57,8 @@ class AtomButton extends StatelessWidget {
        expand = false,
        compact = false,
        padding = null,
-       oneLine = false;
+       oneLine = false,
+       fontSize = null;
 
   final String label;
 
@@ -89,6 +91,9 @@ class AtomButton extends StatelessWidget {
   /// wraps.
   final bool oneLine;
 
+  /// The label's size when a board sets its own (`.hb .btn`: 14).
+  final double? fontSize;
+
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !saving;
@@ -106,7 +111,7 @@ class AtomButton extends StatelessWidget {
       builder: (context, pressed) {
         final s = _style(pressed, disabled: onPressed == null && !saving);
         final textStyle = (small ? AtomText.smallButton : AtomText.button)
-            .copyWith(color: s.fg, fontSize: compact ? 15 : null);
+            .copyWith(color: s.fg, fontSize: fontSize ?? (compact ? 15 : null));
 
         final content = Row(
           mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,

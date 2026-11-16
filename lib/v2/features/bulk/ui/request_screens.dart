@@ -216,6 +216,8 @@ class _SourcingView extends ConsumerWidget {
                     child: AtomButton(
                       label: l.bulkDecline,
                       kind: AtomButtonKind.outline,
+                      oneLine: true,
+                      padding: 10,
                       onPressed: () =>
                           showStatusSheet(context, r.id, declineOnly: true),
                     ),
@@ -224,6 +226,8 @@ class _SourcingView extends ConsumerWidget {
                   Expanded(
                     flex: 16,
                     child: AtomButton(
+                      oneLine: true,
+                      padding: 10,
                       label: state == SourcingState.fresh
                           ? l.bulkActSendQuote
                           : l.bulkSendANewQuote,
@@ -300,7 +304,18 @@ class _SourcingView extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Text(bulkAgo(l, a?.at), style: AtomText.small),
+                    const SizedBox(width: 6),
+                    // At the right edge; wraps at large text rather than overflow.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.sizeOf(context).width * .3,
+                      ),
+                      child: Text(
+                        bulkAgo(l, a?.at),
+                        textAlign: TextAlign.end,
+                        style: AtomText.small,
+                      ),
+                    ),
                   ],
                 ),
                 if (a?.message != null) ...[
@@ -461,9 +476,10 @@ class _SellerRecord extends StatelessWidget {
                     ),
                     Text(
                       [
-                        ?seller.branch,
-                        ?seller.city,
-                        if (seller.code != null) l.bulkCode(seller.code!),
+                        ?(seller.branch ?? r.seller?.branch),
+                        ?(seller.city ?? r.city),
+                        if ((seller.code ?? r.seller?.code) case final c?)
+                          l.bulkCode(c),
                       ].join(' · '),
                       style: AtomText.secondary,
                     ),
@@ -486,14 +502,18 @@ class _SellerRecord extends StatelessWidget {
                 ? l.bulkNotYet
                 : '${l.bulkKpiDeals(seller.dealsWithYou)} · ${formatRs(seller.dealsAmount)}',
           ),
-          if (seller.dealsWithYou > 0) ...[
-            const Divider(height: 1, color: AtomColors.line),
-            AtomInfoLine(
-              label: l.bulkPaidOnTime,
-              value: l.bulkDoneOf(seller.paidOnTime, seller.dealsWithYou),
-              valueColor: AtomColors.green,
-            ),
-          ],
+          const Divider(height: 1, color: AtomColors.line),
+          AtomInfoLine(
+            label: l.bulkPaidOnTime,
+            value: seller.dealsWithYou == 0
+                ? l.bulkNotYet
+                : l.bulkDoneOf(seller.paidOnTime, seller.dealsWithYou),
+            valueColor:
+                seller.dealsWithYou > 0 &&
+                    seller.paidOnTime == seller.dealsWithYou
+                ? AtomColors.green
+                : null,
+          ),
           const Divider(height: 1, color: AtomColors.line),
           AtomInfoLine(label: l.bulkOtherOpen, value: other),
           const SizedBox(height: 8),
@@ -775,16 +795,27 @@ class _QuoteRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  formatRs(q.total),
-                  style: AtomText.money.copyWith(fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                AtomPill(label: label, tone: tone),
-              ],
+            // Sized to its content at the right edge (a Flexible beside the
+            // Expanded took half the row and left it mid-card).
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * .45,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatRs(q.total),
+                    textAlign: TextAlign.end,
+                    style: AtomText.money.copyWith(fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: AtomPill(label: label, tone: tone),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -810,10 +841,16 @@ class _CommissionCard extends StatelessWidget {
           BulkCardTitle(l.bulkCommission),
           const SizedBox(height: 4),
           Text(
-            hasDeal ? l.bulkCommissionFixed : l.bulkCommissionInfo,
+            hasDeal
+                ? l.bulkCommissionFixed
+                : c == null || c.amount == 0
+                ? l.bulkCommissionNoneInfo
+                : l.bulkCommissionInfo,
             style: AtomText.secondary,
           ),
-          if (c != null)
+          if (c == null && !hasDeal)
+            AtomInfoLine(label: l.bulkOnThisRequest, value: formatRs(0))
+          else if (c != null)
             AtomInfoLine(
               label: l.bulkOnThisRequest,
               value: c.amount == 0
@@ -942,9 +979,11 @@ class _WebsiteView extends ConsumerWidget {
                         whatsapp: d.whatsapp,
                         extra: canQuote && open
                             ? AtomButton(
-                                label: l.bulkStatusButton,
+                                label: l.bulkUpdateStatus,
                                 kind: AtomButtonKind.outline,
                                 small: true,
+                                oneLine: true,
+                                padding: 6,
                                 onPressed: () => showStatusSheet(context, r.id),
                               )
                             : null,
@@ -958,79 +997,57 @@ class _WebsiteView extends ConsumerWidget {
                       children: [
                         if (r.status == RequestStatus.quoted &&
                             latest != null) ...[
-                          AtomNote(
+                          BulkLinkNote(
                             kind: AtomNoteKind.success,
-                            message: l.bulkQuoteReady(latest.name),
-                            bold: [l.bulkQuoteReady(latest.name)],
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Wrap(
-                              spacing: 16,
-                              children: [
-                                if (latest.whatsappLink != null)
-                                  AtomTextLink(
-                                    label: l.bulkOpenWhatsApp,
-                                    onTap: () =>
-                                        openWhatsApp(link: latest.whatsappLink),
-                                  ),
-                                AtomTextLink(
-                                  label: l.bulkDownloadPdf,
-                                  onTap: () => _sharePdf(context, ref, latest),
+                            lead: l.bulkQuoteReady(latest.name),
+                            links: [
+                              if (latest.whatsappLink != null)
+                                (
+                                  l.bulkOpenWhatsApp,
+                                  () => openWhatsApp(link: latest.whatsappLink),
                                 ),
-                              ],
-                            ),
+                              (
+                                l.bulkDownloadPdf,
+                                () => _sharePdf(context, ref, latest),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                         ],
                         if (r.status == RequestStatus.won) ...[
-                          AtomNote(
+                          BulkLinkNote(
                             kind: AtomNoteKind.success,
-                            message: deal == null
+                            lead: deal == null
                                 ? l.bulkWonDot
                                 : l.bulkWonDeal(deal.number),
-                          ),
-                          if (deal != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: AtomTextLink(
-                                  label: l.bulkActOpenDeal,
-                                  onTap: () =>
-                                      context.push(V2Routes.dealOf(deal.id)),
+                            links: [
+                              if (deal != null)
+                                (
+                                  l.bulkActOpenDeal,
+                                  () => context.push(V2Routes.dealOf(deal.id)),
                                 ),
-                              ),
-                            ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
                         ],
                         if (lost) ...[
-                          AtomNote(
+                          BulkLinkNote(
                             kind: AtomNoteKind.problem,
-                            message: d.reason == null
+                            lead: d.reason == null
                                 ? l.bulkLostDot
                                 : l.bulkLostReason(d.reason!),
-                            bold: [
-                              d.reason == null
-                                  ? l.bulkLostDot
-                                  : l.bulkLostReason(d.reason!),
-                            ],
-                          ),
-                          if (canQuote)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: AtomTextLink(
-                                  label: l.bulkStatusBackToNew,
-                                  onTap: () => showStatusSheet(
+                            links: [
+                              if (canQuote)
+                                (
+                                  l.bulkStatusBackToNew,
+                                  () => showStatusSheet(
                                     context,
                                     r.id,
                                     preset: StatusChoice.backToNew,
                                   ),
                                 ),
-                              ),
-                            ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
                         ],
                         BulkLinesCard(
@@ -1095,7 +1112,6 @@ class _WebsiteView extends ConsumerWidget {
                         if (canWin) ...[
                           const SizedBox(height: 12),
                           BulkCard(
-                            tone: AtomTone.green,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -1113,25 +1129,31 @@ class _WebsiteView extends ConsumerWidget {
                             ),
                           ),
                         ],
-                        if (d.comments.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          BulkCard(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                BulkCardTitle(l.bulkConversation),
-                                for (final c in d.comments)
-                                  BulkHistoryRow(
-                                    when: bulkWhen(l, c.at),
-                                    what: TextSpan(
-                                      text: [c.text, ?c.byName].join(' · '),
-                                    ),
+                        // Notes and events (status changes, quotes, the
+                        // deal), newest first, then the request coming in.
+                        const SizedBox(height: 12),
+                        BulkCard(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              BulkCardTitle(l.bulkConversation),
+                              for (final c in d.comments)
+                                BulkHistoryRow(
+                                  when: bulkWhen(l, c.at),
+                                  what: TextSpan(
+                                    text: [c.text, ?c.byName].join(' · '),
                                   ),
-                              ],
-                            ),
+                                ),
+                              BulkHistoryRow(
+                                when: bulkWhen(l, r.createdAt),
+                                what: TextSpan(
+                                  text: l.bulkReceivedFromAtomshop,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                         const SizedBox(height: 12),
                         BulkLinesCard(
                           title: l.bulkContactStanding,
@@ -1196,6 +1218,8 @@ class _WebsiteView extends ConsumerWidget {
                     child: AtomButton(
                       label: l.bulkUpdateStatus,
                       kind: AtomButtonKind.outline,
+                      oneLine: true,
+                      padding: 10,
                       onPressed: () => showStatusSheet(context, r.id),
                     ),
                   ),
@@ -1203,6 +1227,8 @@ class _WebsiteView extends ConsumerWidget {
                   Expanded(
                     flex: 16,
                     child: AtomButton(
+                      oneLine: true,
+                      padding: 10,
                       label: r.status == RequestStatus.quoted
                           ? l.bulkNewQuoteRevision
                           : l.bulkActSendQuote,

@@ -35,10 +35,14 @@ class AtomSelectField<T> extends StatelessWidget {
     this.error,
     this.labelNote,
     this.offline = false,
+    this.icon,
   });
 
   final String label;
   final T? value;
+
+  /// The icon at the end in place of ▾, e.g. a padlock on a locked field.
+  final IconData? icon;
   final String? valueLabel;
 
   /// Null disables the field; say why in [hint] or [labelNote].
@@ -86,6 +90,7 @@ class AtomSelectField<T> extends StatelessWidget {
         placeholder: placeholder,
         semanticLabel: label,
         error: error != null,
+        icon: icon,
         onTap: onChanged == null ? null : () => _open(context),
       ),
     );
@@ -171,10 +176,14 @@ class AtomSelectBox extends StatelessWidget {
     this.placeholder,
     this.semanticLabel,
     this.error = false,
+    this.icon,
   });
 
   final String? text;
   final VoidCallback? onTap;
+
+  /// The icon at the end in place of ▾ (null keeps ▾).
+  final IconData? icon;
   final String? placeholder;
   final String? semanticLabel;
   final bool error;
@@ -223,8 +232,8 @@ class AtomSelectBox extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Icon(
-                LucideIcons.chevronDown,
+              Icon(
+                icon ?? LucideIcons.chevronDown,
                 size: AtomIcon.row,
                 color: AtomColors.chevron,
               ),

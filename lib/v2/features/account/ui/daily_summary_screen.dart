@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/api/api_client.dart';
@@ -20,10 +19,15 @@ typedef DailySummary = ({
   bool quotes,
   bool handOver,
   bool stock,
+
+  /// The message today's data would give (`preview`); null when there is
+  /// nothing to report, so nothing would be sent.
+  String? preview,
 });
 
 DailySummary _fromJson(Object? data) {
   final d = Json.map(Json.map(data)['daily_summary'] ?? data);
+  final preview = Json.str(Json.map(data)['preview']);
   bool f(String k, bool fallback) => d[k] == null ? fallback : Json.flag(d[k]);
   return (
     on: f('on', true),
@@ -31,6 +35,7 @@ DailySummary _fromJson(Object? data) {
     quotes: f('quotes', true),
     handOver: f('hand_over', true),
     stock: f('stock', false),
+    preview: preview,
   );
 }
 
@@ -42,8 +47,8 @@ Map<String, dynamic> _toJson(DailySummary s) => {
   'stock': s.stock,
 };
 
-/// `GET settings/daily-summary`. Not on the server yet: a 404 shows
-/// "coming soon" instead of switches that would do nothing.
+/// `GET settings/daily-summary` (owner): the switches, kept on the brand,
+/// and today's message.
 final dailySummaryProvider = FutureProvider.autoDispose<DailySummary>((
   ref,
 ) async {
@@ -73,10 +78,12 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
     final l = AppLocalizations.of(context);
     final before = _s;
     setState(() => _s = next);
+    ref.invalidate(dailySummaryProvider);
     final r = await ref
         .read(apiClientProvider)
         .post('settings/daily-summary', body: _toJson(next), parse: _fromJson);
     if (!mounted) return;
+    if (r case ApiOk(:final value)) setState(() => _s = value);
     if (r case ApiErr(:final failure)) {
       setState(() => _s = before);
       showAtomToast(
@@ -120,6 +127,7 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
                                 quotes: s.quotes,
                                 handOver: s.handOver,
                                 stock: s.stock,
+                                preview: s.preview,
                               ))
                             : null,
                       ),
@@ -140,6 +148,7 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
                                   quotes: s.quotes,
                                   handOver: s.handOver,
                                   stock: s.stock,
+                                  preview: s.preview,
                                 ))
                               : null,
                         ),
@@ -154,6 +163,7 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
                                   quotes: v,
                                   handOver: s.handOver,
                                   stock: s.stock,
+                                  preview: s.preview,
                                 ))
                               : null,
                         ),
@@ -168,6 +178,7 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
                                   quotes: s.quotes,
                                   handOver: v,
                                   stock: s.stock,
+                                  preview: s.preview,
                                 ))
                               : null,
                         ),
@@ -182,6 +193,7 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
                                   quotes: s.quotes,
                                   handOver: s.handOver,
                                   stock: v,
+                                  preview: s.preview,
                                 ))
                               : null,
                         ),
@@ -191,19 +203,26 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
+                        // The board's box: 12/14 padding, no border.
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: const BoxDecoration(
                           color: AtomColors.greenSoft,
                           borderRadius: AtomRadius.brCard,
-                          border: Border.all(color: AtomColors.greenLine),
                         ),
                         child: Text(
-                          l.acctDailySample(
-                            session?.firstName ?? l.acctDailyThere,
-                            session?.brandName ?? l.acctDailyYourBrand,
-                          ),
+                          // Today's real message; with nothing to report, an
+                          // example of what one looks like.
+                          s.preview ??
+                              l.acctDailySample(
+                                session?.firstName ?? l.acctDailyThere,
+                                session?.brandName ?? l.acctDailyYourBrand,
+                              ),
                           style: AtomText.body.copyWith(
                             color: AtomColors.bubbleGreenText,
+                            height: 1.5,
                           ),
                         ),
                       ),
@@ -211,21 +230,15 @@ class _DailySummaryState extends ConsumerState<DailySummaryScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
                       child: Text(
-                        l.acctDailyNothing,
+                        s.preview == null
+                            ? l.settingsDailyPreviewNone
+                            : l.acctDailyNothing,
                         style: AtomText.small.copyWith(color: AtomColors.faint),
                       ),
                     ),
                   ],
                 ],
               ),
-              AsyncError(:final error)
-                  when error is ApiFailure &&
-                      error.kind == ApiFailureKind.notFound =>
-                AtomMessageState(
-                  icon: LucideIcons.messageCircle,
-                  title: l.acctDailySoon,
-                  body: l.acctDailySoonBody,
-                ),
               AsyncError(:final error) => AccountError(
                 error: error,
                 onRetry: () => ref.invalidate(dailySummaryProvider),

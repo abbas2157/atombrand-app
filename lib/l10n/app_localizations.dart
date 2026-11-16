@@ -94,6 +94,282 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
+  /// No description provided for @applyCategoryPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Mobiles, Smart TVs'**
+  String get applyCategoryPlaceholder;
+
+  /// No description provided for @authSplashOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · your data is on this phone'**
+  String get authSplashOffline;
+
+  /// No description provided for @authSplashWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 change waiting to sync} other{{n} changes waiting to sync}}'**
+  String authSplashWaiting(int n);
+
+  /// No description provided for @authSplashLastSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Last synced {when}'**
+  String authSplashLastSynced(String when);
+
+  /// No description provided for @authSplashToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today, {time}'**
+  String authSplashToday(String time);
+
+  /// No description provided for @authSplashDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =0{Offline time is up} =1{Offline for 1 more day} other{Offline for {n} more days}}'**
+  String authSplashDaysLeft(int n);
+
+  /// No description provided for @authPinOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Work offline'**
+  String get authPinOfflineTitle;
+
+  /// No description provided for @authPinOfflineSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep 30 days of your brand on this phone'**
+  String get authPinOfflineSub;
+
+  /// No description provided for @authPinOfflineOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get authPinOfflineOn;
+
+  /// No description provided for @authOutletAllSub.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Combined figures for 1 outlet} other{Combined figures for all {count} outlets}}'**
+  String authOutletAllSub(int count);
+
+  /// No description provided for @authOutletServes.
+  ///
+  /// In en, this message translates to:
+  /// **'{city} · serves {cities}'**
+  String authOutletServes(String city, String cities);
+
+  /// No description provided for @authOutletServesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Serves {cities}'**
+  String authOutletServesOnly(String cities);
+
+  /// No description provided for @authOutletPausedByYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused by you'**
+  String get authOutletPausedByYou;
+
+  /// No description provided for @authOutletPausedByOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused by your brand owner'**
+  String get authOutletPausedByOwner;
+
+  /// No description provided for @authOutletKeepAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep all open outlets on this phone for offline work'**
+  String get authOutletKeepAll;
+
+  /// No description provided for @authOutletKeepOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep {name} on this phone for offline work'**
+  String authOutletKeepOne(String name);
+
+  /// No description provided for @authReadyOnlineWifi.
+  ///
+  /// In en, this message translates to:
+  /// **'Online · Wi-Fi'**
+  String get authReadyOnlineWifi;
+
+  /// No description provided for @authReadySecondsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'About {n} seconds left'**
+  String authReadySecondsLeft(int n);
+
+  /// No description provided for @authReadyMinutesLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{About a minute left} other{About {n} minutes left}}'**
+  String authReadyMinutesLeft(int n);
+
+  /// No description provided for @homeNoticedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Atom noticed'**
+  String get homeNoticedTitle;
+
+  /// No description provided for @homeNoticedMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'From your data this morning'**
+  String get homeNoticedMorning;
+
+  /// No description provided for @homeNoticedAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'From your data this afternoon'**
+  String get homeNoticedAfternoon;
+
+  /// No description provided for @homeNoticedEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'From your data this evening'**
+  String get homeNoticedEvening;
+
+  /// No description provided for @homeNoticedSeeStock.
+  ///
+  /// In en, this message translates to:
+  /// **'See stock'**
+  String get homeNoticedSeeStock;
+
+  /// No description provided for @homeNoticedOpenOutlet.
+  ///
+  /// In en, this message translates to:
+  /// **'Open outlet'**
+  String get homeNoticedOpenOutlet;
+
+  /// No description provided for @homeNoticedFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow up'**
+  String get homeNoticedFollowUp;
+
+  /// No description provided for @statesKeptOnPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 change is kept on this phone. It is sent as soon as you sign in again.} other{{n} changes are kept on this phone. They are sent as soon as you sign in again.}}'**
+  String statesKeptOnPhone(int n);
+
+  /// No description provided for @statesKeptOnPhoneBold.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 change is kept on this phone.} other{{n} changes are kept on this phone.}}'**
+  String statesKeptOnPhoneBold(int n);
+
+  /// No description provided for @statesPlaceSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get statesPlaceSearch;
+
+  /// No description provided for @statesPlaceOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'the order'**
+  String get statesPlaceOrder;
+
+  /// No description provided for @statesPlaceAtompay.
+  ///
+  /// In en, this message translates to:
+  /// **'the AtomPay order'**
+  String get statesPlaceAtompay;
+
+  /// No description provided for @statesPlaceDeal.
+  ///
+  /// In en, this message translates to:
+  /// **'the bulk deal'**
+  String get statesPlaceDeal;
+
+  /// No description provided for @statesPlaceBulkRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'the bulk request'**
+  String get statesPlaceBulkRequest;
+
+  /// No description provided for @statesPlaceProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'the product'**
+  String get statesPlaceProduct;
+
+  /// No description provided for @statesPlaceBrandPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand page'**
+  String get statesPlaceBrandPage;
+
+  /// No description provided for @statesPlaceStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get statesPlaceStock;
+
+  /// No description provided for @statesPlaceTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get statesPlaceTeam;
+
+  /// No description provided for @statesPlaceOutlets.
+  ///
+  /// In en, this message translates to:
+  /// **'Outlets'**
+  String get statesPlaceOutlets;
+
+  /// No description provided for @statesPlacePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan & billing'**
+  String get statesPlacePlan;
+
+  /// No description provided for @statesPlaceReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get statesPlaceReports;
+
+  /// No description provided for @statesPlaceAskAtom.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Atom'**
+  String get statesPlaceAskAtom;
+
+  /// No description provided for @statesPlaceSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync centre'**
+  String get statesPlaceSync;
+
+  /// No description provided for @statesPlaceHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get statesPlaceHelp;
+
+  /// No description provided for @statesPlaceSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get statesPlaceSettings;
+
+  /// No description provided for @statesPlaceNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get statesPlaceNotifications;
+
+  /// No description provided for @statesPlaceMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get statesPlaceMenu;
+
   /// No description provided for @commonBack.
   ///
   /// In en, this message translates to:
@@ -637,7 +913,7 @@ abstract class AppLocalizations {
   /// No description provided for @removedBody.
   ///
   /// In en, this message translates to:
-  /// **'Your package on {business} has ended. Everything you saved is kept safe: products, orders, deals and stock.'**
+  /// **'Your package on {business} has ended. Everything you saved is kept safe: products, orders, bulk deals and stock.'**
   String removedBody(String business);
 
   /// No description provided for @removedOpenNow.
@@ -649,7 +925,7 @@ abstract class AppLocalizations {
   /// No description provided for @removedOpenNowValue.
   ///
   /// In en, this message translates to:
-  /// **'Plan & billing, bills, your profile'**
+  /// **'Plan & billing, your profile'**
   String get removedOpenNowValue;
 
   /// No description provided for @removedAfterPaying.
@@ -697,8 +973,44 @@ abstract class AppLocalizations {
   /// No description provided for @notInRoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'This isn\'t in your role'**
+  /// **'Your role doesn\'t include this'**
   String get notInRoleTitle;
+
+  /// No description provided for @statesAskWhyQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Why doesn\'t my role include this?'**
+  String get statesAskWhyQuestion;
+
+  /// No description provided for @statesCanEverything.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything: you own the brand'**
+  String get statesCanEverything;
+
+  /// No description provided for @statesCanPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'payments'**
+  String get statesCanPayments;
+
+  /// No description provided for @statesCanAtompay.
+  ///
+  /// In en, this message translates to:
+  /// **'AtomPay'**
+  String get statesCanAtompay;
+
+  /// No description provided for @statesCanTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'team'**
+  String get statesCanTeam;
+
+  /// No description provided for @statesCanSee.
+  ///
+  /// In en, this message translates to:
+  /// **'see {list}'**
+  String statesCanSee(String list);
 
   /// No description provided for @notInRoleBody.
   ///
@@ -757,7 +1069,7 @@ abstract class AppLocalizations {
   /// No description provided for @restrictedPayments.
   ///
   /// In en, this message translates to:
-  /// **'Recording payments'**
+  /// **'Recording payments and deliveries'**
   String get restrictedPayments;
 
   /// No description provided for @restrictedWorks.
@@ -769,13 +1081,13 @@ abstract class AppLocalizations {
   /// No description provided for @restrictedCloseDeals.
   ///
   /// In en, this message translates to:
-  /// **'Closing deals, Ask Atom'**
+  /// **'AtomPay hand-overs, Ask Atom'**
   String get restrictedCloseDeals;
 
   /// No description provided for @restrictedNewThings.
   ///
   /// In en, this message translates to:
-  /// **'New orders, products, stock'**
+  /// **'Products, quotes, stock'**
   String get restrictedNewThings;
 
   /// No description provided for @restrictedPaused.
@@ -799,7 +1111,7 @@ abstract class AppLocalizations {
   /// No description provided for @restrictedNote.
   ///
   /// In en, this message translates to:
-  /// **'This isn\'t about a bill, so there is nothing to pay. Your buyers are not affected.'**
+  /// **'This isn\'t about a bill, so there is nothing to pay. Orders already placed carry on.'**
   String get restrictedNote;
 
   /// No description provided for @bannerPay.
@@ -823,7 +1135,7 @@ abstract class AppLocalizations {
   /// No description provided for @signOutConfirmTitle.
   ///
   /// In en, this message translates to:
-  /// **'Log out of Brand Partner?'**
+  /// **'Sign out of Brand Partner?'**
   String get signOutConfirmTitle;
 
   /// Sign out, when this person has unsent offline work.
@@ -1345,13 +1657,13 @@ abstract class AppLocalizations {
   /// No description provided for @dataShop.
   ///
   /// In en, this message translates to:
-  /// **'Your brand and orders'**
+  /// **'Your brand'**
   String get dataShop;
 
   /// No description provided for @dataShopBody.
   ///
   /// In en, this message translates to:
-  /// **'Products, orders, deals, payments and stock, on Atomshop\'s servers.'**
+  /// **'Products, orders, payments, bulk deals and stock, on Atomshop\'s servers.'**
   String get dataShopBody;
 
   /// No description provided for @dataPhone.
@@ -1365,6 +1677,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only what is on screen; nothing stays after you sign out.'**
   String get dataPhoneBody;
+
+  /// No description provided for @dataPhoneOfflineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An encrypted copy for offline work, deleted when you sign out or the phone is signed out.'**
+  String get dataPhoneOfflineBody;
 
   /// No description provided for @dataCamera.
   ///
@@ -1837,8 +2155,32 @@ abstract class AppLocalizations {
   /// No description provided for @noticeSettingsFoot.
   ///
   /// In en, this message translates to:
-  /// **'These are for you on this account.'**
+  /// **'These are for you on this phone. The brand portal has its own bell; the morning message is in Settings › Daily summary.'**
   String get noticeSettingsFoot;
+
+  /// No description provided for @notifMorningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning summary'**
+  String get notifMorningTitle;
+
+  /// No description provided for @notifMorningSub.
+  ///
+  /// In en, this message translates to:
+  /// **'One message with today\'s work'**
+  String get notifMorningSub;
+
+  /// No description provided for @notifMorningAt.
+  ///
+  /// In en, this message translates to:
+  /// **'8:30 am'**
+  String get notifMorningAt;
+
+  /// No description provided for @notifActFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow up'**
+  String get notifActFollowUp;
 
   /// No description provided for @noticeSettingsSub.
   ///
@@ -1879,13 +2221,19 @@ abstract class AppLocalizations {
   /// No description provided for @noticesEmptyAction.
   ///
   /// In en, this message translates to:
-  /// **'Go to Home'**
+  /// **'Go to orders'**
   String get noticesEmptyAction;
+
+  /// No description provided for @notifEmptyHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Home'**
+  String get notifEmptyHome;
 
   /// No description provided for @noticesEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'New orders, bulk requests and messages from Atomshop show here. Older ones are kept for 90 days.'**
+  /// **'New orders, bulk requests, AtomPay hand-overs and product reviews show here. Older ones are kept for 90 days.'**
   String get noticesEmptyBody;
 
   /// No description provided for @noticesEmptyTitle.
@@ -1915,8 +2263,56 @@ abstract class AppLocalizations {
   /// No description provided for @noticesReadAll.
   ///
   /// In en, this message translates to:
-  /// **'Mark all read'**
+  /// **'Mark all as read'**
   String get noticesReadAll;
+
+  /// No description provided for @notifActConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get notifActConfirm;
+
+  /// No description provided for @notifActHandOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over'**
+  String get notifActHandOver;
+
+  /// No description provided for @notifActSendQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Send quote'**
+  String get notifActSendQuote;
+
+  /// No description provided for @notifActReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get notifActReply;
+
+  /// No description provided for @notifActAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get notifActAnswer;
+
+  /// No description provided for @notifActOpenDeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Open deal'**
+  String get notifActOpenDeal;
+
+  /// No description provided for @notifActStockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock in'**
+  String get notifActStockIn;
+
+  /// No description provided for @notifActFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix and resend'**
+  String get notifActFix;
 
   /// No description provided for @noticesStock.
   ///
@@ -2041,7 +2437,7 @@ abstract class AppLocalizations {
   /// No description provided for @permissionsNotificationsSub.
   ///
   /// In en, this message translates to:
-  /// **'Orders, bulk requests, Atomshop messages'**
+  /// **'New orders, bulk requests, AtomPay, product reviews'**
   String get permissionsNotificationsSub;
 
   /// No description provided for @permissionsTurnOn.
@@ -2395,7 +2791,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncWaitingSub.
   ///
   /// In en, this message translates to:
-  /// **'Payments, orders and notes made on this phone'**
+  /// **'Deliveries, payments, stock in, notes made on this phone'**
   String get syncWaitingSub;
 
   /// No description provided for @syncWaitingNone.
@@ -2587,8 +2983,20 @@ abstract class AppLocalizations {
   /// No description provided for @faqsNone.
   ///
   /// In en, this message translates to:
-  /// **'No answer matches. Ask Atomshop on WhatsApp.'**
+  /// **'No answer matches. Try other words, or ask Atomshop on WhatsApp.'**
   String get faqsNone;
+
+  /// No description provided for @helpFaqsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No answers here yet'**
+  String get helpFaqsEmpty;
+
+  /// No description provided for @helpFaqsEmptySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Atomshop is still writing answers for this topic. Ask Atomshop on WhatsApp meanwhile.'**
+  String get helpFaqsEmptySub;
 
   /// No description provided for @faqsTitle.
   ///
@@ -2623,7 +3031,7 @@ abstract class AppLocalizations {
   /// No description provided for @helpSearch.
   ///
   /// In en, this message translates to:
-  /// **'Search help: \"close a deal\", \"receipt\"…'**
+  /// **'Search help: \"hand over\", \"quote\"…'**
   String get helpSearch;
 
   /// No description provided for @helpTalk.
@@ -3205,13 +3613,13 @@ abstract class AppLocalizations {
   /// No description provided for @auth2PendingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your account is being checked.'**
+  /// **'Your application is being checked.'**
   String get auth2PendingTitle;
 
   /// No description provided for @auth2PendingBody.
   ///
   /// In en, this message translates to:
-  /// **'Atomshop verifies every new brand before it can sign in. We will message you on WhatsApp when it is ready, usually within two working days.'**
+  /// **'Atomshop reviews every brand before it can sign in, then creates your login. We will message you on WhatsApp when it is ready, usually within two working days.'**
   String get auth2PendingBody;
 
   /// No description provided for @auth2AskOnWhatsApp.
@@ -3367,7 +3775,7 @@ abstract class AppLocalizations {
   /// No description provided for @auth2TooManyBody.
   ///
   /// In en, this message translates to:
-  /// **'To keep your brand\'s details safe, the app is paused for a few minutes.'**
+  /// **'To keep your brand\'s orders and customer details safe, the app is paused for a few minutes.'**
   String get auth2TooManyBody;
 
   /// No description provided for @auth2TryAgainIn.
@@ -3937,7 +4345,7 @@ abstract class AppLocalizations {
   /// No description provided for @dpDdDataCameraBody.
   ///
   /// In en, this message translates to:
-  /// **'Only when you scan or take a photo. Scanning runs on the phone; nothing goes to Google.'**
+  /// **'Only when you scan a serial or take a delivery or product photo. Scanning runs on the phone; nothing goes to Google.'**
   String get dpDdDataCameraBody;
 
   /// No description provided for @dpDdDataAtom.
@@ -3961,13 +4369,13 @@ abstract class AppLocalizations {
   /// No description provided for @dpDdDownloadAllSub.
   ///
   /// In en, this message translates to:
-  /// **'Orders, deals, payments, stock'**
+  /// **'Orders, payments, products, bulk deals, stock'**
   String get dpDdDownloadAllSub;
 
   /// No description provided for @dpDdExportNote.
   ///
   /// In en, this message translates to:
-  /// **'Atomshop makes the file and emails a link valid for 24 hours.'**
+  /// **'Atomshop makes the file and emails a link valid for 24 hours. Delivery photos are not included.'**
   String get dpDdExportNote;
 
   /// No description provided for @dpDdMore.
@@ -3985,7 +4393,7 @@ abstract class AppLocalizations {
   /// No description provided for @dpDdCameraSub.
   ///
   /// In en, this message translates to:
-  /// **'Scan serials, take photos'**
+  /// **'Scan serials and IMEIs, delivery and product photos'**
   String get dpDdCameraSub;
 
   /// No description provided for @dpDdSelected.
@@ -4339,7 +4747,7 @@ abstract class AppLocalizations {
   /// No description provided for @dpDcPrivacyLead.
   ///
   /// In en, this message translates to:
-  /// **'How Atomshop.pk and Brand Partner keep your brand\'s information.'**
+  /// **'How Atomshop.pk and Brand Partner keep your brand\'s information and the details of buyers who order from you.'**
   String get dpDcPrivacyLead;
 
   /// No description provided for @dpDcPrivacyFoot.
@@ -4357,19 +4765,19 @@ abstract class AppLocalizations {
   /// No description provided for @dpDcEcoLead.
   ///
   /// In en, this message translates to:
-  /// **'Buyers find products on Atomshop and pay in steps. Verified sellers run the deals and source stock from brands. Brands like yours list products, supply sellers and fulfil orders. AtomPay gives verified buyers a 0% markup limit.'**
+  /// **'Customers find products on Atomshop. Brands like yours list them and deliver. Verified local sellers handle AtomPay orders and buy in bulk. AtomPay gives verified customers a 0% markup limit.'**
   String get dpDcEcoLead;
 
   /// No description provided for @dpDcEcoFlowLabel.
   ///
   /// In en, this message translates to:
-  /// **'Buyers order on Atomshop, sellers deliver, brands supply'**
+  /// **'Customers order on Atomshop, you deliver, sellers buy in bulk and handle AtomPay'**
   String get dpDcEcoFlowLabel;
 
   /// No description provided for @dpDcEcoCustomers.
   ///
   /// In en, this message translates to:
-  /// **'Buyers'**
+  /// **'Customers'**
   String get dpDcEcoCustomers;
 
   /// No description provided for @dpDcEcoCustomersSub.
@@ -4387,7 +4795,7 @@ abstract class AppLocalizations {
   /// No description provided for @dpDcEcoYouSub.
   ///
   /// In en, this message translates to:
-  /// **'supply and fulfil in Brand Partner'**
+  /// **'confirm and deliver in Brand Partner'**
   String get dpDcEcoYouSub;
 
   /// No description provided for @dpDcEcoBrands.
@@ -4399,7 +4807,7 @@ abstract class AppLocalizations {
   /// No description provided for @dpDcEcoBrandsSub.
   ///
   /// In en, this message translates to:
-  /// **'source from you in Atom Seller'**
+  /// **'buy in bulk and take AtomPay units'**
   String get dpDcEcoBrandsSub;
 
   /// No description provided for @dpDcYouAreHere.
@@ -4411,25 +4819,25 @@ abstract class AppLocalizations {
   /// No description provided for @dpDcEcoSeller.
   ///
   /// In en, this message translates to:
-  /// **'Run your brand: orders, AtomPay, bulk deals, products, stock and your team.'**
+  /// **'Run your brand on Atomshop: orders, AtomPay hand-overs, bulk deals, products, stock and your team.'**
   String get dpDcEcoSeller;
 
   /// No description provided for @dpDcShareSeller.
   ///
   /// In en, this message translates to:
-  /// **'Share with a brand'**
+  /// **'Share with your team'**
   String get dpDcShareSeller;
 
   /// No description provided for @dpDcShareSellerText.
   ///
   /// In en, this message translates to:
-  /// **'List your brand on Atomshop with Brand Partner: {link}'**
+  /// **'Get Brand Partner to work on our Atomshop orders with me: {link}'**
   String dpDcShareSellerText(String link);
 
   /// No description provided for @dpDcEcoAtomshop.
   ///
   /// In en, this message translates to:
-  /// **'For buyers: browse, choose a plan and order. Orders for your products come to you.'**
+  /// **'For customers: browse your brand page, order cash or with AtomPay. Their orders come to you.'**
   String get dpDcEcoAtomshop;
 
   /// No description provided for @dpDcSendCustomer.
@@ -4447,25 +4855,25 @@ abstract class AppLocalizations {
   /// No description provided for @dpDcEcoPay.
   ///
   /// In en, this message translates to:
-  /// **'Verified buyers get a 0% markup limit for eligible products: 3 months, no advance.'**
+  /// **'Verified customers get a 0% markup limit for eligible products: 3 months, no advance.'**
   String get dpDcEcoPay;
 
   /// No description provided for @dpDcEcoBrand.
   ///
   /// In en, this message translates to:
-  /// **'For sellers: their shop, orders and stock, and sourcing from brands like yours.'**
+  /// **'For verified local sellers: they take AtomPay units from you and send bulk requests.'**
   String get dpDcEcoBrand;
 
   /// No description provided for @dpDcEcoSiteShop.
   ///
   /// In en, this message translates to:
-  /// **'Where buyers find you. Your brand page shows your catalogue to buyers across Pakistan.'**
+  /// **'Where customers find you. Your brand page shows your story, slides and live products.'**
   String get dpDcEcoSiteShop;
 
   /// No description provided for @dpDcEcoSite.
   ///
   /// In en, this message translates to:
-  /// **'Where buyers find products, choose a plan and order.'**
+  /// **'Where customers find you and order your products.'**
   String get dpDcEcoSite;
 
   /// No description provided for @dpDcOpenSite.
@@ -4555,7 +4963,7 @@ abstract class AppLocalizations {
   /// No description provided for @secBlockShotsSub.
   ///
   /// In en, this message translates to:
-  /// **'Of documents and payment proofs'**
+  /// **'Of orders, buyer phone numbers and invoices'**
   String get secBlockShotsSub;
 
   /// No description provided for @recoTitle.
@@ -4743,6 +5151,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bulk deals'**
   String get tabBulk;
+
+  /// No description provided for @tabAtompay.
+  ///
+  /// In en, this message translates to:
+  /// **'AtomPay'**
+  String get tabAtompay;
 
   /// No description provided for @tabProducts.
   ///
@@ -5109,6 +5523,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reports'**
   String get menuReports;
+
+  /// No description provided for @menuLogOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get menuLogOut;
+
+  /// No description provided for @menuRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get menuRoleOwner;
+
+  /// No description provided for @menuTeamRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'Team & roles'**
+  String get menuTeamRoles;
+
+  /// No description provided for @menuProfileSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile & settings'**
+  String get menuProfileSettings;
+
+  /// No description provided for @menuHelpSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Help and support'**
+  String get menuHelpSupport;
+
+  /// No description provided for @menuGroupHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get menuGroupHelp;
+
+  /// No description provided for @menuBadgeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} new'**
+  String menuBadgeNew(int count);
+
+  /// No description provided for @menuBadgeOut.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} out'**
+  String menuBadgeOut(int count);
+
+  /// No description provided for @menuPaidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid until {date}'**
+  String menuPaidUntil(String date);
+
+  /// No description provided for @menuPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person} other{{count} people}}'**
+  String menuPeople(int count);
+
+  /// No description provided for @menuOutletsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} open'**
+  String menuOutletsOpen(int count);
+
+  /// No description provided for @menuSyncedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {time}'**
+  String menuSyncedAt(String time);
 
   /// No description provided for @menuMyPassword.
   ///
@@ -7411,8 +7897,128 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTalkSub.
   ///
   /// In en, this message translates to:
-  /// **'Your requests and the partner team'**
+  /// **'WhatsApp the partner team'**
   String get settingsTalkSub;
+
+  /// No description provided for @settingsPasswordRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get settingsPasswordRow;
+
+  /// No description provided for @settingsPageLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get settingsPageLive;
+
+  /// No description provided for @settingsPageNotLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Not live'**
+  String get settingsPageNotLive;
+
+  /// No description provided for @settingsDeleteRowSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account · password-confirmed'**
+  String get settingsDeleteRowSub;
+
+  /// No description provided for @settingsStatusActivePartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Active partner'**
+  String get settingsStatusActivePartner;
+
+  /// No description provided for @settingsBioNoneSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a fingerprint or face in the phone\'s settings first'**
+  String get settingsBioNoneSub;
+
+  /// No description provided for @settingsBioPinFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a PIN first, then switch this on'**
+  String get settingsBioPinFirst;
+
+  /// No description provided for @settingsOfflineCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline copy'**
+  String get settingsOfflineCopy;
+
+  /// No description provided for @settingsOfflineCopySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders, products, stock, bulk deals · encrypted'**
+  String get settingsOfflineCopySub;
+
+  /// No description provided for @settingsBlueKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue: offline copy'**
+  String get settingsBlueKey;
+
+  /// No description provided for @settingsOfflineCopyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The offline copy is removed only when you sign out, so nothing waiting is lost.'**
+  String get settingsOfflineCopyNote;
+
+  /// No description provided for @settingsMic.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get settingsMic;
+
+  /// No description provided for @settingsMicSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Only for speaking to Ask Atom'**
+  String get settingsMicSub;
+
+  /// No description provided for @settingsSignOutOthersDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Your other devices are signed out'**
+  String get settingsSignOutOthersDone;
+
+  /// No description provided for @settingsSignOutOthersNone.
+  ///
+  /// In en, this message translates to:
+  /// **'You weren\'t signed in anywhere else'**
+  String get settingsSignOutOthersNone;
+
+  /// No description provided for @settingsSignOutOthersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out all other devices?'**
+  String get settingsSignOutOthersTitle;
+
+  /// No description provided for @settingsSignOutOthersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every other phone, tablet and the brand portal signs out at once. This phone stays signed in.'**
+  String get settingsSignOutOthersBody;
+
+  /// No description provided for @settingsSessionsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A device you sign out is signed out at once. With Offline working, its saved copy is deleted the next time it goes online. Needs internet.'**
+  String get settingsSessionsNote;
+
+  /// No description provided for @settingsSessionsNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in now'**
+  String get settingsSessionsNow;
+
+  /// No description provided for @settingsDailyPreviewNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to report today, so no message would go out.'**
+  String get settingsDailyPreviewNone;
 
   /// No description provided for @settingsNoticesSub.
   ///
@@ -8299,7 +8905,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncEndedSend.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Send 1 change waiting} other{Send {count} changes waiting}}'**
+  /// **'{count, plural, =1{Send 1 waiting change} other{Send {count} waiting changes}}'**
   String syncEndedSend(int count);
 
   /// No description provided for @syncEndedPhotos.
@@ -8727,6 +9333,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Outlet: {name}'**
   String stockOutletFilter(String name);
+
+  /// No description provided for @stockCategoryFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Category: {name}'**
+  String stockCategoryFilter(String name);
+
+  /// No description provided for @stockCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get stockCategory;
+
+  /// No description provided for @stockNoRecentIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing received in the last 30 days.'**
+  String get stockNoRecentIn;
+
+  /// No description provided for @stockCameraOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera is off for Brand Partner'**
+  String get stockCameraOffTitle;
+
+  /// No description provided for @stockCameraOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To scan serials and IMEIs, allow the camera in your phone\'s settings. You can also type the number.'**
+  String get stockCameraOffBody;
+
+  /// No description provided for @stockCameraFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera didn\'t start'**
+  String get stockCameraFailedTitle;
+
+  /// No description provided for @stockCameraFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Close other apps using the camera and try again, or type the number.'**
+  String get stockCameraFailedBody;
+
+  /// No description provided for @stockOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get stockOpenSettings;
+
+  /// No description provided for @catVarPickCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a category first. The options follow it: storage for phones, screen size for TVs.'**
+  String get catVarPickCategory;
+
+  /// No description provided for @catVarOneVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Products in this category come in one version.'**
+  String get catVarOneVersion;
+
+  /// No description provided for @catVarNoColours.
+  ///
+  /// In en, this message translates to:
+  /// **'Atomshop hasn\'t added colours yet. Ask support for the ones you need.'**
+  String get catVarNoColours;
+
+  /// No description provided for @catVarNoSizes.
+  ///
+  /// In en, this message translates to:
+  /// **'Atomshop hasn\'t added screen sizes yet. Ask support for the ones you need.'**
+  String get catVarNoSizes;
+
+  /// No description provided for @catVarNoStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Atomshop hasn\'t added storage options yet. Ask support for the ones you need.'**
+  String get catVarNoStorage;
+
+  /// No description provided for @syncNoTeamPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'No phone signed in yet'**
+  String get syncNoTeamPhone;
+
+  /// No description provided for @teamKpiOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders handled this month'**
+  String get teamKpiOrders;
+
+  /// No description provided for @teamKpiOrdersNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed or delivered'**
+  String get teamKpiOrdersNote;
+
+  /// No description provided for @teamOrdersMonthN.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 order this month} other{{n} orders this month}}'**
+  String teamOrdersMonthN(int n);
+
+  /// No description provided for @teamKpiHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders handled · {month}'**
+  String teamKpiHandled(String month);
+
+  /// No description provided for @teamKpiHandledNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{confirmed} confirmed, {delivered} delivered'**
+  String teamKpiHandledNote(int confirmed, int delivered);
+
+  /// No description provided for @teamKpiPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments recorded · {month}'**
+  String teamKpiPaid(String month);
+
+  /// No description provided for @teamKpiPaidNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 payment} other{{n} payments}}'**
+  String teamKpiPaidNote(int n);
+
+  /// No description provided for @teamPhonesRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out their phones'**
+  String get teamPhonesRow;
+
+  /// No description provided for @teamPhonesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'They can sign in again'**
+  String get teamPhonesSub;
+
+  /// No description provided for @teamPhonesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out {name}\'s phones?'**
+  String teamPhonesTitle(String name);
+
+  /// No description provided for @teamPhonesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every phone they use is signed out. A phone with an offline copy deletes it the next time it goes online, with anything it never sent. Their login stays.'**
+  String get teamPhonesBody;
+
+  /// No description provided for @teamPhonesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out phones'**
+  String get teamPhonesButton;
+
+  /// No description provided for @teamPhonesDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s phones are signed out.'**
+  String teamPhonesDone(String name);
+
+  /// No description provided for @teamPhonesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No phone was signed in.'**
+  String get teamPhonesNone;
+
+  /// No description provided for @teamBlurbManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything except outlets, settings and billing'**
+  String get teamBlurbManager;
+
+  /// No description provided for @teamBlurbOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders, payments, AtomPay; sees products and stock'**
+  String get teamBlurbOrders;
+
+  /// No description provided for @teamBlurbBulk.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk requests, quotes and deals'**
+  String get teamBlurbBulk;
+
+  /// No description provided for @teamBlurbStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock in, adjust, move; warehouses'**
+  String get teamBlurbStock;
+
+  /// No description provided for @teamBlurbMarketing.
+  ///
+  /// In en, this message translates to:
+  /// **'Products and the brand page'**
+  String get teamBlurbMarketing;
+
+  /// No description provided for @teamBlurbAccountant.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals, payments, reports and exports'**
+  String get teamBlurbAccountant;
 
   /// No description provided for @stockProductFilter.
   ///
@@ -12856,6 +13666,66 @@ abstract class AppLocalizations {
   /// **'Excel · online'**
   String get acctExcelOnline;
 
+  /// No description provided for @accountReportOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No orders} =1{1 order} other{{count} orders}}'**
+  String accountReportOrders(int count);
+
+  /// No description provided for @accountReportStillDue.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} still due'**
+  String accountReportStillDue(String amount);
+
+  /// No description provided for @accountReportUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No units} =1{1 unit} other{{count} units}}'**
+  String accountReportUnits(int count);
+
+  /// No description provided for @accountReportDeals.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No deals} =1{1 deal} other{{count} deals}}'**
+  String accountReportDeals(int count);
+
+  /// No description provided for @accountReportNoneToday.
+  ///
+  /// In en, this message translates to:
+  /// **'None today'**
+  String get accountReportNoneToday;
+
+  /// No description provided for @accountReportMethodIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Method: {method}'**
+  String accountReportMethodIs(String method);
+
+  /// No description provided for @accountReportMethodAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get accountReportMethodAny;
+
+  /// No description provided for @accountReportWhichMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Which method?'**
+  String get accountReportWhichMethod;
+
+  /// No description provided for @accountNoPaymentsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments yet'**
+  String get accountNoPaymentsYet;
+
+  /// No description provided for @accountNoBillsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No bills yet'**
+  String get accountNoBillsYet;
+
   /// No description provided for @acctOutletIs.
   ///
   /// In en, this message translates to:
@@ -13219,7 +14089,7 @@ abstract class AppLocalizations {
   /// No description provided for @askAtomHint.
   ///
   /// In en, this message translates to:
-  /// **'Ask about your orders, deals or stock'**
+  /// **'Ask, or tap the mic'**
   String get askAtomHint;
 
   /// No description provided for @askAtomHintOffline.
@@ -13305,6 +14175,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Which seller requests are new?'**
   String get askAtomQRequests;
+
+  /// No description provided for @askAtomQAtompay.
+  ///
+  /// In en, this message translates to:
+  /// **'Is mahine kitni AtomPay sales hui?'**
+  String get askAtomQAtompay;
+
+  /// No description provided for @askAtomShowThem.
+  ///
+  /// In en, this message translates to:
+  /// **'Show them'**
+  String get askAtomShowThem;
+
+  /// No description provided for @askAtomMic.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak your question'**
+  String get askAtomMic;
+
+  /// No description provided for @askAtomMicStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop listening'**
+  String get askAtomMicStop;
+
+  /// No description provided for @askAtomListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening…'**
+  String get askAtomListening;
+
+  /// No description provided for @askAtomMicDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Atom can\'t hear you: the microphone is off for Brand Partner. Allow it in your phone\'s settings, or type your question.'**
+  String get askAtomMicDenied;
+
+  /// No description provided for @askAtomMicUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice isn\'t available on this phone. Type your question instead.'**
+  String get askAtomMicUnavailable;
 
   /// No description provided for @applyTypeManufacturer.
   ///
@@ -14365,7 +15277,7 @@ abstract class AppLocalizations {
   /// No description provided for @outletsOrdersThisMonth.
   ///
   /// In en, this message translates to:
-  /// **'Latest orders'**
+  /// **'Orders this month'**
   String get outletsOrdersThisMonth;
 
   /// No description provided for @outletsNoOrders.
@@ -17842,6 +18754,126 @@ abstract class AppLocalizations {
   /// **'New quote revision'**
   String get bulkNewQuoteRevision;
 
+  /// No description provided for @bulkAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get bulkAll;
+
+  /// No description provided for @bulkReceivedFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Received: {when}'**
+  String bulkReceivedFilter(String when);
+
+  /// No description provided for @bulkReceivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get bulkReceivedTitle;
+
+  /// No description provided for @bulkAnyTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Any time'**
+  String get bulkAnyTime;
+
+  /// No description provided for @bulkRangeToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get bulkRangeToday;
+
+  /// No description provided for @bulkRangeWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get bulkRangeWeek;
+
+  /// No description provided for @bulkRangeDays30.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get bulkRangeDays30;
+
+  /// No description provided for @bulkRangeThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get bulkRangeThisMonth;
+
+  /// No description provided for @bulkRangePick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick dates'**
+  String get bulkRangePick;
+
+  /// No description provided for @bulkRangeDates.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} – {to}'**
+  String bulkRangeDates(String from, String to);
+
+  /// No description provided for @bulkEmptyReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests received then'**
+  String get bulkEmptyReceived;
+
+  /// No description provided for @bulkEmptyReceivedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another time, or Any time.'**
+  String get bulkEmptyReceivedBody;
+
+  /// No description provided for @bulkLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t load'**
+  String get bulkLoadErrorTitle;
+
+  /// No description provided for @bulkLoadErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Atomshop couldn\'t load this just now. Nothing was changed.'**
+  String get bulkLoadErrorBody;
+
+  /// No description provided for @bulkNoDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'No delivery yet.'**
+  String get bulkNoDelivery;
+
+  /// No description provided for @bulkFromRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'From request'**
+  String get bulkFromRequest;
+
+  /// No description provided for @bulkAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get bulkAddress;
+
+  /// No description provided for @bulkCommissionNoneInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller deals carry no commission for your brand today. If Atomshop sets a rate, it is shown here before you send a quote and fixed when the deal opens; it is added to your monthly bill, never taken from the seller\'s payment.'**
+  String get bulkCommissionNoneInfo;
+
+  /// No description provided for @bulkReceivedFromAtomshop.
+  ///
+  /// In en, this message translates to:
+  /// **'Request received from Atomshop'**
+  String get bulkReceivedFromAtomshop;
+
+  /// No description provided for @bulkAddPhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo'**
+  String get bulkAddPhotoTitle;
+
   /// No description provided for @teamSemYes.
   ///
   /// In en, this message translates to:
@@ -18285,6 +19317,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'off'**
   String get teamSemOff;
+
+  /// No description provided for @ordersClearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get ordersClearSearch;
+
+  /// No description provided for @ordersSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Order number, customer, phone or product'**
+  String get ordersSearchPlaceholder;
+
+  /// No description provided for @atompaySearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Order number or product'**
+  String get atompaySearchPlaceholder;
+
+  /// No description provided for @ordersPlacedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Placed'**
+  String get ordersPlacedTitle;
+
+  /// No description provided for @ordersPlacedFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Placed: {when}'**
+  String ordersPlacedFilter(String when);
+
+  /// No description provided for @ordersLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t load'**
+  String get ordersLoadErrorTitle;
+
+  /// No description provided for @ordersLoadErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Atomshop couldn\'t load this just now. Nothing was changed.'**
+  String get ordersLoadErrorBody;
+
+  /// No description provided for @ordersErrorRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Ref {ref}'**
+  String ordersErrorRef(String ref);
+
+  /// No description provided for @ordersSaveErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t save. Nothing was changed; try again.'**
+  String get ordersSaveErrorBody;
+
+  /// No description provided for @ordersDeliveryFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get ordersDeliveryFree;
+
+  /// No description provided for @ordersNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get ordersNotVerified;
+
+  /// No description provided for @ordersNotGiven.
+  ///
+  /// In en, this message translates to:
+  /// **'Not given'**
+  String get ordersNotGiven;
+
+  /// No description provided for @ordersDeliveredBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered by'**
+  String get ordersDeliveredBy;
 }
 
 class _AppLocalizationsDelegate

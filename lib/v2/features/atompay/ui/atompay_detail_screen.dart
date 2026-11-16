@@ -72,8 +72,8 @@ class AtompayView extends ConsumerWidget {
                     ? null
                     : () => Navigator.of(context).maybePop(),
               )
-            : AtomErrorState(
-                message: e is ApiFailure ? sayOrderFailure(e, l) : null,
+            : OrdersLoadError(
+                error: e,
                 onRetry: () => ref.invalidate(atompayDetailProvider(uuid)),
               ),
       ),
@@ -321,7 +321,7 @@ class _AtompayBodyState extends ConsumerState<_AtompayBody> {
         title: l.ordersWhatOrdered,
         lines: [
           OrderLine(
-            label: '${o.productLine} · 1',
+            label: '${o.productLine} × ${o.quantity}',
             value: formatRs(o.cashPrice),
           ),
         ],

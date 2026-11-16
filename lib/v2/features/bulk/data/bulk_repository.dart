@@ -90,10 +90,16 @@ class BulkRepository {
       _api.get('bulk-orders/count', parse: BulkCounts.fromJson);
 
   /// `GET bulk-orders?from=sellers|buyers&status=`; a null [status] is
-  /// every status (`status=all`). The counts are per status under [from].
+  /// every status (`status=all`), [changeAsked] the seller requests owing
+  /// a new revision (`status=change_asked`). [since] and [until] are the
+  /// days it came in (`received_from` / `received_to`, inclusive). The
+  /// counts are per status under [from] and the days.
   Future<ApiResult<BulkRequestsPage>> requests({
     required String from,
     required RequestStatus? status,
+    bool changeAsked = false,
+    DateTime? since,
+    DateTime? until,
     String? search,
     int page = 1,
   }) => _orCopy(
@@ -101,15 +107,24 @@ class BulkRepository {
       'bulk-orders',
       query: {
         'from': from,
-        'status': status?.key ?? 'all',
+        'status': changeAsked ? 'change_asked' : status?.key ?? 'all',
+        if (since != null) 'received_from': AtomDates.api(since),
+        if (until != null) 'received_to': AtomDates.api(until),
         if (page > 1) 'page': page,
         if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
       },
       parse: BulkRequestsPage.fromJson,
     ),
-    (copy) => page > 1
+    // The copy can't tell a change asked; that list needs the server.
+    (copy) => page > 1 || changeAsked
         ? Future.value(null)
-        : copy.requests(from: from, status: status?.key, search: search),
+        : copy.requests(
+            from: from,
+            status: status?.key,
+            search: search,
+            since: since,
+            until: until,
+          ),
   );
 
   /// `GET bulk-orders/{id}`.
@@ -375,7 +390,15 @@ final bulkCountsProvider = FutureProvider.autoDispose<BulkCounts>((ref) async {
   return _value(await ref.read(bulkRepositoryProvider).counts());
 });
 
-typedef RequestsQuery = ({String from, RequestStatus status, String search});
+/// One request list's filters: a null [status] is All.
+typedef RequestsQuery = ({
+  String from,
+  RequestStatus? status,
+  bool changeAsked,
+  DateTime? since,
+  DateTime? until,
+  String search,
+});
 
 /// The first page of one request list (7.1 Seller requests / Website).
 final bulkRequestsProvider = FutureProvider.autoDispose
@@ -384,7 +407,14 @@ final bulkRequestsProvider = FutureProvider.autoDispose
       return _value(
         await ref
             .read(bulkRepositoryProvider)
-            .requests(from: q.from, status: q.status, search: q.search),
+            .requests(
+              from: q.from,
+              status: q.status,
+              changeAsked: q.changeAsked,
+              since: q.since,
+              until: q.until,
+              search: q.search,
+            ),
       );
     });
 

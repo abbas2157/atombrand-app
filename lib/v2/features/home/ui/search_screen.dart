@@ -319,9 +319,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
-                hintText: l.homeSearchHint,
-                hintStyle: AtomText.input.copyWith(
-                  color: AtomColors.placeholder,
+                // The whole hint fits beside the scan key: it scales down
+                // rather than end in "…" (5.8).
+                hint: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    l.homeSearchHint,
+                    maxLines: 1,
+                    style: AtomText.input.copyWith(
+                      color: AtomColors.placeholder,
+                    ),
+                  ),
                 ),
               ),
             ),

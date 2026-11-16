@@ -43,31 +43,35 @@ class _TeamListScreenState extends ConsumerState<TeamListScreen> {
   List<Widget> _body(TeamList list, TeamRoles? roles, bool online) {
     final session = watchSession(ref);
     final members = list.members;
+    // The owner is listed first and counted, as on the board (5 people:
+    // the owner and four members). The owner is using the app now, so is
+    // active and signed in today.
+    final isOwner = session != null && session.who.isOwner;
+    final me = isOwner ? 1 : 0;
     final on = members.where((m) => !m.isOff).length;
     final off = members.length - on;
-    final waiting = members
-        .where((m) => m.status == MemberStatus.waiting)
+    final working = members
+        .where((m) => m.status == MemberStatus.active)
         .length;
     final rows = members.where(_shows).toList();
-    final owner =
-        session != null && session.who.isOwner && _filter != _Filter.off;
+    final owner = isOwner && _filter != _Filter.off;
     return [
       AtomKpiGrid(
         kpis: [
           AtomKpi(
             label: l.teamKpiMembers,
-            value: '${members.length}',
-            note: l.teamKpiMembersNote(on),
+            value: '${members.length + me}',
+            note: l.teamKpiMembersNote(working + me),
           ),
           AtomKpi(
             label: l.teamKpiToday,
-            value: '${activeToday(members)}',
+            value: '${activeToday(members) + me}',
             note: l.teamKpiTodayNote,
           ),
           AtomKpi(
-            label: l.teamKpiWaiting,
-            value: '$waiting',
-            note: l.teamKpiWaitingNote,
+            label: l.teamKpiOrders,
+            value: list.ordersMonth == null ? '–' : '${list.ordersMonth}',
+            note: l.teamKpiOrdersNote,
           ),
           AtomKpi(
             label: l.teamKpiRoles,
@@ -85,9 +89,9 @@ class _TeamListScreenState extends ConsumerState<TeamListScreen> {
         selected: _filter,
         onPick: (f) => setState(() => _filter = f),
         chips: [
-          (_Filter.active, l.teamFilterActive, on),
+          (_Filter.active, l.teamFilterActive, on + me),
           (_Filter.off, l.teamFilterOff, off),
-          (_Filter.all, l.teamFilterAll, members.length),
+          (_Filter.all, l.teamFilterAll, members.length + me),
         ],
       ),
       const SizedBox(height: 10),
@@ -148,19 +152,27 @@ class _TeamListScreenState extends ConsumerState<TeamListScreen> {
                       ? l.teamAdd
                       : l.teamAddMember,
                   kind: AtomButtonKind.primary,
-                  icon: LucideIcons.plus,
                   onPressed: () => context.push(V2Routes.teamAdd),
                 ),
-              const SizedBox(width: 4),
+              // with the header's 8: the 16px gutter
+              const SizedBox(width: 8),
             ],
             tabs: [
-              AtomHeaderTab(l.teamPeople, count: list?.members.length),
-              AtomHeaderTab(l.teamRoles, count: roles?.roles.length),
+              AtomHeaderTab(
+                l.teamPeople,
+                // the owner is one of the people listed
+                count: list == null
+                    ? null
+                    : list.members.length +
+                          ((watchSession(ref)?.who.isOwner ?? false) ? 1 : 0),
+              ),
             ],
             selectedTab: 0,
-            onTab: (i) {
-              if (i == 1) context.push(V2Routes.teamRoles);
-            },
+            // Roles is an outlined button beside People, as on the board.
+            tabsTrailing: _RolesButton(
+              count: roles?.roles.length,
+              onTap: () => context.push(V2Routes.teamRoles),
+            ),
           ),
           Expanded(
             child: RefreshIndicator(
@@ -215,7 +227,14 @@ class _OwnerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final big = MediaQuery.textScalerOf(context).scale(10) >= 15;
+    final pill = AtomPill(
+      label: l.teamOwner,
+      tone: AtomTone.blue,
+      compact: true,
+    );
     return Semantics(
+      container: true,
       label: '$name, ${l.teamOwner}',
       excludeSemantics: true,
       child: Container(
@@ -238,11 +257,11 @@ class _OwnerRow extends StatelessWidget {
                     style: AtomText.secondary,
                   ),
                   SeenText(text: l.teamActiveNow, tone: SeenTone.now),
+                  if (big) ...[const SizedBox(height: 4), pill],
                 ],
               ),
             ),
-            const SizedBox(width: AtomSpace.s2),
-            AtomPill(label: l.teamOwner, tone: AtomTone.blue),
+            if (!big) ...[const SizedBox(width: AtomSpace.s2), pill],
           ],
         ),
       ),
@@ -262,39 +281,111 @@ class _MemberRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final m = member;
-    final (seen, tone) = seenLine(l, m);
+    final (seenAt, tone) = seenLine(l, m);
+    final seen = m.ordersMonth > 0 && !m.isOff
+        ? '$seenAt · ${l.teamOrdersMonthN(m.ordersMonth)}'
+        : seenAt;
     final role = '${m.role?.name ?? l.teamNoRole} · ${worksIn(l, m)}';
+    // Large text: the status goes under the lines, not beside them.
+    final big = MediaQuery.textScalerOf(context).scale(10) >= 15;
+    // Its own node: without it the rows merged into one for screen
+    // readers, and a tap at that node's middle fell on the divider.
+    return Semantics(
+      container: true,
+      child: AtomPressable(
+        onTap: onTap,
+        scaleOnPress: false,
+        focusRadius: BorderRadius.zero,
+        semanticLabel: [
+          m.name,
+          role,
+          seen,
+          statusLabel(l, m.status),
+        ].join(', '),
+        builder: (_, pressed) => Container(
+          color: pressed ? AtomColors.head : AtomColors.paper,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AtomSpace.inset,
+            vertical: AtomSpace.s3,
+          ),
+          child: ExcludeSemantics(
+            child: Opacity(
+              opacity: m.isOff ? 0.6 : 1,
+              child: Row(
+                children: [
+                  MemberInitials(member: m),
+                  const SizedBox(width: AtomSpace.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(m.name, style: AtomText.listTitle),
+                        Text(role, style: AtomText.secondary),
+                        SeenText(text: seen, tone: tone),
+                        if (big) ...[
+                          const SizedBox(height: 4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: MemberStatusPill(status: m.status),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (!big) ...[
+                    const SizedBox(width: AtomSpace.s2),
+                    MemberStatusPill(status: m.status),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// `.mini` "Roles 6" beside the People tab: 36 tall (44 to tap), 13px,
+/// the count in muted grey 6 after.
+class _RolesButton extends StatelessWidget {
+  const _RolesButton({required this.count, required this.onTap});
+
+  final int? count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return AtomPressable(
       onTap: onTap,
-      scaleOnPress: false,
-      focusRadius: BorderRadius.zero,
-      semanticLabel: [m.name, role, seen, statusLabel(l, m.status)].join(', '),
-      builder: (_, pressed) => Container(
-        color: pressed ? AtomColors.head : AtomColors.paper,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AtomSpace.inset,
-          vertical: AtomSpace.s3,
-        ),
-        child: ExcludeSemantics(
-          child: Opacity(
-            opacity: m.isOff ? 0.6 : 1,
-            child: Row(
-              children: [
-                MemberInitials(member: m),
-                const SizedBox(width: AtomSpace.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(m.name, style: AtomText.listTitle),
-                      Text(role, style: AtomText.secondary),
-                      SeenText(text: seen, tone: tone),
-                    ],
-                  ),
+      semanticLabel: count == null ? l.teamRoles : '${l.teamRoles}, $count',
+      builder: (_, pressed) => SizedBox(
+        height: 44,
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: pressed ? AtomColors.head : AtomColors.paper,
+              borderRadius: AtomRadius.brControl,
+              border: Border.all(color: AtomColors.line2),
+            ),
+            child: ExcludeSemantics(
+              child: Text.rich(
+                TextSpan(
+                  text: l.teamRoles,
+                  children: [
+                    if (count != null)
+                      TextSpan(
+                        text: '  $count',
+                        style: const TextStyle(color: AtomColors.muted),
+                      ),
+                  ],
                 ),
-                const SizedBox(width: AtomSpace.s2),
-                MemberStatusPill(status: m.status),
-              ],
+                style: AtomText.smallButton.copyWith(color: AtomColors.ink),
+              ),
             ),
           ),
         ),

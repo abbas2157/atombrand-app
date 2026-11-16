@@ -141,6 +141,8 @@ class _Repo implements TeamRepository {
   Future<ApiResult<MemberWithLogin>> reset(TeamMember member) =>
       throw UnimplementedError();
   @override
+  Future<ApiResult<int>> signOutPhones(int id) => throw UnimplementedError();
+  @override
   Future<ApiResult<int>> saveRole({
     int? id,
     required String name,
@@ -179,8 +181,10 @@ Future<void> _pump(
   WidgetTester tester,
   Widget screen, {
   BrandSession session = _owner,
+  double width = 390,
+  double textScale = 1,
 }) async {
-  tester.view.physicalSize = const Size(390 * 3, 2400 * 3);
+  tester.view.physicalSize = Size(width * 3, 2400 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
@@ -195,6 +199,11 @@ Future<void> _pump(
         theme: AtomTheme.light,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: screen,
       ),
     ),
@@ -219,6 +228,31 @@ void main() {
       expect(find.text('Asad Raza'), findsNothing);
     },
   );
+
+  testWidgets('Team: each row is its own node; Roles sits beside People', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _pump(tester, const TeamListScreen());
+    expect(find.bySemanticsLabel(RegExp(r'^Asad Raza, Owner')), findsWidgets);
+    expect(find.bySemanticsLabel(RegExp(r'^Usman Ali, ')), findsWidgets);
+    // not merged into one node (a tap at its middle hit the divider)
+    expect(
+      find.bySemanticsLabel(RegExp(r'Asad Raza.*Usman Ali')),
+      findsNothing,
+    );
+    expect(find.bySemanticsLabel(RegExp(r'^Roles, 4$')), findsWidgets);
+    handle.dispose();
+  });
+
+  testWidgets('Team list and Add stay inside 320dp at 200% text', (
+    tester,
+  ) async {
+    await _pump(tester, const TeamListScreen(), width: 320, textScale: 2);
+    expect(tester.takeException(), isNull);
+    await _pump(tester, const TeamMemberForm(), width: 320, textScale: 2);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('Add: every role for the owner, outlets for Only some outlets', (
     tester,

@@ -116,6 +116,8 @@ class BrandOutlet {
     this.openedOn,
     this.figures,
     this.openOrders,
+    this.runBy,
+    this.staffNames,
   });
 
   final int id;
@@ -138,6 +140,12 @@ class BrandOutlet {
   /// Orders not yet delivered (Pending, Confirming, Processing); detail only.
   final int? openOrders;
 
+  /// Who runs it (`run_by`): the manager, or the owner when none is set.
+  final String? runBy;
+
+  /// The people who work here, those in every outlet included; detail only.
+  final List<String>? staffNames;
+
   factory BrandOutlet.fromJson(Object? raw) {
     final j = Json.map(raw);
     final manager = Json.map(j['manager']);
@@ -157,6 +165,10 @@ class BrandOutlet {
           ? OutletFigures.fromJson(j['figures'])
           : null,
       openOrders: Json.integer(j['open_orders']),
+      runBy: Json.str(j['run_by']) ?? Json.str(manager['name']),
+      staffNames: j['staff_names'] is List
+          ? [for (final n in Json.list(j['staff_names'])) ?Json.str(n)]
+          : null,
     );
   }
 }

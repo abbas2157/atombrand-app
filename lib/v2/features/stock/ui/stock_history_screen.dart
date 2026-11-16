@@ -126,78 +126,86 @@ class _StockHistoryScreenState extends ConsumerState<StockHistoryScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: AtomTextField(
+            // No label above the box (the board's search has its
+            // placeholder only); the label is read out.
+            child: Semantics(
               label: l.stockSearchHistory,
-              controller: _searchBox,
-              placeholder: l.stockHistoryHint,
-              prefix: const Icon(
-                LucideIcons.search,
-                size: 18,
-                color: AtomColors.muted,
+              child: AtomTextField(
+                label: '',
+                controller: _searchBox,
+                placeholder: l.stockHistoryHint,
+                prefix: const Icon(
+                  LucideIcons.search,
+                  size: 18,
+                  color: AtomColors.muted,
+                ),
+                textInputAction: TextInputAction.search,
+                onChanged: (v) {
+                  _debounce?.cancel();
+                  _debounce = Timer(
+                    const Duration(milliseconds: 400),
+                    () => _setQuery(() => _search = v.trim()),
+                  );
+                },
+                onSubmitted: (v) => _setQuery(() => _search = v.trim()),
               ),
-              textInputAction: TextInputAction.search,
-              onChanged: (v) {
-                _debounce?.cancel();
-                _debounce = Timer(
-                  const Duration(milliseconds: 400),
-                  () => _setQuery(() => _search = v.trim()),
-                );
-              },
-              onSubmitted: (v) => _setQuery(() => _search = v.trim()),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (multi)
-                  StockFilterChip(
-                    label: l.stockOutletFilter(
-                      _outletId == null
-                          ? l.stockAll
-                          : outlets
-                                .firstWhere(
-                                  (o) => o.id == _outletId,
-                                  orElse: () => outlets.first,
-                                )
-                                .name,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (multi)
+                    StockFilterChip(
+                      label: l.stockOutletFilter(
+                        _outletId == null
+                            ? l.stockAll
+                            : outlets
+                                  .firstWhere(
+                                    (o) => o.id == _outletId,
+                                    orElse: () => outlets.first,
+                                  )
+                                  .name,
+                      ),
+                      active: _outletId != null,
+                      onTap: () async {
+                        final id = await showAtomSelect<int>(
+                          context,
+                          title: l.stockOutlet,
+                          selected: _outletId ?? 0,
+                          options: [
+                            AtomOption(value: 0, label: l.stockAllOutlets),
+                            for (final o in outlets)
+                              AtomOption(value: o.id, label: o.name),
+                          ],
+                        );
+                        if (id != null) {
+                          _setQuery(() => _outletId = id == 0 ? null : id);
+                        }
+                      },
                     ),
-                    active: _outletId != null,
+                  StockFilterChip(
+                    label: l.stockWhenFilter(periods[_period] ?? ''),
+                    active: _period != '30',
                     onTap: () async {
-                      final id = await showAtomSelect<int>(
+                      final p = await showAtomSelect<String>(
                         context,
-                        title: l.stockOutlet,
-                        selected: _outletId ?? 0,
+                        title: l.stockWhen,
+                        selected: _period,
                         options: [
-                          AtomOption(value: 0, label: l.stockAllOutlets),
-                          for (final o in outlets)
-                            AtomOption(value: o.id, label: o.name),
+                          for (final e in periods.entries)
+                            AtomOption(value: e.key, label: e.value),
                         ],
                       );
-                      if (id != null) {
-                        _setQuery(() => _outletId = id == 0 ? null : id);
-                      }
+                      if (p != null) _setQuery(() => _period = p);
                     },
                   ),
-                StockFilterChip(
-                  label: l.stockWhenFilter(periods[_period] ?? ''),
-                  active: _period != '30',
-                  onTap: () async {
-                    final p = await showAtomSelect<String>(
-                      context,
-                      title: l.stockWhen,
-                      selected: _period,
-                      options: [
-                        for (final e in periods.entries)
-                          AtomOption(value: e.key, label: e.value),
-                      ],
-                    );
-                    if (p != null) _setQuery(() => _period = p);
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -242,20 +250,24 @@ class _StockHistoryScreenState extends ConsumerState<StockHistoryScreen> {
             if (groups.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 14),
+                // The board's plain card: one bold line, centred.
                 child: StockCard(
-                  child: AtomMessageState(
-                    icon: LucideIcons.clock,
-                    title: _search.isEmpty
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    _search.isEmpty
                         ? l.stockNothingPeriod
                         : l.stockNoMatch(_search),
-                    art: false,
+                    textAlign: TextAlign.center,
+                    style: AtomText.listTitle.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
             for (final g in groups) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(2, 16, 2, 8),
-                child: Text(g.day, style: AtomText.section),
+                padding: const EdgeInsets.fromLTRB(2, 14, 2, 8),
+                child: Text(g.day.toUpperCase(), style: AtomText.section),
               ),
               StockRows(children: [for (final m in g.rows) MoveRow(move: m)]),
             ],

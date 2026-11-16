@@ -19,7 +19,8 @@ import 'choose_plan_sheet.dart';
 
 /// Plan & billing (12.6, owner): the state badge and the plan in the navy
 /// header, four KPIs, the bill to pay, the add-ons, renewing, the payments
-/// sent and the bills with their PDFs. Every amount is Atomshop's.
+/// sent and the bills with their PDFs. How to pay Atomshop is on I've paid
+/// (12.8). Every amount is Atomshop's.
 class PlanScreen extends ConsumerWidget {
   const PlanScreen({super.key});
 
@@ -200,6 +201,7 @@ class _Body extends ConsumerWidget {
         AtomKpiGrid(
           kpis: [
             AtomKpi(
+              valueSize: 16,
               label: l.acctPlan,
               value: p.periodMonths == null
                   ? (p.status == 'trial' ? l.acctFreeTrial : l.acctNoneYet)
@@ -207,6 +209,7 @@ class _Body extends ConsumerWidget {
               note: p.multiOutlet ? l.acctMultiOutlet : l.acctSingleOutlet,
             ),
             AtomKpi(
+              valueSize: 16,
               label: l.acctPaidUntil,
               value: until == null ? '—' : AtomDates.day(until),
               note: until == null
@@ -214,6 +217,7 @@ class _Body extends ConsumerWidget {
                   : daysLeftLabel(l, until, today),
             ),
             AtomKpi(
+              valueSize: 16,
               label: l.acctAmountDue,
               value: formatRs(p.due),
               valueColour:
@@ -227,6 +231,7 @@ class _Body extends ConsumerWidget {
                   : l.acctOpenBills(open.length),
             ),
             AtomKpi(
+              valueSize: 16,
               label: l.acctCredit,
               value: formatRs(p.credit),
               note: p.discountPct > 0
@@ -262,68 +267,66 @@ class _Body extends ConsumerWidget {
             ],
           ),
         ],
-        if (p.periodsOnOffer.isNotEmpty) ...[
-          AccountLabel(l.acctRenewTitle),
-          AccountActionCard(
-            icon: LucideIcons.calendar,
-            title: l.acctHowLongLine(_periodsLine(l, p.periodsOnOffer)),
-            sub: l.acctRenewSub,
-            action: l.commonChoose,
-            onTap: () => showChoosePlanSheet(context, plan: p),
+        // Always offered: the sheet asks Atomshop for the price, and says
+        // so plainly when a period isn't sold.
+        AccountLabel(l.acctRenewTitle),
+        AccountActionCard(
+          icon: LucideIcons.calendar,
+          title: l.acctHowLongLine(
+            _periodsLine(
+              l,
+              p.periodsOnOffer.isEmpty ? billingPeriods : p.periodsOnOffer,
+            ),
           ),
-        ],
-        AccountLabel(l.acctHowToPay),
-        _Payee(plan: p),
-        if (p.payments.isNotEmpty) ...[
-          AccountLabel(l.acctYourPayments),
-          AccountCard(
-            children: [
-              for (final pay in p.payments)
-                AccountLine(
-                  text: [
-                    if (pay.paidOn != null) AtomDates.short(pay.paidOn!),
-                    pay.methodLabel ?? pay.method ?? '',
-                    formatRs(pay.amountReceived ?? pay.amountClaimed),
-                  ].where((s) => s.isNotEmpty).join(' · '),
-                  sub: pay.status == 'rejected' ? pay.reason : null,
-                  pill: AtomPill(
-                    label: paymentStatus(l, pay).label,
-                    tone: paymentStatus(l, pay).tone,
-                  ),
-                  linkLabel: pay.hasReceipt ? l.acctReceipt : null,
-                  onLink: pay.hasReceipt
-                      ? () => shareServerPdf(
-                          context,
-                          ref,
-                          receiptPdf(pay.number!),
-                        )
-                      : null,
+          sub: l.acctRenewSub,
+          action: l.commonChoose,
+          onTap: () => showChoosePlanSheet(context, plan: p),
+        ),
+        AccountLabel(l.acctYourPayments),
+        AccountCard(
+          children: [
+            if (p.payments.isEmpty) AccountLine(text: l.accountNoPaymentsYet),
+            for (final pay in p.payments)
+              AccountLine(
+                text: [
+                  if (pay.paidOn != null) AtomDates.short(pay.paidOn!),
+                  pay.methodLabel ?? pay.method ?? '',
+                  formatRs(pay.amountReceived ?? pay.amountClaimed),
+                ].where((s) => s.isNotEmpty).join(' · '),
+                sub: pay.status == 'rejected' ? pay.reason : null,
+                pill: AtomPill(
+                  label: paymentStatus(l, pay).label,
+                  tone: paymentStatus(l, pay).tone,
                 ),
-            ],
-          ),
-        ],
-        if (p.invoices.isNotEmpty) ...[
-          AccountLabel(l.acctBills),
-          AccountCard(
-            children: [
-              for (final b in p.invoices)
-                AccountLine(
-                  bold: b.number,
-                  text: b.coversFrom == null
-                      ? (b.kindLabel ?? '')
-                      : b.kind == 'package'
-                      ? DateFormat('MMMM').format(b.coversFrom!)
-                      : billTitle(l, b),
-                  pill: AtomPill(
-                    label: billStatus(l, b).label,
-                    tone: billStatus(l, b).tone,
-                  ),
-                  linkLabel: l.acctPdf,
-                  onLink: () => shareServerPdf(context, ref, billPdf(b.number)),
+                linkLabel: pay.hasReceipt ? l.acctReceipt : null,
+                onLink: pay.hasReceipt
+                    ? () =>
+                          shareServerPdf(context, ref, receiptPdf(pay.number!))
+                    : null,
+              ),
+          ],
+        ),
+        AccountLabel(l.acctBills),
+        AccountCard(
+          children: [
+            if (p.invoices.isEmpty) AccountLine(text: l.accountNoBillsYet),
+            for (final b in p.invoices)
+              AccountLine(
+                bold: b.number,
+                text: b.coversFrom == null
+                    ? (b.kindLabel ?? '')
+                    : b.kind == 'package'
+                    ? DateFormat('MMMM').format(b.coversFrom!)
+                    : billTitle(l, b),
+                pill: AtomPill(
+                  label: billStatus(l, b).label,
+                  tone: billStatus(l, b).tone,
                 ),
-            ],
-          ),
-        ],
+                linkLabel: l.acctPdf,
+                onLink: () => shareServerPdf(context, ref, billPdf(b.number)),
+              ),
+          ],
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(2, 8, 2, 0),
           child: Text(
@@ -385,44 +388,6 @@ class _AddonRow extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Atomshop's account, to pay into: bank, wallets and the note.
-class _Payee extends StatelessWidget {
-  const _Payee({required this.plan});
-  final BillingOverview plan;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final pe = plan.payee;
-    final lines = <(String, String)>[
-      if (pe['bank_name'] case final v?) (l.acctBank, v),
-      if (pe['account_title'] case final v?) (l.acctAccountTitle, v),
-      if (pe['iban'] case final v?) (l.acctIban, v),
-      if (pe['jazzcash'] case final v?) (l.acctJazzCash, v),
-      if (pe['easypaisa'] case final v?) (l.acctEasypaisa, v),
-    ];
-    if (lines.isEmpty && pe['note'] == null) {
-      return AtomNote(kind: AtomNoteKind.info, message: l.acctAskForAccount);
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: AtomDecor.card,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final (label, value) in lines)
-            CopyLine(label: label, value: value),
-          if (pe['note'] case final note?)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(note, style: AtomText.small),
-            ),
-        ],
       ),
     );
   }

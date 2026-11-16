@@ -14,7 +14,7 @@ import '../../auth/data/auth_repository.dart';
 import '../../auth/ui/sign_in_screen.dart' show atomshopSupportPhone;
 import '../../help/data/help_repository.dart';
 import '../../help/ui/help_screens.dart'
-    show LegalBar, LegalHead, LegalSections;
+    show LegalBar, LegalHead, LegalSections, helpErrorText;
 
 /// The terms' head and sections (18.5), or why they can't be shown.
 class _TermsBody extends ConsumerWidget {
@@ -48,9 +48,7 @@ class _TermsBody extends ConsumerWidget {
                 )
               : data.hasError && !data.hasValue
               ? AtomErrorState(
-                  message: data.error is ApiFailure
-                      ? (data.error! as ApiFailure).message
-                      : null,
+                  message: helpErrorText(l, data.error),
                   onRetry: () => ref.invalidate(termsDocProvider),
                 )
               : doc!.sections.isNotEmpty
@@ -192,7 +190,7 @@ class _TermsAcceptScreenState extends ConsumerState<TermsAcceptScreen> {
     setState(() {
       _error = switch (failure.kind) {
         ApiFailureKind.offline || ApiFailureKind.timeout => l.signInOffline,
-        _ => failure.message ?? l.commonSomethingWrong,
+        _ => l.commonSomethingWrong,
       };
     });
   }

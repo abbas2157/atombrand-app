@@ -31,6 +31,10 @@ abstract interface class TeamRepository {
   /// everywhere. The answer has no member: [member] is passed through.
   Future<ApiResult<MemberWithLogin>> reset(TeamMember member);
 
+  /// `POST team/{id}/sign-out-phones`: every phone of theirs signs out
+  /// (offline copies are wiped); their login stays. Answers how many.
+  Future<ApiResult<int>> signOutPhones(int id);
+
   /// `GET team/roles`.
   Future<ApiResult<TeamRoles>> roles();
 
@@ -89,6 +93,12 @@ class ApiTeamRepository implements TeamRepository {
     'team/${member.id}/reset',
     parse: (d) =>
         (member: member, login: TeamLogin.fromJson(Json.map(d)['login'])),
+  );
+
+  @override
+  Future<ApiResult<int>> signOutPhones(int id) => _api.post(
+    'team/$id/sign-out-phones',
+    parse: (d) => Json.integer(Json.map(d)['signed_out']) ?? 0,
   );
 
   @override

@@ -173,31 +173,45 @@ class _StockAdjustScreenState extends ConsumerState<StockAdjustScreen> {
   @override
   Widget build(BuildContext context) {
     final options = ref.watch(stockFormOptionsProvider);
+    // A bottom sheet over the screen it was opened from (the board shows
+    // it over Product stock): the route is a StockSheetPage.
     return AtomUnsavedGuard(
       dirty: _note.text.trim().isNotEmpty && !_saving,
-      child: Scaffold(
-        backgroundColor: AtomColors.paper,
-        body: Column(
-          children: [
-            AtomFlowBar(
-              leading: AtomFlowLeading.close,
-              title: AppLocalizations.of(context).stockAdjustTitle,
-            ),
-            const OfflineBar(),
-            Expanded(
-              child: options.when(
-                loading: () => StockLoading(count: 3),
-                error: (e, _) => StockFailed(
-                  error: e,
-                  onRetry: () => ref.invalidate(stockFormOptionsProvider),
+      // Its own Material and scroll, so it also works shown on its own.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                header: true,
+                child: Text(
+                  AppLocalizations.of(context).stockAdjustTitle,
+                  style: AtomText.heading,
+                ),
+              ),
+              const OfflineBar(),
+              const SizedBox(height: 12),
+              options.when(
+                loading: () =>
+                    SizedBox(height: 220, child: StockLoading(count: 3)),
+                error: (e, _) => SizedBox(
+                  height: 320,
+                  child: StockFailed(
+                    error: e,
+                    onRetry: () => ref.invalidate(stockFormOptionsProvider),
+                  ),
                 ),
                 data: (o) {
                   _start(o);
                   return _form(o);
                 },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -219,8 +233,9 @@ class _StockAdjustScreenState extends ConsumerState<StockAdjustScreen> {
           note: _note.text,
         );
     final v = _variant;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AtomSegmented<bool>(
           segments: [
@@ -370,24 +385,40 @@ class _StockAdjustScreenState extends ConsumerState<StockAdjustScreen> {
         const SizedBox(height: 16),
         Text(l.stockReason, style: AtomText.fieldLabel),
         const SizedBox(height: 6),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final r in reasons)
-              _ReasonChip(
-                label: r,
-                on: _reason == r,
-                onTap: () => setState(() => _reason = r),
-              ),
-          ],
+        // `.why`: a two-column grid of reason buttons.
+        Semantics(
+          label: l.stockReason,
+          container: true,
+          child: Column(
+            spacing: 8,
+            children: [
+              for (var i = 0; i < reasons.length; i += 2)
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 8,
+                    children: [
+                      for (final r in reasons.skip(i).take(2))
+                        Expanded(
+                          child: _ReasonChip(
+                            label: r,
+                            on: _reason == r,
+                            onTap: () => setState(() => _reason = r),
+                          ),
+                        ),
+                      if (i + 1 >= reasons.length) const Spacer(),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         AtomTextField(
           label: l.stockNote,
           labelNote: l.stockRequired,
           controller: _note,
-          minLines: 3,
+          minLines: 2,
           keyboardType: TextInputType.multiline,
           placeholder: l.stockWhatHappened,
           inputFormatters: [LengthLimitingTextInputFormatter(300)],
@@ -428,21 +459,28 @@ class _ReasonChip extends StatelessWidget {
     onTap: onTap,
     semanticLabel: label,
     selected: on,
-    focusRadius: AtomRadius.brPill,
+    focusRadius: AtomRadius.brControl,
     builder: (context, pressed) => Container(
-      constraints: const BoxConstraints(minHeight: 38),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      constraints: const BoxConstraints(minHeight: 44),
+      alignment: Alignment.center,
+      // 2px border when chosen; the padding keeps the text still.
+      padding: EdgeInsets.symmetric(horizontal: on ? 9 : 10, vertical: 6),
       decoration: BoxDecoration(
         color: on
             ? AtomColors.primarySoft
             : (pressed ? AtomColors.surface : AtomColors.paper),
-        borderRadius: AtomRadius.brPill,
-        border: Border.all(color: on ? AtomColors.primary : AtomColors.line2),
+        borderRadius: AtomRadius.brControl,
+        border: Border.all(
+          color: on ? AtomColors.primary : AtomColors.line2,
+          width: on ? 2 : 1,
+        ),
       ),
       child: Text(
         label,
-        style: AtomText.smallButton.copyWith(
-          color: on ? AtomColors.primary : AtomColors.ink,
+        textAlign: TextAlign.center,
+        style: AtomText.body.copyWith(
+          fontWeight: FontWeight.w600,
+          color: on ? AtomColors.primary : AtomColors.text,
         ),
       ),
     ),

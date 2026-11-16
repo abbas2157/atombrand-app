@@ -25,6 +25,31 @@ class _Owner extends SessionController {
   );
 }
 
+/// Hamza, Order handler: orders, payments, AtomPay and see stock.
+class _Handler extends SessionController {
+  @override
+  SessionState build() => const SignedIn(
+    BrandSession(
+      token: 't',
+      userId: 2,
+      name: 'Hamza',
+      who: Who(
+        isOwner: false,
+        roleKey: 'order_handler',
+        roleName: 'Order handler',
+        permissions: {'orders.view', 'orders.edit', 'stock.view'},
+      ),
+      brandName: 'Zenvo',
+    ),
+  );
+}
+
+class _InventoryOn extends AccessController {
+  @override
+  AccessState build() =>
+      const AccessState(addonStates: {Addon.inventory: AddonState.active});
+}
+
 class _Access extends AccessController {
   @override
   AccessState build() =>
@@ -68,10 +93,15 @@ const _options = FormOptions(
   sizes: [NamedOption(21, '43"'), NamedOption(22, '55"')],
 );
 
-Widget _app(Widget home) => ProviderScope(
+Widget _app(Widget home, {bool handler = false}) => ProviderScope(
   overrides: [
-    sessionProvider.overrideWith(_Owner.new),
-    accessProvider.overrideWith(_Access.new),
+    if (handler) ...[
+      sessionProvider.overrideWith(_Handler.new),
+      accessProvider.overrideWith(_InventoryOn.new),
+    ] else ...[
+      sessionProvider.overrideWith(_Owner.new),
+      accessProvider.overrideWith(_Access.new),
+    ],
     productsProvider.overrideWith((ref, q) async => _page),
     formOptionsProvider.overrideWith((ref) async => _options),
     productDetailProvider.overrideWith(
@@ -161,5 +191,50 @@ void main() {
     expect(find.text('Slide 1'), findsOneWidget);
     expect(find.text('Zenvo AC'), findsOneWidget);
     expect(find.text('Save brand page'), findsOneWidget);
+  });
+
+  testWidgets('Order handler: More actions holds only Stock and serials', (
+    t,
+  ) async {
+    await t.pumpWidget(_app(const ProductsScreen(), handler: true));
+    await t.pumpAndSettle();
+    expect(find.text('Add product'), findsNothing);
+    // The held product allows nothing: no ⋯ button at all.
+    expect(
+      find.bySemanticsLabel('More actions for Zenvo Air Fryer 5 L'),
+      findsNothing,
+    );
+    await t.tap(
+      find.bySemanticsLabel('More actions for Zenvo Inverter AC 1.5 ton'),
+    );
+    await t.pumpAndSettle();
+    expect(find.text('Stock and serials'), findsOneWidget);
+    expect(find.text('Edit product'), findsNothing);
+    expect(find.text('Delete product'), findsNothing);
+    expect(find.text('AtomPay'), findsNothing);
+  });
+
+  testWidgets('Catalogue screens fit 320dp at 200% text', (t) async {
+    t.view.physicalSize = const Size(320, 640);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    for (final screen in <Widget>[
+      const ProductsScreen(),
+      const ProductFormScreen(id: 10388),
+      const ProductFormScreen(),
+      const BrandPageScreen(),
+    ]) {
+      await t.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 640),
+            textScaler: TextScaler.linear(2),
+          ),
+          child: _app(screen),
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull, reason: '${screen.runtimeType}');
+    }
   });
 }

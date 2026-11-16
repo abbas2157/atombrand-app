@@ -5,7 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/routes.dart';
-import '../../../core/api/api_result.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
 import '../data/orders_models.dart';
@@ -71,8 +70,8 @@ class _OrderStepGateState extends ConsumerState<OrderStepGate> {
       if (order.hasError && !order.isLoading) {
         final e = order.error;
         return _page(
-          AtomErrorState(
-            message: e is ApiFailure ? sayOrderFailure(e, l) : null,
+          OrdersLoadError(
+            error: e!,
             onRetry: () => ref.invalidate(orderDetailProvider(widget.uuid)),
           ),
         );

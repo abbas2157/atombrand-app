@@ -15,7 +15,6 @@ import '../../../core/session/session_controller.dart';
 import '../../../design/design.dart';
 import '../../../widgets/widgets.dart';
 import '../../orders/ui/order_parts.dart';
-import '../../states/ui/state_screens.dart' show NoInternetBody;
 import '../data/atompay_models.dart';
 import '../data/atompay_repository.dart';
 import 'atompay_detail_screen.dart';
@@ -218,7 +217,7 @@ class _AtompayListBodyState extends ConsumerState<AtompayListBody> {
         ),
         OrdersSearchBox(
           controller: _search,
-          placeholder: l.ordersProductName,
+          placeholder: l.atompaySearchPlaceholder,
           onChanged: (_) {
             _searchTimer?.cancel();
             _searchTimer = Timer(const Duration(milliseconds: 400), () {
@@ -246,17 +245,10 @@ class _AtompayListBodyState extends ConsumerState<AtompayListBody> {
               padding: EdgeInsets.only(top: 16),
               child: AtomLoadingRows(),
             ),
-            error: (e, _) =>
-                e is ApiFailure &&
-                    (e.kind == ApiFailureKind.offline ||
-                        e.kind == ApiFailureKind.timeout)
-                ? NoInternetBody(
-                    onRetry: () => ref.invalidate(atompayPageProvider(query)),
-                  )
-                : AtomErrorState(
-                    message: e is ApiFailure ? e.message : null,
-                    onRetry: () => ref.invalidate(atompayPageProvider(query)),
-                  ),
+            error: (e, _) => OrdersLoadError(
+              error: e,
+              onRetry: () => ref.invalidate(atompayPageProvider(query)),
+            ),
             data: (p) => list(p.page.lastPage, p.page.items),
           ),
         ),
@@ -362,7 +354,10 @@ class AtompayOrderCard extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(o.productLine, style: AtomText.listTitle),
+                    Text(
+                      [o.productLine, l.ordersQty(o.quantity)].join(' · '),
+                      style: AtomText.listTitle,
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -390,18 +385,27 @@ class AtompayOrderCard extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                Text(l.ordersCashPrice, style: AtomText.small),
-                const SizedBox(width: 6),
-                Text(formatRs(o.cashPrice), style: AtomText.money),
-                const Spacer(),
-                AtomButton.small(
-                  label: canHand ? l.atompayHandOver : l.atompayView,
-                  kind: canHand
-                      ? AtomButtonKind.primary
-                      : AtomButtonKind.outline,
-                  onPressed: canHand
-                      ? () => context.push(V2Routes.atompayHandoverOf(o.uuid))
-                      : open,
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(l.ordersCashPrice, style: AtomText.small),
+                      Text(formatRs(o.cashPrice), style: AtomText.money),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: AtomButton.small(
+                    label: canHand ? l.atompayHandOver : l.atompayView,
+                    kind: canHand
+                        ? AtomButtonKind.primary
+                        : AtomButtonKind.outline,
+                    onPressed: canHand
+                        ? () => context.push(V2Routes.atompayHandoverOf(o.uuid))
+                        : open,
+                  ),
                 ),
               ],
             ),

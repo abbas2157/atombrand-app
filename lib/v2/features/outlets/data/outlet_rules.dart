@@ -48,8 +48,9 @@ String outletCardLine(AppLocalizations l, BrandOutlet o) {
     OutletStatus.paused => l.outletsCardPaused,
     OutletStatus.closed => l.outletsCardClosed,
     OutletStatus.open => [
-      ?o.managerName,
-      if (f != null) staffWords(l, f.staff),
+      ?(o.runBy ?? o.managerName),
+      // everyone who works here: this outlet's own and every-outlet members
+      if (f != null) staffWords(l, f.staff + f.staffAll),
       if (f != null && f.toConfirm > 0) l.outletsKpiOrdersNote(f.toConfirm),
     ].join(' · '),
   };

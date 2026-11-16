@@ -46,9 +46,13 @@ class ReportFilter {
     this.from,
     this.to,
     this.outletId,
+    this.method,
   });
 
   final ReportPeriod period;
+
+  /// A payment method (payments report); null for any.
+  final String? method;
   final DateTime? from;
   final DateTime? to;
   final int? outletId;
@@ -59,6 +63,7 @@ class ReportFilter {
       'from': AtomDates.api(from!),
     if (period == ReportPeriod.custom && to != null) 'to': AtomDates.api(to!),
     'outlet': ?outletId,
+    'method': ?method,
   };
 
   ReportFilter copyWith({
@@ -66,11 +71,13 @@ class ReportFilter {
     DateTime? Function()? from,
     DateTime? Function()? to,
     int? Function()? outletId,
+    String? Function()? method,
   }) => ReportFilter(
     period: period ?? this.period,
     from: from != null ? from() : this.from,
     to: to != null ? to() : this.to,
     outletId: outletId != null ? outletId() : this.outletId,
+    method: method != null ? method() : this.method,
   );
 
   @override
@@ -79,13 +86,14 @@ class ReportFilter {
       other.period == period &&
       other.from == from &&
       other.to == to &&
-      other.outletId == outletId;
+      other.outletId == outletId &&
+      other.method == method;
 
   @override
-  int get hashCode => Object.hash(period, from, to, outletId);
+  int get hashCode => Object.hash(period, from, to, outletId, method);
 }
 
-/// The four headline numbers for one period.
+/// The four headline numbers for one period, and the line under each.
 @immutable
 class ReportTotals {
   const ReportTotals({
@@ -93,12 +101,22 @@ class ReportTotals {
     this.received = 0,
     this.atompayPaid = 0,
     this.bulkWon = 0,
+    this.cashOrders,
+    this.stillDue,
+    this.atompayUnits,
+    this.bulkDeals,
   });
 
   final int cashSales;
   final int received;
   final int atompayPaid;
   final int bulkWon;
+
+  /// The lines under the numbers; null from a server that doesn't send them.
+  final int? cashOrders;
+  final int? stillDue;
+  final int? atompayUnits;
+  final int? bulkDeals;
 
   factory ReportTotals.fromJson(Object? raw) {
     final j = Json.map(raw);
@@ -107,6 +125,10 @@ class ReportTotals {
       received: Json.integer(j['received']) ?? 0,
       atompayPaid: Json.integer(j['atompay_paid']) ?? 0,
       bulkWon: Json.integer(j['bulk_won']) ?? 0,
+      cashOrders: Json.integer(j['cash_orders']),
+      stillDue: Json.integer(j['still_due']),
+      atompayUnits: Json.integer(j['atompay_units']),
+      bulkDeals: Json.integer(j['bulk_deals']),
     );
   }
 }
@@ -245,26 +267,40 @@ class ReportTable {
     required this.title,
     required this.columns,
     required this.rows,
+    this.key = '',
+    this.phone,
     this.totals,
   });
 
+  final String key;
   final String title;
   final List<ReportColumn> columns;
+
+  /// The three columns a phone shows (12.5); null to pick them here.
+  final List<ReportColumn>? phone;
+
+  /// What a phone shows: the server's three, else the first three.
+  List<ReportColumn> get phoneColumns =>
+      phone ?? columns.take(3).toList(growable: false);
   final List<Map<String, dynamic>> rows;
   final Map<String, dynamic>? totals;
 
   factory ReportTable.fromJson(Object? raw) {
     final j = Json.map(raw);
+    List<ReportColumn> cols(Object? list) => [
+      for (final c in Json.list(list))
+        ReportColumn(
+          Json.str(Json.map(c)['key']) ?? '',
+          Json.str(Json.map(c)['label']) ?? '',
+          columnType(Json.str(Json.map(c)['type'])),
+        ),
+    ];
+    final phone = j['phone'] is List ? cols(j['phone']) : null;
     return ReportTable(
+      key: Json.str(j['key']) ?? '',
       title: Json.str(j['title']) ?? '',
-      columns: [
-        for (final c in Json.list(j['columns']))
-          ReportColumn(
-            Json.str(Json.map(c)['key']) ?? '',
-            Json.str(Json.map(c)['label']) ?? '',
-            columnType(Json.str(Json.map(c)['type'])),
-          ),
-      ],
+      columns: cols(j['columns']),
+      phone: phone == null || phone.isEmpty ? null : phone,
       rows: [for (final r in Json.list(j['rows'])) Json.map(r)],
       totals: j['totals'] is Map ? Json.map(j['totals']) : null,
     );
@@ -321,11 +357,27 @@ class ReportData {
     this.tables = const [],
     this.note,
     this.madeAt,
+    this.phoneTable,
+    this.methods = const {},
+    this.method,
   });
 
   final String key;
   final String title;
   final String? description;
+
+  /// The table a phone shows (`phone_table`); the first when not sent.
+  final String? phoneTable;
+
+  /// Payment methods to filter by (payments report): key → label.
+  final Map<String, String> methods;
+
+  /// The method chosen, as the server applied it.
+  final String? method;
+
+  ReportTable? get phoneTableData =>
+      tables.where((t) => t.key == phoneTable).firstOrNull ??
+      tables.firstOrNull;
   final String? periodKey;
   final String? periodLabel;
   final String? outletName;
@@ -361,6 +413,12 @@ class ReportData {
       tables: [for (final t in Json.list(d['tables'])) ReportTable.fromJson(t)],
       note: Json.str(d['note']),
       madeAt: Json.str(d['made_at']),
+      phoneTable: Json.str(d['phone_table']),
+      methods: {
+        for (final e in Json.map(d['methods']).entries)
+          e.key: ?Json.str(e.value),
+      },
+      method: Json.str(d['method']),
     );
   }
 }

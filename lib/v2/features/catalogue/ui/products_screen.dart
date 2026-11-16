@@ -262,6 +262,12 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         children: [
           AtomPageHeader(
             title: l.catProductsTitle,
+            subtitle: counts == null
+                ? null
+                : l.catProductsSummary(
+                    counts.total,
+                    counts.countOf(ProductStatus.published),
+                  ),
             actions: [
               if (askAtom)
                 AtomIconButton(
@@ -270,7 +276,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   glyph: const AtomAiMark(size: 30),
                   onTap: () => context.push(V2Routes.askAtom),
                 ),
-              if (canEdit)
+              // At large text on a narrow phone the label can't fit beside
+              // the title: the + alone, with its name for screen readers.
+              if (canEdit &&
+                  (MediaQuery.textScalerOf(context).scale(10) <= 13 ||
+                      MediaQuery.sizeOf(context).width >= 400))
                 Padding(
                   padding: const EdgeInsets.only(left: 4, right: 8),
                   child: AtomButton.small(
@@ -279,6 +289,12 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     kind: AtomButtonKind.primary,
                     onPressed: () => context.push(V2Routes.productNew),
                   ),
+                )
+              else if (canEdit)
+                AtomIconButton(
+                  icon: LucideIcons.plus,
+                  label: l.catAddProduct,
+                  onTap: () => context.push(V2Routes.productNew),
                 ),
             ],
           ),
@@ -292,20 +308,8 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 return ref.refresh(productsProvider(query).future);
               },
               child: AtomSliverPage(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 slivers: [
-                  if (counts != null)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Tiny(
-                          l.catProductsSummary(
-                            counts.total,
-                            counts.countOf(ProductStatus.published),
-                          ),
-                        ),
-                      ),
-                    ),
                   SliverToBoxAdapter(
                     child: _StatusTiles(
                       counts: counts,
@@ -404,6 +408,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                                 )
                               : AtomErrorState(
                                   message: e is ApiFailure ? e.message : null,
+                                  error: e,
                                   onRetry: () =>
                                       ref.invalidate(productsProvider(query)),
                                 ),
@@ -562,9 +567,20 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             return ProductListRow(
               product: p,
               showAvailability: inventoryOn ?? page.inventory,
+              // A role without catalogue edit can't open the form; it reads
+              // the product's stock instead, when it may.
               onTap: page.fromCopy
                   ? null
-                  : () => context.push(V2Routes.productEditOf(p.id)),
+                  : canEdit
+                  ? () => context.push(V2Routes.productEditOf(p.id))
+                  : canStock && inventoryOn == true
+                  ? switch (p.available?.stockProductId) {
+                      final id? => () => context.push(
+                        V2Routes.productStockOf(id),
+                      ),
+                      null => null,
+                    }
+                  : null,
               onMore: actions.isEmpty ? null : () => _openActions(p, actions),
             );
           },
@@ -691,11 +707,19 @@ class _StatusTiles extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                label,
-                style: AtomText.small.copyWith(
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
+              // One line in every tile, so all four stay the same height:
+              // a long name ("Out of stock") shrinks a little to fit.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: AtomText.small.copyWith(
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
                 ),
               ),
             ],

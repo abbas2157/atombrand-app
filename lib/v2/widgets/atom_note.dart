@@ -155,6 +155,7 @@ class AtomPill extends StatelessWidget {
     required this.label,
     this.tone = AtomTone.grey,
     this.dot = false,
+    this.compact = false,
   });
 
   final String label;
@@ -163,11 +164,15 @@ class AtomPill extends StatelessWidget {
   /// A small dot before the label, for live states (Online / Offline).
   final bool dot;
 
+  /// 22 tall rather than 26: the boards' `.pill` with `height: 22px`
+  /// inside list rows.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 26),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      constraints: BoxConstraints(minHeight: compact ? 22 : 26),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 1 : 3),
       decoration: BoxDecoration(
         color: tone.bg,
         borderRadius: AtomRadius.brPill,

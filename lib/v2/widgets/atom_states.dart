@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../core/api/api_result.dart';
 import '../design/design.dart';
 import 'atom_brand.dart';
 import 'atom_button.dart';
@@ -299,16 +300,38 @@ class AtomTextLink extends StatelessWidget {
 /// "Something went wrong" with Try again, drawn as the error board (14.7):
 /// the rose tile, a 24 title, and Try again as the main button.
 class AtomErrorState extends StatelessWidget {
-  const AtomErrorState({super.key, required this.onRetry, this.message});
+  const AtomErrorState({
+    super.key,
+    required this.onRetry,
+    this.message,
+    this.error,
+  });
 
   final VoidCallback onRetry;
 
   /// A plain explanation; defaults to "Something went wrong".
   final String? message;
 
+  /// The failure itself, when the screen has it: a 403 (not in your role)
+  /// then shows 13.3's "Your role doesn't include this" instead of an
+  /// error with Try again.
+  final Object? error;
+
+  /// What a 403 shows (13.3), set by `features/states` when the router is
+  /// built; null falls back to the error.
+  static Widget Function(BuildContext context, ApiFailure failure)? roleRefusal;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final refusal = roleRefusal;
+    final f = error;
+    if (refusal != null &&
+        f is ApiFailure &&
+        (f.kind == ApiFailureKind.notInRole ||
+            f.kind == ApiFailureKind.ownerOnly)) {
+      return refusal(context, f);
+    }
     return AtomMessageState(
       icon: LucideIcons.circleAlert,
       tone: AtomTone.rose,

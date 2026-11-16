@@ -22,6 +22,15 @@ import '../../../core/format/ids.dart' show whatsAppUri;
 import '../../settings/data/settings_repository.dart' show appVersion;
 import '../data/help_repository.dart';
 
+/// What a failed load says: "no signal" offline, otherwise the plain
+/// "Something went wrong" (never the server's raw text).
+String? helpErrorText(AppLocalizations l, Object? error) =>
+    error is ApiFailure &&
+        (error.kind == ApiFailureKind.offline ||
+            error.kind == ApiFailureKind.timeout)
+    ? l.signInOffline
+    : null;
+
 // ── Topics ────────────────────────────────────────────────────────────────
 
 /// A help topic: the server's category, its name and its tile (18.1).
@@ -45,32 +54,32 @@ List<HelpTopic> helpTopics(
   (
     key: 'orders',
     name: l.noticesOrders,
-    icon: LucideIcons.file,
+    icon: LucideIcons.box,
     tone: AtomTone.blue,
   ),
   (
     key: 'atompay',
     name: l.helpTopicAtompay,
     icon: LucideIcons.creditCard,
-    tone: AtomTone.blue,
+    tone: AtomTone.green,
   ),
   (
     key: 'bulk',
     name: l.noticesBulk,
     icon: LucideIcons.funnel,
-    tone: AtomTone.amber,
+    tone: AtomTone.blue,
   ),
   (
     key: 'products',
     name: l.noticesProducts,
     icon: LucideIcons.tag,
-    tone: AtomTone.green,
+    tone: AtomTone.amber,
   ),
   if (has(Addon.inventory))
     (
       key: 'stock',
       name: l.stockTitle,
-      icon: LucideIcons.box,
+      icon: LucideIcons.layoutGrid,
       tone: AtomTone.green,
     ),
   if (has(Addon.team))
@@ -850,6 +859,8 @@ class FaqScreen extends ConsumerStatefulWidget {
 class _FaqScreenState extends ConsumerState<FaqScreen> {
   late String? _topic = widget.topic;
   int? _open;
+  // The board opens the first answer of a topic; tapping takes over.
+  bool _autoOpen = true;
   final _search = TextEditingController();
   Timer? _debounce;
   String _query = '';
@@ -889,8 +900,19 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
       ))
         if (all.any((f) => f.category == t.key) || searching) t,
     ];
-    // The board's chip order: the money topics first.
-    const first = ['orders', 'bulk', 'products'];
+    // The board's chip order (Orders, AtomPay, Bulk deals, Products …
+    // Account), then the topics the board's add-ons bring.
+    const first = [
+      'orders',
+      'atompay',
+      'bulk',
+      'products',
+      'stock',
+      'team',
+      'plan',
+      'getting-started',
+      'account',
+    ];
     topics.sort((a, b) {
       final ia = first.indexOf(a.key), ib = first.indexOf(b.key);
       return (ia < 0 ? 99 : ia).compareTo(ib < 0 ? 99 : ib);
@@ -904,6 +926,8 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
             for (final f in all)
               if (f.category == topic) f,
           ];
+    final open =
+        _open ?? (_autoOpen && !searching ? shown.firstOrNull?.id : null);
 
     return Scaffold(
       body: Column(
@@ -976,6 +1000,7 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
                             onTap: () => setState(() {
                               _topic = t.key;
                               _open = null;
+                              _autoOpen = true;
                             }),
                           ),
                         ],
@@ -988,9 +1013,7 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
                       ? const AtomLoadingRows()
                       : data.hasError && !data.hasValue
                       ? AtomErrorState(
-                          message: data.error is ApiFailure
-                              ? (data.error! as ApiFailure).message
-                              : null,
+                          message: helpErrorText(l, data.error),
                           onRetry: () => searching
                               ? ref.invalidate(helpSearchProvider(_query))
                               : ref.invalidate(helpFaqsProvider),
@@ -998,7 +1021,8 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
                       : shown.isEmpty
                       ? AtomMessageState(
                           icon: LucideIcons.circleHelp,
-                          title: l.faqsNone,
+                          title: searching ? l.faqsNone : l.helpFaqsEmpty,
+                          body: searching ? null : l.helpFaqsEmptySub,
                           actionLabel: l.supportWhatsApp,
                           onAction: () => launchUrl(
                             whatsAppUri(AtomshopContacts.whatsapp),
@@ -1010,11 +1034,12 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
                             for (final f in shown)
                               _FaqItem(
                                 faq: f,
-                                open: _open == f.id,
+                                open: open == f.id,
                                 askAtom: askAtom,
-                                onTap: () => setState(
-                                  () => _open = _open == f.id ? null : f.id,
-                                ),
+                                onTap: () => setState(() {
+                                  _autoOpen = false;
+                                  _open = open == f.id ? null : f.id;
+                                }),
                               ),
                           ],
                         ),
@@ -1576,9 +1601,7 @@ class _SupportListScreenState extends ConsumerState<SupportListScreen> {
                     const AtomLoadingRows()
                   else if (data.hasError && !data.hasValue)
                     AtomErrorState(
-                      message: data.error is ApiFailure
-                          ? (data.error! as ApiFailure).message
-                          : null,
+                      message: helpErrorText(l, data.error),
                       onRetry: () => ref.invalidate(supportRequestsProvider),
                     )
                   else if (shown.isEmpty)
@@ -2428,9 +2451,7 @@ class PrivacyScreen extends ConsumerWidget {
                         )
                       : data.hasError && !data.hasValue
                       ? AtomErrorState(
-                          message: data.error is ApiFailure
-                              ? (data.error! as ApiFailure).message
-                              : null,
+                          message: helpErrorText(l, data.error),
                           onRetry: () => ref.invalidate(privacyProvider),
                         )
                       : LegalSections(doc: doc!, openFirst: 'privacy'),
@@ -2463,6 +2484,9 @@ abstract final class _Links {
   );
   static final atompayAndroid = Uri.parse(
     'https://play.google.com/store/apps/details?id=com.ecommerce.atompay',
+  );
+  static final atomsellerAndroid = Uri.parse(
+    'https://play.google.com/store/apps/details?id=com.ecommerce.atomseller',
   );
   static const brandPartnerAndroid =
       'https://play.google.com/store/apps/details?id=pk.atomshop.atombrand_app';
@@ -2596,14 +2620,6 @@ class EcosystemScreen extends ConsumerWidget {
                   links: [
                     ('Google Play', () => open(_Links.atomshopAndroid)),
                     ('App Store', () => open(_Links.atomshopIos)),
-                    (
-                      l.dpDcSendCustomer,
-                      () => share(
-                        l.dpDcSendCustomerText(
-                          _Links.atomshopAndroid.toString(),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -2618,6 +2634,9 @@ class EcosystemScreen extends ConsumerWidget {
                   mark: const _Mark(asset: 'assets/brand/eco_atomseller.png'),
                   name: 'Atom Seller',
                   text: l.dpDcEcoBrand,
+                  links: [
+                    ('Google Play', () => open(_Links.atomsellerAndroid)),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 _AppCard(
