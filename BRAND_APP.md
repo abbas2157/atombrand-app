@@ -1,10 +1,10 @@
-# AtomShop Brand App: Product, Architecture, Design & API
+# Atombrand: Product, Architecture, Design & API
 
-> **What this is:** the single reference for building the **Brand Partner mobile app** (Flutter). It covers what the app is for (PRD), how it fits the backend (architecture), how it should look (design), and the complete API contract.
+> **What this is:** the single reference for building **Atombrand**, the Brand Partner mobile app (Flutter). It covers what the app is for (PRD), how it fits the backend (architecture), how it should look (design), and the complete API contract.
 > **Backend status:** API built and tested (`routes/api/brand-app.php`, `tests/Feature/BrandAppApiTest.php`).
 > **Build brief:** `docs/BRAND_APP_BUILD_PROMPT.md`, a ready-to-paste prompt for the Flutter build.
 > **Web twin:** the Brand Partner portal at `/brand-portal`. The app does the same jobs with the same rules. When in doubt, the portal's behaviour is the reference.
-> Last updated: 2026-10-01
+> Last updated: 2026-10-05
 
 ---
 
@@ -71,6 +71,7 @@ Brand partners today must open the web portal on a laptop to see new orders and 
 | F10 | Brand page editor | `page`, `page/update` | Logo, banner, story, contacts, up to 2 promo slides |
 | F11 | Profile & password | `profile/*` | Changing password signs out other devices |
 | F12 | Notifications: inbox + push for new orders, new bulk requests, product review decisions | `fcm-token`, `notifications/*` | See §8.10 |
+| F13 | Delete account | `me/delete` | Required by App Store 5.1.1(v) and Google Play; password-confirmed |
 
 ### 1.6 Success metrics
 
@@ -148,11 +149,12 @@ Splash ─┬─ (token valid) ──────────────► Mai
                            └─ Become a partner ─► Application form ─► Verify phone ─► Submitted
 
 Main (bottom tabs)
- ├─ Home        Dashboard
- ├─ Orders      Retail | Instalment  ─► Order detail ─► Status sheets (Deliver / Cancel)
+ ├─ Home        Dashboard ─► Orders (full screen, no tab): Retail | Instalment ─► Order detail ─► Status sheets (Deliver / Cancel)
  ├─ Bulk        Tabs by status (badge) ─► Request dossier ─► Update status sheet
  ├─ Catalogue   Products | Inventory ─► Product detail ─► Product form
- └─ More        Brand page editor · Profile · Change password · Support · Sign out
+ └─ More        Brand page editor · Profile · Change password · Support · Privacy policy · Sign out · Delete account
+
+Orders has no bottom tab (since 2026-10-05): the dashboard's order stats, "See all" and the overdue card open it, pre-filtered where relevant. Order detail also opens from notifications, pushes and bulk dossiers.
 
 App bar (every tab): bell icon with `me.badges.unread_notifications` ─► Notifications ─► tap opens the order / bulk request / product
 ```
@@ -189,72 +191,71 @@ The **Bulk** tab shows a badge with `me.badges.new_bulk_requests` (refresh on ap
 
 ## 4. Design system
 
-Layout mirrors the Brand Partner web portal (`public/brand/css/style.css`); colours follow the AtomBrands logo (red + charcoal on white).
+**[DESIGN.md](DESIGN.md) is the source of truth for how the app looks**; tokens live in `lib/core/theme.dart` (`AppPalette`). This section is a summary. If the two ever disagree, DESIGN.md wins and this section gets fixed. Layout mirrors the Brand Partner web portal; the palette is the app's own (since 2026-10-03) and does not copy the web's colours.
 
 ### 4.1 Colour tokens
+One palette for every screen: deep indigo primary, orange accent, navy header, soft neutrals, in a **light and a dark variant** that follow the system setting. Key light values (dark values in DESIGN.md §3.1):
 
-| Token | Hex | Use |
+| Token | Light | Use |
 |---|---|---|
-| `primary` | `#BE1E2D` | Primary buttons, active tab, links, FAB, "new" badges |
-| `primarySoft` | `#BE1E2D` @ 10% | Selected chips, nav indicator |
-| `accent` | `#1B1C1E` | App bar, dark highlights |
-| `background` | `#F6F7FB` | Scaffold |
-| `surface` | `#FFFFFF` | Cards, sheets |
-| `ink` | `#1B1C1E` | Primary text |
-| `muted` | `#64748B` | Secondary text, captions |
-| `line` | `#E2E8F0` | Dividers, input borders |
-| `success` | `#15803D` on `#16A34A` @ 12% | Green badge |
-| `warning` | `#B45309` on `#FAA53A` @ 16% | Amber badge |
-| `danger` | `#B91C1C` on `#DC2626` @ 10% | Red badge, destructive actions |
-| `neutral` | `#64748B` on `#F1F5F9` | Grey badge |
+| `primary` | `#4136C9` | Primary buttons, active tab, links, focus |
+| `accent` / `accentInk` | `#FF7A1A` / `#B04600` | Highlights only / the accent when it has to be text |
+| `header` | `#10122B` | App bars and the dashboard header |
+| `page` / `card` | `#F5F6FA` / `#FFFFFF` | Scaffold / cards, sheets |
+| `text` / `muted` | `#10122B` / `#5B6078` | Primary / secondary text |
+| `border` / `divider` | `#D9DCE6` / `#EEF0F5` | Inputs, outlines / hairlines in cards |
+| `danger` | `#C4213A` | Errors, destructive actions |
 
-Dark mode: not required for v1. If added, keep `primary`/`accent` and invert surfaces (`#0F172A` / `#1E293B`).
+Widgets read tokens with `AppPalette.of(context)` and never use raw hex.
 
 ### 4.2 Typography
-- **Inter** (Google Fonts): 400 / 500 / 600 / 700.
-- Scale: Display 24/700 (dashboard numbers) · Title 18/600 · Body 14/400 · Label 13/500 · Caption 12/400 muted.
-- Numbers on stat cards use tabular figures.
+- **Inter** on signed-in screens, **Poppins** on the auth screens (Google Fonts, `google_fonts` pinned to 8).
+- Scale: screen title 18/600 · card title 16/600 · KPI 20/700 · body 14–15/400 · caption 12/400 muted.
+- Prices and counts use tabular figures.
 
 ### 4.3 Shape & spacing
-- Card radius **16**, input/button radius **12**, badge radius **999** (pill).
-- 4-pt spacing grid; screen padding 16; card padding 16; gap between cards 12.
-- Shadow: `0 2 10 rgba(0,0,0,.06)` on cards only.
-- Tap targets ≥ 44×44.
+- Card radius **16**, input/button radius **14**, badges and chips are pills.
+- 4-pt grid; screen padding 16 (signed in) / 24 (auth).
+- Card shadow in light mode only.
+- Tap targets ≥ 48 px (text links ≥ 44).
 
-### 4.4 Status badges (identical to web)
+### 4.4 Status badges
+Each badge is a `Tone` (text on a soft fill; DESIGN.md §2.2), mapped in `lib/widgets/status_badge.dart`.
 
-| Value | Label shown | Colour |
+| Value | Label shown | Tone |
 |---|---|---|
-| Order `Pending` | Pending | grey |
-| Order `Varification` | **Verification** | amber |
-| Order `Processing` | Processing | amber |
-| Order `Delivered` | Delivered | blue |
-| Order `Instalments` | Instalments | blue |
-| Order `Completed` | Completed | green |
-| Order `Cancelled` | Cancelled | red |
-| Bulk `New Lead` | New Lead | amber |
-| Bulk `Contacted` / `Quoted` | same | blue |
-| Bulk `Won` | Won | green |
-| Bulk `Lost` | Lost | red |
-| Product `Published` | **Live** | green |
-| Product `Pending` | **In review** | amber |
-| Product `Out of Stock` | Out of stock | red |
-| Product `On hold` / `Closed` | same | grey |
+| Order `Pending` | Pending | neutral (slate) |
+| Order `Varification` | **Verification** | info (blue) |
+| Order `Processing` | Processing | warning (amber) |
+| Order `Delivered` | Delivered | positive (green) |
+| Order `Instalments` | Instalments | info (blue) |
+| Order `Completed` | Completed | positive (green) |
+| Order `Cancelled` | Cancelled | negative (red) |
+| Bulk `New Lead` | New Lead | lead (orange) |
+| Bulk `Contacted` | Contacted | info (blue) |
+| Bulk `Quoted` | Quoted | violet |
+| Bulk `Won` | Won | positive (green) |
+| Bulk `Lost` | Lost | neutral (slate) |
+| Product `Published` | **Live** | positive (green) |
+| Product `Pending` | **In review** | info (blue) |
+| Product `Out of Stock` | Out of stock | negative (red) |
+| Product `On hold` | On hold | warning (amber) |
+| Product `Closed` | Closed | neutral (slate) |
 
-Badges never wrap. A retail order also gets a payment pill: **"Paid in full"** (blue) when `is_cash`, otherwise **"{tenure}-month plan"** (grey).
+Badges never wrap. A retail order also gets a payment pill: **"Paid in full"** (positive) when `is_cash`, otherwise **"{tenure} mo plan"** (outlined neutral).
 
 ### 4.5 Components
-- **StatCard:** icon in a soft-tinted circle, big number, caption, optional trend.
+- **StatCard:** icon in a soft-tinted tile, big number, caption, optional trend.
 - **OrderTile:** product thumb (48), title, variant line, amount, status badge, date.
 - **BulkTile:** buyer name, product, quantity, city, status badge, quick call/WhatsApp icons.
 - **ProductTile:** thumb, title, PR number, price, status badge, stock count.
-- **InfoBanner:** left border info blue `#3D5DAB`, info icon (used for `locked_reason`, review warnings).
+- **InfoBanner:** `info` tone with an info icon (used for `locked_reason`, review warnings).
 - **CodeInput:** 6 boxes, auto-advance, paste support, SMS/WhatsApp autofill where the OS allows.
 - **EmptyState:** illustration/icon, one sentence saying what's missing, one action.
-- Icons: Material Symbols Rounded (the web uses Bootstrap Icons; pick the closest equivalents).
+- Icons: **Lucide** through `AppIcons` (`lib/core/app_icons.dart`), never `Icons.*` directly.
 
 ### 4.6 Accessibility
-- Contrast ≥ 4.5:1 for text (all badge pairs above meet this).
+- Contrast ≥ 4.5:1 for text (every tone pair meets this in both modes).
 - Respect system font scaling up to 130% without clipping.
 - Every icon-only button has a semantic label.
 
@@ -478,6 +479,9 @@ App bootstrap data.
 | 🔒 | `GET me` | n/a | `{ user, brand, badges: { new_bulk_requests, unread_notifications } }` |
 | 🔒 | `POST fcm-token` | `fcm_token` | `[]` |
 | 🔒 | `POST auth/logout` | n/a | revokes the current token |
+| 🔒 | `POST me/delete` | `password` | **Needed before store release.** Deletes the brand login (see below) |
+
+`POST me/delete` (same contract as the AtomPay app's): `422` with `data.password` on a wrong password (§7.1 envelope). On success, revoke **every** token for the user, unlink the brand login, unpublish the brand's products, delete personal data (name, email, phone, FCM tokens), and keep order, payout and invoice records only as long as the law requires. If it can't go ahead yet (orders in progress, money owed), answer `409` with a `message` saying why; the app shows it. Returns a `message` the app shows on the Welcome screen. Apple and Google both check this works with the review account, so it must be live before submission.
 
 ### 8.3 Dashboard: 🔒 `GET dashboard`
 ```json
@@ -489,6 +493,30 @@ App bootstrap data.
   "latest_orders": [ { "uuid": "…", "id": 901, "status": "Pending", "total_deal_price": 30000, "advance_price": 30000, "is_cash": true, "product": { "id": 5, "title": "…", "picture": "…" }, "created_at": "…" } ]
 }
 ```
+
+**Proposed additions (optional; app ready, server to do).** The Home dashboard (DESIGN.md §4.1) already reads these. It hides each section until the server sends its data, so they can ship one at a time:
+
+```json
+{
+  "orders": { "…": "…", "pending": 5, "verification": 5 },
+  "periods": {
+    "today": { "revenue": 566550, "revenue_change_pct": 12, "orders": 14, "orders_change": 3,
+               "series": [ { "label": "9 AM", "value": 42000 }, { "label": "11 AM", "value": 78840 } ] },
+    "7d":    { "revenue": 1986400, "revenue_change_pct": 8, "orders": 22, "orders_change": 4, "series": [ { "label": "Sun", "value": 212000 } ] },
+    "30d":   { "revenue": 4252848, "revenue_change_pct": 15, "orders": 39, "orders_change": 6, "series": [ { "label": "4 Sep", "value": 98000 } ] }
+  },
+  "recovery": { "financed": 1284600, "recovered": 873528, "overdue_instalments": 3 }
+}
+```
+
+| Field | Meaning | Shows |
+|---|---|---|
+| `orders.pending` / `orders.verification` | Current count of the brand's orders in `Pending` / `Varification` | "Pending orders" KPI; "Orders waiting for verification" row |
+| `periods.{today,7d,30d}` | Revenue (sum of `total_deal_price`, excluding cancelled) and order count for the period. `*_change` compares with the previous period of the same length: a whole-number percentage for revenue, an absolute count for orders. Asia/Karachi days. | Period switch, Revenue and Orders KPIs with ▲/▼, sales chart |
+| `periods.*.series` | Oldest → newest buckets: 2-hour slots for `today`, days for `7d` and `30d`. `label` is display-ready. | Chart bars; the last bar is highlighted |
+| `recovery` | Instalment orders: total financed, collected so far, count of instalments past due | Instalment recovery card |
+
+Until `periods` arrives, the KPIs show all-time order value and orders in the last 30 days. Until `orders.pending` arrives, the third KPI shows live products.
 
 ### 8.4 Products
 
@@ -531,12 +559,26 @@ App bootstrap data.
 
 Variant lists are **replaced** on every save; send the full set each time.
 
+**Wanted for the Catalogue design (not used yet):** a `counts` sibling on `GET products` (per status, for the current `q`) so every chip shows a count, not just the four the dashboard has; `sort=updated|price|name`; `q` matching `pr_number` like Inventory does; a `Rejected` outcome with a `rejection_reason` (shown on the card with *Fix & resubmit*); a `barcode` field to scan; and brand endpoints to put a product on hold and to duplicate one.
+
 ### 8.5 Inventory
 
 | | Endpoint | Notes |
 |---|---|---|
 | 🔒 | `GET inventory?q=&availability=in\|out&page=` | summaries + `can_manage_stock`; sibling `summary: { in_stock, out_of_stock }`. `q` also matches exact `pr_number`. |
 | 🔒 | `POST inventory/{id}` | `available` (`0`/`1`), `stock` (required when available, 1–1,000,000) → `{ id, status, stock }`. `409` if not live yet. |
+
+**Wanted for the Inventory design (not used yet):** `POST inventory` taking a list of `{ id, available, stock }` so Save is one request and all-or-nothing; a `low` availability filter and a `low` count in `summary` (the app loads every page to count today); a `stock_tracked` flag so a live product with 0 units isn't guessed to be untracked; and `barcode` on each item for the scan button.
+
+**Wanted for the Product detail design (not used yet):** on `GET products/{id}`: `rejection_reason` + `reviewed_at` (with a `Rejected` status), `instalment_preview: { months, monthly }` (how buyers see the plan), and `performance: { units_sold, revenue, page_views, bulk_requests, daily_units[30], last_sale_at }` for the last 30 days. Brand endpoints for `POST products/{id}/duplicate`, `…/hold`, `…/close` and `…/reopen`. Each section stays hidden until it is sent.
+
+**Wanted for the Add / Edit product design (not used yet):** a way to keep a live product live while an edit is reviewed (today `update` sets it `Pending` and hides it); a gallery order field so photos can be reordered; server-side drafts (*Save draft*); and the plan terms behind "Buyers will see From Rs. X/month" (shared with `instalment_preview` above).
+
+**Wanted for the More design (not used yet):** per-type push settings (new orders, bulk leads, stock alerts); a seller language preference with Urdu copy; payout bank details; team members with their own logins; a help center URL in `config.support`; and the brand `status` values spelled out (the app maps active / pending / suspended).
+
+**Wanted for the Brand page design (not used yet):** slides with an image, a link (product or category) and start/end dates, and more than 2 of them; WhatsApp, business address, city, social links and a "show contact details" switch; an order for featured products and a limit the server enforces; whether `description` may hold simple HTML (then the story gets Bold / Heading / Bullet like the product description); and a "Write with AI" draft endpoint.
+
+**Wanted for the Notifications design (not used yet):** more types (order status changes, instalment received / overdue, stock alerts, product rejected with a reason, AtomShop announcements with an image); a product thumbnail and the amount / city in `data`; `DELETE notifications/{id}` and a mark-unread call; per-type preferences, channels (push, WhatsApp, email) and quiet hours; and how long new bulk leads have waited, for "waiting over 3 days".
 
 ### 8.6 Orders
 
@@ -581,6 +623,20 @@ Variant lists are **replaced** on every save; send the full set each time.
 ```
 Customer details are personal data (CNIC, address). Don't cache them to disk, and don't log them.
 
+**Proposed list additions (optional; app ready, server to do).** The Orders screen (DESIGN.md §4.3) shows these as soon as they arrive and hides them until then:
+
+| Field | Where | Meaning | Shows |
+|---|---|---|---|
+| `counts` | sibling of `items` | `{ "Pending": 5, "Varification": 1, … }` for the current `type` and `q`, ignoring `status` | Count on each status chip; "All" is their sum |
+| `type_counts` | sibling | `{ "retail": 6, "instalment": 8 }` for the current `q` | "Retail (6)" / "Instalment (8)" |
+| `total_value` | sibling | Sum of `total_deal_price` for the current filter (all pages) | "14 orders · Rs. 1,045,600 total" |
+| `recovery_percent` | list item | As in the detail's `deal` | Recovery bar on instalment cards |
+| `needs_action` | list item | The brand must act on it now | Red stripe on the card. Without it the app marks retail cash orders at Pending or Verification |
+
+Also wanted, but not yet used by the app, since the UI would mislead without them: `q` matching customer name and order # (the search box says "Search by product" until then), and `sort=newest|oldest|price` (the mockup's Sort control). The mockup's **Shipped** status and **COD** plan don't exist in the API. They'd need a new status and a payment-method field.
+
+**Wanted for the order detail design (not used yet):** a `Shipped` status (for a Shipped step in the tracker); retail `payment_method` (`cod` / `online`) and `payment_status`; and an `Overdue` value in `instalments[].status`, so overdue doesn't depend on the device's clock. Until then the app treats any unpaid instalment dated before today as overdue.
+
 **Status change** (`multipart` when sending a photo):
 
 | Field | Rules |
@@ -617,6 +673,8 @@ Customer details are personal data (CNIC, address). Don't cache them to disk, an
 }
 ```
 `requester` is `null` for guests with no AtomShop account.
+
+**Wanted for the bulk request design (not used yet):** structured quote fields on a status change (`quote_price`, `quote_quantity`, `quote_valid_until`); the product's `price` in the dossier (for "≈ Rs. 15.8M at retail price"); an endpoint to turn a won lead into an order (*Create order*); and one to mark a lead as spam. Until then the app saves a quote as a fixed first line of `comments` (DESIGN.md §4.5).
 
 ### 8.8 Brand page
 
@@ -734,6 +792,7 @@ Covers: envelope 401, email + any-format phone login, refusal of wrong password 
 - [ ] FCM token registered after sign-in and on refresh.
 - [ ] Rs. / date formatting per §2.6 everywhere.
 - [ ] Works at 360 px width and 130% font scale.
+- [ ] Store compliance: [docs/STORE_SUBMISSION.md](docs/STORE_SUBMISSION.md) §2 blockers done, §6 checklist ticked.
 
 ---
 
@@ -743,5 +802,5 @@ Covers: envelope 401, email + any-format phone login, refusal of wrong password 
 2. **More events:** order status changed by AtomShop/a seller, low stock, a bulk request left unanswered for 24 h.
 3. **Review feedback:** when admin rejects or holds a product, there is no reason field to show the brand.
 4. **Analytics:** sales by product over time, conversion of bulk requests (Won / total).
-5. **Sign in with Apple/Google:** not planned; accounts are AtomShop-provisioned.
+5. **Sign in with Apple:** not planned; accounts are AtomShop-provisioned. Google sign-in for existing accounts is built in the app and waits on `POST auth/google` ([docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)). It is **Android only**: on iOS, App Store guideline 4.8 would also require Sign in with Apple. Add both together if Google is wanted on iOS.
 6. **Changing phone/email** does not currently require a code to the new contact. Consider adding before launch if partners share devices.

@@ -12,18 +12,27 @@ void main() {
     expect(find.text('Varification'), findsNothing);
   });
 
-  test('badge labels and tones match the web portal', () {
+  test('badge labels and tones follow DESIGN.md §2.2', () {
     expect(StatusBadge.product('Published').label, 'Live');
     expect(StatusBadge.product('Published').tone, BadgeTone.success);
     expect(StatusBadge.product('Pending').label, 'In review');
     expect(StatusBadge.product('Out of Stock').tone, BadgeTone.danger);
-    expect(StatusBadge.order('Completed').tone, BadgeTone.success);
-    expect(StatusBadge.order('Cancelled').tone, BadgeTone.danger);
+    expect(StatusBadge.product('Pending').tone, BadgeTone.info);
+    expect(StatusBadge.product('On hold').tone, BadgeTone.warning);
+    expect(StatusBadge.product('Closed').tone, BadgeTone.neutral);
     expect(StatusBadge.order('Pending').tone, BadgeTone.neutral);
-    expect(StatusBadge.bulk('New Lead').tone, BadgeTone.warning);
-    expect(StatusBadge.bulk('Quoted').tone, BadgeTone.info);
+    expect(StatusBadge.order('Varification').tone, BadgeTone.info);
+    expect(StatusBadge.order('Processing').tone, BadgeTone.warning);
+    expect(StatusBadge.order('Delivered').tone, BadgeTone.success);
+    expect(StatusBadge.order('Cancelled').tone, BadgeTone.danger);
+    expect(StatusBadge.bulk('New Lead').tone, BadgeTone.lead);
+    expect(StatusBadge.bulk('Quoted').tone, BadgeTone.violet);
+    expect(StatusBadge.bulk('Lost').tone, BadgeTone.neutral);
     expect(StatusBadge.payment(isCash: true, tenure: 1).label, 'Paid in full');
-    expect(StatusBadge.payment(isCash: false, tenure: 6).label, '6-month plan');
+    expect(StatusBadge.payment(isCash: true, tenure: 1).tone, BadgeTone.success);
+    expect(StatusBadge.payment(isCash: false, tenure: 6).label, '6 mo plan');
+    // Dashboard latest_orders has no tenure: never guess a number.
+    expect(StatusBadge.payment(isCash: false).label, 'Instalment plan');
   });
 
   testWidgets('CodeInput completes after six digits', (tester) async {

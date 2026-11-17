@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/app_icons.dart';
 
 import '../core/theme.dart';
 
@@ -47,6 +48,7 @@ class _CodeInputState extends State<CodeInput> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final p = AppPalette.of(context);
     final text = _ctrl.text;
     final hasError = widget.errorText != null;
     return Semantics(
@@ -96,22 +98,37 @@ class _CodeInputState extends State<CodeInput> {
                       final filled = i < text.length;
                       final active = _focus.hasFocus && i == text.length.clamp(0, widget.length - 1);
                       final borderColor = hasError
-                          ? AppColors.dangerFg
-                          : active
-                              ? AppColors.primary
-                              : Colors.transparent;
+                          ? p.danger
+                          : (active || filled)
+                              ? p.primary
+                              : p.border;
                       return Expanded(
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 120),
-                          height: 58,
+                          height: 56,
                           margin: EdgeInsets.only(right: i == widget.length - 1 ? 0 : 8),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: active ? AppColors.surface : AppColors.background,
+                            color: filled && !hasError ? p.primarySoft : p.field,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: borderColor, width: active ? 1.6 : 1),
+                            border: Border.all(color: borderColor, width: 1.5),
+                            boxShadow: active
+                                ? [BoxShadow(color: hasError ? p.dangerRing : p.ring, spreadRadius: 4)]
+                                : p.fieldShadow,
                           ),
-                          child: Text(filled ? text[i] : '', style: t.headlineSmall?.copyWith(fontFeatures: tabularFigures)),
+                          child: filled
+                              ? Text(
+                                  text[i],
+                                  style: t.headlineSmall?.copyWith(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w600,
+                                    color: p.text,
+                                    fontFeatures: tabularFigures,
+                                  ),
+                                )
+                              : active
+                                  ? Container(width: 2, height: 26, color: p.primary)
+                                  : null,
                         ),
                       );
                     }),
@@ -122,7 +139,14 @@ class _CodeInputState extends State<CodeInput> {
           ),
           if (hasError) ...[
             const SizedBox(height: 8),
-            Text(widget.errorText!, style: t.bodySmall?.copyWith(color: AppColors.dangerFg)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(AppIcons.error, size: 16, color: p.danger),
+                const SizedBox(width: 6),
+                Expanded(child: Text(widget.errorText!, style: t.bodySmall?.copyWith(fontSize: 13, color: p.danger))),
+              ],
+            ),
           ],
         ],
       ),

@@ -114,6 +114,12 @@ class SessionNotifier extends Notifier<SessionState> {
     state = const SignedOut();
   }
 
+  /// The server deleted the account (F13): forget it on this device too.
+  Future<void> accountDeleted(String notice) async {
+    await _clear();
+    state = SignedOut(notice: notice);
+  }
+
   void _onAuthFailure(int status, String message) {
     if (state is SignedOut) return;
     unawaited(_clear());

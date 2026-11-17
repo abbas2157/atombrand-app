@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../core/app_icons.dart';
 
 import '../core/theme.dart';
 
@@ -13,9 +14,10 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     final radius = BorderRadius.circular(AppRadius.card);
     return DecoratedBox(
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: radius, boxShadow: cardShadow),
+      decoration: BoxDecoration(color: p.card, borderRadius: radius, boxShadow: p.cardShadow),
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
@@ -30,7 +32,7 @@ class AppCard extends StatelessWidget {
 
 /// Rounded network thumbnail with a neutral placeholder.
 class NetThumb extends StatelessWidget {
-  const NetThumb(this.url, {super.key, this.size = 48, this.radius = 10, this.icon = Icons.inventory_2_outlined});
+  const NetThumb(this.url, {super.key, this.size = 48, this.radius = 10, this.icon = AppIcons.package});
 
   final String? url;
   final double size;
@@ -39,11 +41,12 @@ class NetThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     final placeholder = Container(
       width: size,
       height: size,
-      color: AppColors.neutralBg,
-      child: Icon(icon, color: AppColors.muted, size: size * 0.45),
+      color: p.surface,
+      child: Icon(icon, color: p.muted, size: size * 0.45),
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
@@ -61,22 +64,22 @@ class NetThumb extends StatelessWidget {
   }
 }
 
-/// Info banner with a primary left border (§4.5), used for `locked_reason`
-/// and review warnings.
+/// Tinted info banner (§4.5), used for `locked_reason` and review warnings.
+/// [color] defaults to the info blue.
 class InfoBanner extends StatelessWidget {
-  const InfoBanner(this.text, {super.key, this.icon = Icons.info_outline_rounded, this.color = AppColors.infoFg});
+  const InfoBanner(this.text, {super.key, this.icon = AppIcons.info, this.color});
 
   final String text;
   final IconData icon;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? AppPalette.of(context).info.fg;
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.control),
-        border: Border(left: BorderSide(color: color, width: 4)),
       ),
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -102,6 +105,7 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -111,11 +115,11 @@ class EmptyState extends StatelessWidget {
             Container(
               width: 72,
               height: 72,
-              decoration: const BoxDecoration(color: AppColors.primarySoft, shape: BoxShape.circle),
-              child: Icon(icon, color: AppColors.primary, size: 34),
+              decoration: BoxDecoration(color: p.primarySoft2, shape: BoxShape.circle),
+              child: Icon(icon, color: p.primary, size: 34),
             ),
             const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.muted)),
+            Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: p.muted)),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 16),
               FilledButton.tonal(onPressed: onAction, child: Text(actionLabel!)),
@@ -135,7 +139,7 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => EmptyState(
-        icon: Icons.cloud_off_rounded,
+        icon: AppIcons.offline,
         message: message,
         actionLabel: 'Try again',
         onAction: onRetry,
@@ -206,13 +210,14 @@ class BusyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
-        style: danger ? FilledButton.styleFrom(backgroundColor: AppColors.dangerFg) : null,
+        style: danger ? FilledButton.styleFrom(backgroundColor: p.danger, foregroundColor: p.onPrimary) : null,
         onPressed: busy ? null : onPressed,
         child: busy
-            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+            ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: p.onPrimary))
             : Text(label),
       ),
     );

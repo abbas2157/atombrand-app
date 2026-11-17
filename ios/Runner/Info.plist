@@ -6,6 +6,16 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Open Brand Partner with Face ID instead of your PIN.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Brand Partner uses the camera to scan serial numbers, take product photos and proof-of-delivery photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Brand Partner uses your photos so you can choose product pictures, your brand logo and banner, and proof-of-delivery photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Brand Partner uses the microphone only while you ask Ask Atom a question by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Brand Partner turns your spoken question for Ask Atom into text.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Atombrand</string>
 	<key>CFBundleExecutable</key>
@@ -28,10 +38,10 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Take delivery proof photos and product pictures.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose product pictures, your brand logo and banner, and delivery photos.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -59,8 +69,6 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<key>UIStatusBarHidden</key>
-	<false/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

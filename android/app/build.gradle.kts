@@ -1,5 +1,4 @@
 import java.util.Properties
-import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
@@ -7,12 +6,22 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Upload-key credentials, kept out of version control (android/key.properties).
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+// Push needs the Firebase config (docs/RELEASE.md). Without it the app still
+// builds and runs; it just never gets an FCM token.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.warn("android/app/google-services.json not found: push notifications are off in this build.")
 }
+
+// Release signing: android/key.properties (git-ignored) points at the upload
+// keystore. See docs/RELEASE.md. Without it, release builds fall back to the
+// debug key so `flutter run --release` still works, but can't go to Play.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasReleaseKey = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "com.ecommerce.atombrand"
@@ -22,6 +31,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -39,23 +49,22 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"] as String?
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
         }
     }
 
     buildTypes {
         release {
-            // Release builds are signed with the upload key when key.properties
-            // exists. Without it the build falls back to the debug key, which
-            // Play Console rejects: check the log line printed below.
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
             } else {
-                logger.warn("WARNING: android/key.properties not found - signing release with the DEBUG key. Play Console will reject this bundle.")
+                logger.warn("android/key.properties not found: signing the release build with the DEBUG key.")
                 signingConfigs.getByName("debug")
             }
         }
@@ -70,4 +79,9 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // flutter_local_notifications needs Java 8+ APIs on older Android.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

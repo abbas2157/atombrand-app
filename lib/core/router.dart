@@ -18,6 +18,7 @@ import '../features/catalogue/product_detail_screen.dart';
 import '../features/catalogue/product_form_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/orders/order_detail_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/orders/orders_screen.dart';
 import '../features/profile/more_screen.dart';
 import '../features/profile/profile_screens.dart';
@@ -83,15 +84,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: '/home', builder: (_, _) => const DashboardScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/orders',
-              builder: (_, state) => OrdersScreen(
-                initialType: state.uri.queryParameters['type'],
-                initialStatus: state.uri.queryParameters['status'],
-              ),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
             GoRoute(path: '/bulk', builder: (_, _) => const BulkScreen()),
           ]),
           StatefulShellBranch(routes: [
@@ -107,6 +99,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // Full-screen pages pushed over the tabs.
+      // Orders has no tab; the dashboard opens it, optionally filtered.
+      GoRoute(
+        parentNavigatorKey: _rootKey,
+        path: '/orders',
+        builder: (_, state) => OrdersScreen(
+          initialType: state.uri.queryParameters['type'],
+          initialStatus: state.uri.queryParameters['status'],
+        ),
+      ),
       GoRoute(
         parentNavigatorKey: _rootKey,
         path: '/orders/:type/:uuid',
@@ -133,9 +134,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(parentNavigatorKey: _rootKey, path: '/notifications', builder: (_, _) => const NotificationsScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/brand-page', builder: (_, _) => const BrandPageScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(parentNavigatorKey: _rootKey, path: '/change-password', builder: (_, _) => const ChangePasswordScreen()),
+      GoRoute(parentNavigatorKey: _rootKey, path: '/delete-account', builder: (_, _) => const DeleteAccountScreen()),
     ],
   );
 });

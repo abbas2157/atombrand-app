@@ -25,7 +25,22 @@ Future<PickedImage?> pickImage({
 }) async {
   final file = await _picker.pickImage(source: source, requestFullMetadata: false);
   if (file == null) return null;
-  return _compress(file, maxBytes);
+  final img = await _compress(file, maxBytes);
+  if (img == null) throw ImageTooLarge(file.name, await file.length(), maxBytes);
+  return img;
+}
+
+/// The picked image can't be brought under the size limit.
+class ImageTooLarge implements Exception {
+  const ImageTooLarge(this.name, this.bytes, this.maxBytes);
+  final String name;
+  final int bytes;
+  final int maxBytes;
+
+  String get message => 'Image too large. Use a file under ${maxBytes ~/ (1024 * 1024)} MB.';
+
+  /// "6.8 MB"
+  String get size => '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
 /// Picks up to [limit] gallery images, each compressed under [maxBytes].
