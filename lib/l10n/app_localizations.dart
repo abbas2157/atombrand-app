@@ -649,8 +649,20 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeBecomeSeller.
   ///
   /// In en, this message translates to:
-  /// **'Apply to list your brand'**
+  /// **'List your brand'**
   String get welcomeBecomeSeller;
+
+  /// No description provided for @signInEmailPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'you@yourbrand.pk'**
+  String get signInEmailPlaceholder;
+
+  /// No description provided for @signInPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get signInPasswordPlaceholder;
 
   /// No description provided for @signInTitle.
   ///

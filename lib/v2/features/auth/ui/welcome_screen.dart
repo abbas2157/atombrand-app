@@ -363,7 +363,7 @@ class _Sheet extends StatelessWidget {
           const SizedBox(height: 10),
           AtomButton(
             label: l.welcomeBecomeSeller,
-            kind: AtomButtonKind.outline,
+            kind: AtomButtonKind.primaryOutline,
             onPressed: () => context.push(V2Routes.apply),
           ),
         ],

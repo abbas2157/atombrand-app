@@ -62,8 +62,15 @@ class SessionController extends Notifier<SessionState> {
     return const SessionLoading();
   }
 
+  /// How long the launch screen stays up, even when the stored session
+  /// reads back at once.
+  static const minimumLaunch = Duration(seconds: 3);
+
   Future<void> _restore() async {
+    // Started before the read, so the wait overlaps it rather than adding to it.
+    final launch = Future<void>.delayed(minimumLaunch);
     final session = await _store.read();
+    await launch;
     // Something else (a sign-in in a test) may have run meanwhile.
     if (state is! SessionLoading) return;
     state = session == null ? const SignedOut() : SignedIn(session);

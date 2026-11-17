@@ -34,6 +34,7 @@ class AtomPasswordField extends StatefulWidget {
     required this.controller,
     this.error,
     this.hint,
+    this.placeholder,
     this.showStrength = false,
     this.labelTrailing,
     this.newPassword = false,
@@ -54,6 +55,9 @@ class AtomPasswordField extends StatefulWidget {
   final FocusNode? focusNode;
   final String? error;
   final String? hint;
+
+  /// Grey text inside the empty field.
+  final String? placeholder;
 
   /// The four-bar meter and its word, for choosing a new password.
   final bool showStrength;
@@ -150,7 +154,8 @@ class _AtomPasswordFieldState extends State<AtomPasswordField> {
               style: AtomText.input,
               decoration: InputDecoration(
                 semanticCounterText: '',
-                hintText: null,
+                hintText: widget.placeholder,
+                hintStyle: AtomText.input.copyWith(color: AtomColors.muted),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,

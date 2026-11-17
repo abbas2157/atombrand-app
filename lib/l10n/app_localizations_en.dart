@@ -364,7 +364,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeSignIn => 'Sign in';
 
   @override
-  String get welcomeBecomeSeller => 'Apply to list your brand';
+  String get welcomeBecomeSeller => 'List your brand';
+
+  @override
+  String get signInEmailPlaceholder => 'you@yourbrand.pk';
+
+  @override
+  String get signInPasswordPlaceholder => 'Enter your password';
 
   @override
   String get signInTitle => 'Sign in to Brand Partner';

@@ -17,6 +17,10 @@ enum AtomButtonKind {
 
   /// A navy-line outline on a navy screen.
   ghostDark,
+
+  /// An outline that carries the brand colour, for a secondary action that
+  /// still needs to read as the way forward (1.0's "List your brand").
+  primaryOutline,
 }
 
 /// The v2 button: full width and 50 tall, or small (36 tall, 48 tap area).
@@ -207,6 +211,12 @@ class AtomButton extends StatelessWidget {
           bg: pressed ? AtomColors.surface : AtomColors.paper,
           fg: AtomColors.ink,
           border: AtomColors.line2,
+        );
+      case AtomButtonKind.primaryOutline:
+        return _ButtonStyle(
+          bg: pressed ? AtomColors.primarySoft : AtomColors.paper,
+          fg: AtomColors.primary,
+          border: AtomColors.primaryLine,
         );
       case AtomButtonKind.danger:
         return _ButtonStyle(

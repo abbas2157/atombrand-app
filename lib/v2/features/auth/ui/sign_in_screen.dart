@@ -228,6 +228,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             child: AutofillGroup(
               child: AuthScrollBody(
                 children: [
+                  const Center(child: AtomBrandTile(size: 64, onLight: true)),
+                  const SizedBox(height: 18),
                   Semantics(
                     header: true,
                     child: Text(l.signInTitle, style: AuthText.h1),
@@ -292,7 +294,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     key: ValueKey(_who),
                     label: owner ? l.signInEmail : l.signInMobile,
                     controller: _login,
-                    placeholder: owner ? null : '03XX XXXXXXX',
+                    placeholder: owner ? l.signInEmailPlaceholder : '03XX XXXXXXX',
                     hint: owner ? null : l.signInMobileHint,
                     error: _loginError,
                     prefix: Icon(
@@ -313,6 +315,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   AtomPasswordField(
                     label: l.signInPassword,
                     controller: _password,
+                    placeholder: l.signInPasswordPlaceholder,
                     error: _passwordError,
                     labelTrailing: AtomPressable(
                       onTap: () => context.push(V2Routes.forgot),
@@ -419,7 +422,11 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
-/// "Trouble signing in? WhatsApp Atomshop" at the foot.
+/// The foot of Sign in: the way in for a brand that has no account yet,
+/// then support for one that does.
+///
+/// A hairline lifts the pair off the form, and the two rows are spaced far
+/// enough apart to read as separate offers rather than one grey block.
 class _Trouble extends StatelessWidget {
   const _Trouble({required this.l});
   final AppLocalizations l;
@@ -428,7 +435,9 @@ class _Trouble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // 2.1 "New brand? Apply to list your brand".
+        Divider(color: AtomColors.line2, height: 1, thickness: 1),
+        const SizedBox(height: 20),
+        // 2.1 "New brand? List your brand".
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -444,7 +453,7 @@ class _Trouble extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         _troubleRow(context),
       ],
     );
