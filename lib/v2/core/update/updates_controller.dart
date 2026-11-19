@@ -335,10 +335,10 @@ class UpdatesController extends Notifier<UpdatesState> {
           Uri.parse('market://details?id=$id'),
       if (p?.storeUrl != null) Uri.parse(p!.storeUrl!),
       // Fallbacks when the server names no store page. The App Store id is
-      // not known yet: iPhones then rely on `app_store_id` from GET config.
+      // not hard-coded: iPhones rely on `app_store_id` from GET config.
       if (!ios)
         Uri.parse(
-          'https://play.google.com/store/apps/details?id=pk.atomshop.atombrand_app',
+          'https://play.google.com/store/apps/details?id=com.ecommerce.atombrand',
         ),
     ];
     for (final uri in uris) {

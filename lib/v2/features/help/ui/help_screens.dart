@@ -2490,7 +2490,7 @@ abstract final class _Links {
     'https://play.google.com/store/apps/details?id=com.ecommerce.atomseller',
   );
   static const brandPartnerAndroid =
-      'https://play.google.com/store/apps/details?id=pk.atomshop.atombrand_app';
+      'https://play.google.com/store/apps/details?id=com.ecommerce.atombrand';
   static final site = Uri.parse('https://atomshop.pk');
   static final facebook = Uri.parse('https://www.facebook.com/atomshoppk');
   static final instagram = Uri.parse('https://www.instagram.com/atomshop.pk/');

@@ -45,7 +45,7 @@ export 'settings_parts.dart' show SettingsPane, settingsLeading;
 
 /// Brand Partner on Google Play.
 final playStoreUri = Uri.parse(
-  'https://play.google.com/store/apps/details?id=pk.atomshop.atombrand_app',
+  'https://play.google.com/store/apps/details?id=com.ecommerce.atombrand',
 );
 
 /// A page with a back arrow, the title and a scrolling body.

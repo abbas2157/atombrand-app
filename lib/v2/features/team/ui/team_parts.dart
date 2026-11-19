@@ -19,7 +19,7 @@ import '../data/team_rules.dart';
 
 /// Atombrand on Google Play: the link that goes with the WhatsApp message.
 const teamAppLink =
-    'https://play.google.com/store/apps/details?id=pk.atomshop.atombrand_app';
+    'https://play.google.com/store/apps/details?id=com.ecommerce.atombrand';
 
 /// The signed-in session, or null.
 BrandSession? watchSession(WidgetRef ref) =>
